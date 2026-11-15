@@ -1,0 +1,64 @@
+# Decisions
+
+One line per meaningful choice, with the reason.
+
+- **Stack: React 19 + TS + Vite + vite-plugin-pwa, no PixiJS/Zustand/TanStack/Dexie/Supabase.** Static GitHub Pages hosting; Canvas 2D is plenty for 32×32 sprites; a 40-line store with useSyncExternalStore + idb-keyval keeps the shell at ~137 KB gz.
+- **No backend.** GitHub Pages is static; accounts, sync, RLS, push notifications and community challenges are out. ONB-8 "Save your journal?" became a backup-file prompt; the offline "N waiting to sync" chip became "saved on this phone".
+- **Palette slot mapping by nearest default colour, not luminance sort (PIX-5).** Luminance sort paints robins grey; pulling each species slot toward its nearest photo cluster plus a global light shift keeps anatomy readable while the photo still decides the colours.
+- **Sprites stored as 17 palette indices, frames regenerated deterministically.** Tiny storage, byte-identical on every device; `spriteHash` of frame 0 is kept for audits.
+- **Ink reserved for outlines; big black areas render as Plum.** Black birds otherwise vanish on dark pages.
+- **Window Mode species are filed as verified without a confirm sheet.** The game spawned the bird, so it is not a silent guess; keeps first catch at 6 taps.
+- **Window Mode palette comes from a clean plate (bird + scene average colour), the photo is the real scene crop.** Painted backgrounds would otherwise bleed into sprite colours.
+- **Craft badges count Field Mode photos only.** Window-mode Fieldcraft is partly synthetic (focus/patience), so it can't farm photo badges.
+- **"Not sure — identify later" instead of "you tell me".** There is no ID model; the honest copy says what happens.
+- **Hotspot/county badges re-expressed as patch/habitat badges.** No coordinates are stored, so hotspots and counties cannot be known.
+- **Call player links to Xeno-canto instead of embedding audio.** Recordings need per-file licences and an API key.
+- **Reference photos from iNaturalist (user request).** Only CC-licensed default photos, always attributed; cached by the service worker for offline.
+- **Owner-supplied layered backgrounds replace procedural scenes (user request).** 14 sets mapped to habitat × day phase; procedural pixel props (branches, wire, feeder, post) give birds perches in every scene. The art is outside FIELD 32 by owner choice; sprites and props stay in FIELD 32.
+- **UI theme: near-black neutrals with a neon yellow-green primary (#C6FF1A) (user request).** Sprite palette unchanged; "gold" badge tier and Legendary rarity keep FIELD 32 Sun.
+- **Mobile-only layout.** The app is a 480 px column; desktop shows a note to open it on a phone.
+- **Sun times from region centroid (NOAA approx.) placed relative to solar noon.** Fixes sunsets that wrap past UTC midnight; tested across longitudes.
+- **No decorations (user request).** Feathers are spent on feeder food only; extra Aviary scenes open at 10 species.
+- **One job per tab (user request).** Explore = find birds (full-screen map + pull-up drawer), BirdDex = collection, Snap = camera, Aviary = care (Birds · Feeder), Trainer = progress (Quests · Badges · Lenses · Bird list). Quests live only in Trainer; alerts surface where action is needed.
+- **Discovery language (user request).** Birds are found and discovered, never caught: "Discovered!", the Snap Lens records a bird's likeness while the real bird flies on.
+- **Owner-supplied sound clips** for purchases, new BirdDex entries, level-ups/badges and the Snap Lens throw; long jingles duck the music.
+- **Professor Merlin (owner art) is the only guide.** Merlin (a real small falcon) leads onboarding, runs the Feed Store and the quest board. Rowan the druid was removed at the owner's request.
+- **Bird Homes unlock by trainer level.** 51 owner-supplied scenes (Glacier lake removed); 4 at Lv 1, then 2 per level to Lv 25. Trainer level = 1 + floor(sqrt(XP/30)), finer than the 9 ranks so there is always an unlock in reach.
+- **Map tiles: OpenStreetMap.** CARTO basemaps began requiring an API key; OSM standard tiles need none (with OSM France as a fallback).
+- **Music only on the title and onboarding.** In-game music is opt-in (Settings → Music during play).
+- **Main theme is a streamed song.** Kept out of the install precache (2 MB) and cached on first play; it pauses/resumes across screens and ducks under jingles.
+- **Plain-language bird groups.** Songbird, Crow family, Bird of prey… replace invented type names; BirdDex filters are All/Found/Missing + group + where.
+- **Live data needs no login.** iNaturalist read endpoints are public with CORS `*`; Explore shows a live status, refreshes every 5 minutes, lists the latest nearby reports, and Settings has a live-data check.
+- **Sound only while the app is on screen.** All audio pauses on visibilitychange/pagehide and resumes on return.
+
+- **Snap Lenses boost Snap Power.** Five lenses (Ripple free +0; Bubble +5, Ember +10, Arcane +15, Phantom +20, bought with Feathers) add to the photo score of camera shots (capped at 100), which raises XP. Each also tints the capsule and plays an owner-supplied fx sheet when a bird is recorded, replacing the old explosion. Viewable and switchable on the Trainer page and in Merlin's Shop.
+- **Merlin's guided tour** runs once after onboarding (and on first launch of this version for existing players). It spotlights the real UI on each tab; skippable, keyboard-operable (Esc, arrows) and replayable from Settings.
+- **Snap Power is explained where it appears** (onboarding, the result dialog, and the label on the info box): it is the photo score out of 100 and only affects XP.
+- **Colour themes:** Neon (default), Dusk, Ember and Field guide (light). Each passes axe-core colour-contrast on every main screen (WCAG 2.1 AA, Section 508).
+- **Identification is a skill moment.** Picking a candidate opens a side-by-side compare (your photo vs a CC reference photo + short description) before confirming; "Try next" flips through the shortlist.
+- **First win, fast.** The first discovery pays double XP and Feathers. "It flew off? Log it without a photo" records a seen-only sighting (4 Feathers, 0.25× XP) that marks the BirdDex cell as seen but never counts as discovered or joins the Aviary.
+- **BirdDex chapters** (Backyard 12, Park & Woods 20, Water 15, Hunters 10, and a monthly "specials" set from iNaturalist month counts) give finishable goals with Feather rewards; the whole-region total is secondary.
+- **One progression number.** Level (1 + √(XP/30)) is primary; rank names are titles. Snap Power shows as a grade (S ≥90, A ≥75, B ≥55, C ≥35, D).
+- **Just-in-time help.** Merlin shows a one-time tip on each tab and in the camera; the full 12-step tour only runs from Settings → Replay.
+- **Shop everywhere.** The Feather counter opens Merlin's Shop as its own screen.
+- **Missions** turn the freshest nearby sighting of a bird you still need into a 3-hour goal (+25 XP, +25 Feathers), with walking directions via Google Maps.
+- **Pets you can touch; hunger that forgives.** Tapping a bird makes it hop and chirp and shows its HP and mood; each bird gives 3 Feathers once a day. After 20+ hours away, Merlin feeds weak Aviary birds back to 50 HP and says so.
+- **Settings diet.** Grid, reference photos, live-data check, sprite lab and diagnostics live under Advanced. Diagnostics shows a local player-journey summary (no data leaves the phone).
+- **BirdDex is a field guide.** Goals (chapters) → look-up search → All / Found / To find → a sticky group index → one section per bird group with a found count. Unfound birds show their name (a guide you can look things up in), as a silhouette. "Life list" is now "Bird list".
+- **Equal heights on every row.** BirdDex cards are a fixed 4-row grid (number / art / name / footer); chapter cards, pantry tiles, button pairs, Explore cards, Bird Home and theme cards stretch to the tallest item in their row.
+- **Pixel food icons** replace emoji so Seed Mix, Berry Mash and Mealworm Tub match the art style on every phone.
+- **Missions can be declined.** "Not now" hides mission offers for 2 hours, and that species is not offered again that day.
+- **Bird Homes live on the Aviary page** as a horizontal strip (no extra "Change" step); the chosen home is centred, locked homes show the level they unlock at.
+- **Sheets render at the app root** (React portal) so they always sit at the bottom of the screen, even when the page behind them is scrolled.
+- **Fun facts are sourced, never generated.** Tapping a bird shows the curated BirdlyQuest fact for its species, then whole sentences from its Wikipedia summary (via iNaturalist), one per tap.
+- **The partner is a pet too.** It has HP, gets hungry, eats from the feeder and is cared for by Merlin's welcome-back feeding, so its HP bar shows above it like every other bird.
+- **Birds can be named.** Right after a discovery (optional field) or any time from the Aviary list (✎ Name). Names show in the Aviary, its labels, the Bird Box and meal messages; the species name stays alongside.
+- **35 Snap Lenses in four tiers** (Common Lv1, Rare Lv4, Epic Lv8, Legendary Lv12; +0 to +30 Snap Power, 0–600 Feathers). Effects reuse the five owner fx sheets with CSS colour filters and eight layouts (single, double, ring of 3, ring of 6, swarm, rain, orbit, rainbow).
+- **Feathers read as money.** A gold pixel feather marks every balance and price; the counter says "Feathers"; Merlin's Shop opens with your balance, "Feathers are BirdlyQuest's money" and a How-to-earn list; Merlin explains it in onboarding.
+- **Bug sweep:** a scripted run through ~55 screens and states in all four themes checks JS errors, failed requests, broken images, sideways overflow and axe a11y rules (contrast, names, labels). Fixes from it: Escape closes the badge pop-up, tier colours are theme-aware, page subtitles wrap instead of truncating.
+- **Lens bodies differ by tier** (Common grey capsule, Rare steel body with silver handles, Epic purple winged body with a gem, Legendary gold crowned body with rubies and a glow), and every lens above the starter adds a pixel-particle burst in its own shape and colours (drops, leaves, hearts, snowflakes, stars, bolts, diamonds, sparkles, rings, feathers).
+- **Default Bird Home is day/night:** Sky meadow by day, Mountain dusk at dusk and night. New homes from the owner: Sky meadow (Lv1), Crimson castle (Lv9), Moonlit keep (Lv13), Ivy chapel (Lv17). The strip is ordered by unlock level.
+- **Birding spots on Explore:** iNaturalist community places near you (parks, refuges, preserves, wetlands…), filtered to nature places, ranked by research-grade bird species recorded there, with map pins, "often seen" birds and walking directions. Cached for a day per area; no new services or keys.
+- **Explore drawer has one size.** The All / Less toggle (and the expanding handle) was removed; each tab scrolls inside the drawer.
+- **Camera fills the screen.** The live view uses the full height; Likely birds (one compact row), zoom / shutter / Import and "It flew off?" float on a gradient over the bottom. A square frame shows exactly what is captured (the crop is mapped from the on-screen frame back to video pixels, including software zoom). Merlin's camera tip sits at the top.
+- **Sky meadow trimmed** to its scenery band so the mountains and clouds sit in the Aviary view instead of being cropped off.
