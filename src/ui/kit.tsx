@@ -21,11 +21,11 @@ export function FeatherChip({ label = true }: { label?: boolean }) {
 export function PageHeader({ title, sub, right }: { title: string; sub?: ReactNode; right?: ReactNode }) {
   return (
     <header className="page-header">
-      <div className="grow" style={{ minWidth: 0 }}>
+      <div className="page-head-row">
         <h1>{title}</h1>
-        {sub && <div className="page-sub">{sub}</div>}
+        <div className="row" style={{ gap: 6, flex: 'none' }}>{right}</div>
       </div>
-      <div className="row" style={{ gap: 6 }}>{right}</div>
+      {sub && <div className="page-sub">{sub}</div>}
     </header>
   );
 }

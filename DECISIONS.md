@@ -63,3 +63,4 @@ One line per meaningful choice, with the reason.
 - **Camera fills the screen.** The live view uses the full height; Likely birds (one compact row), zoom / shutter / Import and "It flew off?" float on a gradient over the bottom. A square frame shows exactly what is captured (the crop is mapped from the on-screen frame back to video pixels, including software zoom). Merlin's camera tip sits at the top.
 - **Sky meadow trimmed** to its scenery band so the mountains and clouds sit in the Aviary view instead of being cropped off.
 - **New players start with two Bird Homes** (Sky meadow and Mountain dusk, the default day/night pair); every other home unlocks one level later than before (Lv2–Lv26). Camera Likely cards are larger (photo, name, sprite) and the camera shutter is 64px.
+- **Page headers:** title and actions (Feathers, settings) share one line; the subtitle runs full width underneath so it does not wrap.

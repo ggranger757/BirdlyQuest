@@ -202,7 +202,7 @@ export function Viewfinder() {
             {short.map(({ sp }) => (
               <div key={sp.id} role="listitem" className="cam-chip">
                 <RefThumb sp={sp} size={52} />
-                <span className="cam-chip-text"><span className="cam-chip-name">{sp.common}</span><Sprite species={sp} scale={1} mode="static" /></span>
+                <span className="cam-chip-name">{sp.common}</span>
               </div>
             ))}
           </div>
