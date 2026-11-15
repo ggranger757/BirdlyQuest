@@ -507,4 +507,4 @@ export function hungryCount(now = new Date()): number {
 }
 
 // e2e/dev only: lets automated checks seed a save. Stripped from production builds.
-if (import.meta.env.DEV && typeof window !== 'undefined') (window as any).__store = { getState, setState, fileCatch };
+if ((import.meta as any).env?.DEV && typeof window !== 'undefined') (window as any).__store = { getState, setState, fileCatch };

@@ -75,6 +75,9 @@ export const SCENES: Record<string, SceneDef> = {
   bulk: { id: 'bulk', label: "Bulkhead tunnel", level: 25, layers: 4, w: 352, h: 224, ground: 214, props: ['branchL', 'wire', 'feeder'] },
 };
 
+// New players start with two homes (the default day/night pair); every other home unlocks one level later.
+for (const sc of Object.values(SCENES)) sc.level = sc.id === 'skyday' || sc.id === 'dusk' ? 1 : sc.level + 1;
+
 const BY_PHASE: Record<Habitat, Record<DayPhase, [string, string?]>> = {
   urban: { dawn: ['skyline'], morning: ['c2'], day: ['c2'], golden: ['c4'], dusk: ['c4', 'rgba(60,20,70,0.28)'], night: ['neoncity'] },
   woodland: { dawn: ['n1'], morning: ['nfb'], day: ['pine'], golden: ['b3', 'rgba(255,170,60,0.14)'], dusk: ['dusk'], night: ['nfa'] },

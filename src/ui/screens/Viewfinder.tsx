@@ -200,12 +200,15 @@ export function Viewfinder() {
           <div className="cam-likely" role="list" aria-label="Likely birds right now">
             <span className="px cam-likely-label">Likely</span>
             {short.map(({ sp }) => (
-              <div key={sp.id} role="listitem" className="cam-chip"><RefThumb sp={sp} size={28} /><span>{sp.common}</span></div>
+              <div key={sp.id} role="listitem" className="cam-chip">
+                <RefThumb sp={sp} size={52} />
+                <span className="cam-chip-text"><span className="cam-chip-name">{sp.common}</span><Sprite species={sp} scale={1} mode="static" /></span>
+              </div>
             ))}
           </div>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <button className="btn ghost small cam-side" onClick={() => setZoom((z) => (z >= 3 ? 1 : z + 1))} aria-label={`Zoom ${zoom} times`}>{zoom}×</button>
-            <button className="shutter ready" onClick={shoot} disabled={cam !== 'live'} aria-label="Shutter"><Icon name="photo" size={28} color="var(--ink)" /></button>
+            <button className="shutter ready" onClick={shoot} disabled={cam !== 'live'} aria-label="Shutter"><Icon name="photo" size={22} color="var(--ink)" /></button>
             <button className="btn ghost small cam-side" onClick={() => fileRef.current?.click()} aria-label="Import a photo from today">Import</button>
           </div>
           <button className="link cam-flew" onClick={() => nav.replace({ name: 'quicklog' })}>It flew off? Log it without a photo</button>
