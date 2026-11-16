@@ -642,3 +642,5 @@ section[aria-label], [data-tour], .jgrid { scroll-margin-top: 76px; }
 .page-head-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; }
 .page-head-row h1 { margin: 0; }
 .page-sub { margin-top: 4px; }
+.season { margin: 0 0 4px; }
+.season-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }

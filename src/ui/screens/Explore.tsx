@@ -265,13 +265,23 @@ export function Explore() {
           </div>
           {view === 'latest' && <MissionCard feed={feed} caught={caught} />}
           {view === 'likely' && (() => {
-                const inSeason = entries.filter((e) => !e.sp.sensitive && e.seasonal > 0.6 && e.freq < 0.85).sort((a, b) => b.seasonal - a.seasonal).slice(0, 4);
+                const inSeason = entries.filter((e) => !e.sp.sensitive && e.seasonal > 0.6 && e.freq < 0.85).sort((a, b) => b.seasonal - a.seasonal).slice(0, 8);
                 if (inSeason.length < 2) return null;
                 const month = new Date().toLocaleString(undefined, { month: 'long' });
                 return (
-                  <div className="season-banner" role="note">
-                    <span className="mission-tag">In season</span> This {month} in {region.name}: {inSeason.map((e, i) => <span key={e.sp.id}>{i ? ', ' : ''}<button className="link" style={{ minHeight: 0, padding: 0 }} onClick={() => openSp(e.sp)}>{e.sp.common}</button></span>)}. Look for them before they move on!
-                  </div>
+                  <section className="season" aria-label={`In season this ${month}`}>
+                    <div className="season-head"><span className="mission-tag">In season</span> <span className="small">Passing through {region.name} this {month}</span></div>
+                    <div className="bird-cards">
+                      {inSeason.map((e) => (
+                        <button key={e.sp.id} className={`bird-card ${caught.has(e.sp.id) ? 'caught' : ''}`} onClick={() => openSp(e.sp)}>
+                          {e.sp.photo ? <img src={e.sp.photo} alt="" loading="lazy" /> : <span className="ph" style={{ display: 'block', overflow: 'hidden' }}><BirdThumb sp={e.sp} size={84} /></span>}
+                          <span className="dexno">{dexNo(e.dex)} {caught.has(e.sp.id) ? <span style={{ color: 'var(--accent)' }}>✓ found</span> : ''}</span>
+                          <span className="nm">{e.sp.common}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="section-title" style={{ marginTop: 4 }}><span>Likely right now</span></div>
+                  </section>
                 );
           })()}
           {view === 'spots' ? (
