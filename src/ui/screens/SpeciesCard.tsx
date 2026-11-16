@@ -8,8 +8,7 @@ import { hpNow, mood, MOOD_LINE } from '../../core/pets';
 import { UNKNOWN } from '../../core/model';
 import { lns, rarityOf, regionSpecies } from '../../core/rarity';
 import { photoURL } from '../../app/db';
-import { Sprite, RarityTag, TopBar, VERIFY_META, formatDate, RefPhotoCard, Icon, Sheet, Meter } from '../components';
-import { HEX } from '../../core/palette';
+import { Sprite, RarityTag, TopBar, VERIFY_META, formatDate, RefPhotoCard, Icon, Sheet, Meter, SKY_PLATE } from '../components';
 
 const HAB_LABEL: Record<string, string> = { urban: 'Urban & suburban', woodland: 'Woodland', water: 'Water & wetland' };
 
@@ -39,7 +38,7 @@ export function SpeciesCard({ id, sightingId }: { id: string; sightingId?: strin
       <TopBar title={`${dexNo(entry?.dex ?? cur?.dex)} ${mine.length || sp.id === '_unknown' ? sp.common : sp.common}`} onBack={nav.back}
         right={cur && <button className="icon-btn" aria-label="Open journal spread" onClick={() => nav.open({ name: 'spread', sightingId: cur.id })}><Icon name="journal" size={20} /></button>} />
       <div className="screen">
-        <div style={{ background: cur ? HEX[cur.sprite.bg] : 'var(--plum)', border: '2px solid var(--ink)', boxShadow: '4px 4px 0 #000', display: 'flex', justifyContent: 'center', padding: 8 }}>
+        <div style={{ ...(cur ? SKY_PLATE : { background: 'var(--plum)' }), border: '2px solid var(--ink)', boxShadow: '4px 4px 0 #000', display: 'flex', justifyContent: 'center', padding: 8 }}>
           {cur ? <Sprite species={sp} parts={cur.sprite.parts} scale={6} mode={cur.sprite.pose === 'flight' ? 'fly' : 'idle'} />
             : <Sprite species={sp} scale={6} mode="silhouette" label={`${sp.common} silhouette — not yet seen`} />}
         </div>

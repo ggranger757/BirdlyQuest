@@ -5,7 +5,7 @@ import { photoURL } from '../../app/db';
 import { renderFrames } from '../../core/pixel/sprite';
 import { HEX, CLEAR, RGB } from '../../core/palette';
 import { RARITY_META } from '../../core/rarity';
-import { Sprite, TopBar, RarityTag, formatDate, VERIFY_META, Icon } from '../components';
+import { Sprite, TopBar, RarityTag, formatDate, VERIFY_META, Icon, SKY_PLATE, SKY_PLATE_SRC } from '../components';
 import { sfx } from '../../app/audio';
 
 // COL-4: the journal spread. Left page photo, right page sprite + note. The shareable artifact.
@@ -47,7 +47,7 @@ export function Spread({ sightingId }: { sightingId: string }) {
             </div>
           </div>
           <div className="paper" style={{ padding: 12, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ background: HEX[s.sprite.bg], border: '2px solid var(--ink)' }}><Sprite species={sp} parts={s.sprite.parts} scale={4} /></div>
+            <div style={{ ...SKY_PLATE, border: '2px solid var(--ink)' }}><Sprite species={sp} parts={s.sprite.parts} scale={4} /></div>
             <h3 className="mt8" style={{ fontSize: 12, textAlign: 'center' }}>{name}</h3>
             {sp.sci && <div className="sci" style={{ fontSize: 12, textAlign: 'center' }}>{sp.sci}</div>}
             <div className="small mt8" style={{ color: 'var(--ink)' }}><span aria-hidden>{RARITY_META[s.rarity].glyph}</span> {RARITY_META[s.rarity].label} · {VERIFY_META[s.verification].label}</div>
@@ -99,7 +99,11 @@ export async function renderShareCard(s: ReturnType<typeof Object>, sp: any, nam
   // sprite
   const f = renderFrames(sp, s.sprite.parts)[0];
   const px = 12, ox = W / 2 + (W / 2 - 60 - 32 * px) / 2, oy = 220;
-  g.fillStyle = HEX[s.sprite.bg]; g.fillRect(ox - 8, oy - 8, 32 * px + 16, 32 * px + 16);
+  const pw = 32 * px + 16, sky = await loadImg(SKY_PLATE_SRC);
+  if (sky) { // same crop as the on-screen plate: cover, anchored 62% across and to the bottom
+    const sh = sky.naturalHeight, sw = sh, sx = Math.round((sky.naturalWidth - sw) * 0.62);
+    g.imageSmoothingEnabled = false; g.drawImage(sky, sx, 0, sw, sh, ox - 8, oy - 8, pw, pw);
+  } else { g.fillStyle = HEX[s.sprite.bg]; g.fillRect(ox - 8, oy - 8, pw, pw); }
   for (let i = 0; i < 1024; i++) { if (f[i] === CLEAR) continue; const [r, gg, b] = RGB[f[i]]; g.fillStyle = `rgb(${r},${gg},${b})`; g.fillRect(ox + (i % 32) * px, oy + ((i / 32) | 0) * px, px, px); }
   g.fillStyle = '#14121F'; g.font = '34px Silkscreen'; g.textAlign = 'center';
   wrap(g, name.toUpperCase(), W * 0.75 - 30, 690, 420, 42);

@@ -9,9 +9,9 @@ import { regionEntries, allKnownSpecies, taxonSummary } from '../../data/provide
 import type { Species } from '../../data/types';
 import { likelyNow } from '../../core/rarity';
 import { renderFrames } from '../../core/pixel/sprite';
-import { RGB, CLEAR, IDX, HEX } from '../../core/palette';
+import { RGB, CLEAR, IDX } from '../../core/palette';
 import { rgbToLab, snapToPalette } from '../../core/color';
-import { Sprite, useReducedMotion, useRefPhoto } from '../components';
+import { Sprite, useReducedMotion, useRefPhoto, SKY_PLATE } from '../components';
 import { Dialog, Menu, Types, BirdThumb, Capsule, Wipe, dexNo, BadgeIcon, LensFx } from '../game';
 import { lensOf, boostedPower } from '../../core/lenses';
 import { sfx, haptic, gameMusic, playClip } from '../../app/audio';
@@ -354,7 +354,7 @@ function BattleField({ job, habitat, region, stage, result, analysis, snapPower,
       {/* trainer side: partner peeks in from bottom-left */}
       <PartnerCorner />
       {stage === 'caught' && s?.firstRecord && <span className="stampmark sun" style={{ position: 'absolute', left: 16, top: '44%', background: '#000' }}>★ New BirdDex entry</span>}
-      {s && stage === 'caught' && <div style={{ position: 'absolute', right: 12, bottom: 10, background: HEX[s.sprite.bg], border: '2px solid #000' }}><Sprite species={sp!} parts={s.sprite.parts} scale={2} /></div>}
+      {s && stage === 'caught' && <div style={{ position: 'absolute', right: 12, bottom: 10, ...SKY_PLATE, border: '2px solid #000' }}><Sprite species={sp!} parts={s.sprite.parts} scale={2} /></div>}
     </div>
   );
 }

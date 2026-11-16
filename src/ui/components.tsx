@@ -151,6 +151,12 @@ export function RarityTag({ rarity, showLabel = true }: { rarity: Rarity; showLa
   );
 }
 
+/** Opening-screen sky (the valley scene, flattened) used behind pixel birds on plates. */
+export const SKY_PLATE_SRC = 'bg/valley/plate.png';
+export const SKY_PLATE: import('react').CSSProperties = {
+  backgroundImage: `url(${SKY_PLATE_SRC})`, backgroundSize: 'cover', backgroundPosition: '62% 100%', backgroundRepeat: 'no-repeat', imageRendering: 'pixelated',
+};
+
 export const VERIFY_META: Record<Verification, { label: string; short: string; cls: string }> = {
   verified: { label: 'Verified', short: '✓', cls: 'moss' },
   'self-reported': { label: 'Self-reported', short: 'SR', cls: 'ash' },
