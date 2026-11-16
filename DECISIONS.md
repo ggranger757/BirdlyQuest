@@ -65,3 +65,4 @@ One line per meaningful choice, with the reason.
 - **New players start with two Bird Homes** (Sky meadow and Mountain dusk, the default day/night pair); every other home unlocks one level later than before (Lv2–Lv26). Camera Likely cards are larger (photo, name, sprite) and the camera shutter is 64px.
 - **Page headers:** title and actions (Feathers, settings) share one line; the subtitle runs full width underneath so it does not wrap.
 - **In-season birds are cards** on the Likely tab (up to 8, same card as Likely), above the Likely list.
+- **Explore cards never clip names:** cards are 112px wide with room for three lines; names wrap in full and every card in a row stretches to the same height.

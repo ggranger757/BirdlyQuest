@@ -644,3 +644,8 @@ section[aria-label], [data-tour], .jgrid { scroll-margin-top: 76px; }
 .page-sub { margin-top: 4px; }
 .season { margin: 0 0 4px; }
 .season-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+/* Explore cards: full names, never clipped; same height across a row */
+.bird-cards { grid-auto-columns: 112px; align-items: stretch; }
+.bird-card { padding: 5px; gap: 3px; }
+.bird-card img, .bird-card .ph { height: 76px; }
+.bird-card .nm { display: block; -webkit-line-clamp: unset; overflow: visible; overflow-wrap: anywhere; hyphens: auto; font-size: 12px; line-height: 15px; min-height: 45px; }
