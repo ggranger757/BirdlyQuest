@@ -1,12 +1,18 @@
 import { MerlinTip } from '../MerlinTip';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNav } from '../nav';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNav, pushBackGuard } from '../nav';
 import { useGame, setState, logEvent } from '../../app/store';
 import { getRegion } from '../../data/geo';
 import { likelyNow } from '../../core/rarity';
 import { normalize, fromFile, exifDate, analyze, canvas } from '../../app/photo';
 import { Sprite, Icon, RarityTag, TopBar, RefThumb } from '../components';
 import { sfx, haptic } from '../../app/audio';
+import { CamRail, BirdPeek, warmPeekPhotos } from '../CamControls';
+
+const SW_ZOOM_MAX = 4;   // software zoom beyond 4× is mostly upscaled blur
+const HW_ZOOM_CAP = 10;  // keep the rail usable on phones that report 50–100× digital zoom
+const fmtZoom = (z: number) => `${z < 10 ? z.toFixed(1) : Math.round(z)}×`;
+const fmtEv = (v: number) => (Math.abs(v) < 0.05 ? '0' : `${v > 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}`);
 
 type CamState = 'ask' | 'starting' | 'live' | 'denied' | 'none' | 'busy';
 
@@ -18,6 +24,7 @@ export function Viewfinder() {
   const asked = useGame((s) => s.log.some((l) => l.e === 'camera_granted'));
   const region = getRegion(regionCode);
   const short = useMemo(() => likelyNow(region, new Date(), habitat).slice(0, 5), [regionCode, habitat]);
+  useEffect(() => { warmPeekPhotos(short.map((l) => l.sp)); }, [short]); // tap → the real bird, instantly
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [cam, setCam] = useState<CamState>(asked ? 'starting' : 'ask');
@@ -27,6 +34,9 @@ export function Viewfinder() {
   const [hwExposure, setHwExposure] = useState<{ min: number; max: number } | null>(null);
   const [hwZoom, setHwZoom] = useState<{ min: number; max: number } | null>(null);
   const [freeze, setFreeze] = useState<string | null>(null);
+  const [hud, setHud] = useState<string | null>(null);       // big transient readout while zooming / brightening
+  const hudTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [peek, setPeek] = useState<number | null>(null);     // index into `short` of the bird card open over the camera
   const [small, setSmall] = useState(false);
   const [importErr, setImportErr] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -42,7 +52,11 @@ export function Viewfinder() {
       const track = stream.getVideoTracks()[0];
       const caps: any = track.getCapabilities?.() ?? {};
       if (caps.exposureCompensation) setHwExposure({ min: caps.exposureCompensation.min, max: caps.exposureCompensation.max });
-      if (caps.zoom) setHwZoom({ min: caps.zoom.min, max: caps.zoom.max });
+      if (caps.zoom) {
+        setHwZoom({ min: caps.zoom.min, max: caps.zoom.max });
+        const cur = (track.getSettings?.() as any)?.zoom;
+        setZoom(typeof cur === 'number' ? cur : Math.max(caps.zoom.min, 1));
+      }
       setCam('live');
       logEvent('camera_granted');
     } catch (e: any) {
@@ -51,16 +65,47 @@ export function Viewfinder() {
   };
   useEffect(() => { if (cam === 'starting') start(); return () => streamRef.current?.getTracks().forEach((t) => t.stop()); }, []);
 
-  // hardware exposure / zoom when the device supports it; otherwise apply in software (preview AND capture)
-  useEffect(() => {
+  // ranges: hardware when the device exposes it, otherwise software (applied to preview AND capture)
+  const zoomRange = hwZoom ? { min: hwZoom.min, max: Math.max(hwZoom.min + 0.1, Math.min(hwZoom.max, HW_ZOOM_CAP)) } : { min: 1, max: SW_ZOOM_MAX };
+  const evRange = hwExposure ? { min: Math.max(hwExposure.min, -3), max: Math.min(hwExposure.max, 3) } : { min: -2, max: 2 };
+  const zoomRef = useRef(zoom); zoomRef.current = zoom;
+  const rangeRef = useRef(zoomRange); rangeRef.current = zoomRange;
+
+  const flashHud = useCallback((text: string) => {
+    setHud(text);
+    clearTimeout(hudTimer.current);
+    hudTimer.current = setTimeout(() => setHud(null), 900);
+  }, []);
+  useEffect(() => () => clearTimeout(hudTimer.current), []);
+  const changeZoom = useCallback((z: number) => {
+    const r = rangeRef.current;
+    const nz = Math.round(Math.max(r.min, Math.min(r.max, z)) * 10) / 10;
+    if (nz === zoomRef.current) return;
+    zoomRef.current = nz;
+    setZoom(nz); flashHud(fmtZoom(nz));
+  }, [flashHud]);
+  const changeExposure = (v: number) => { setExposure(v); flashHud(`☀ ${fmtEv(v)}`); };
+
+  // hardware constraints: dragging fires many updates, so keep one applyConstraints in flight and coalesce the rest
+  const hwBusy = useRef(false), hwDirty = useRef(false);
+  const want = useRef({ exposure, zoom, hwExposure, hwZoom }); want.current = { exposure, zoom, hwExposure, hwZoom };
+  const pushHw = useCallback(() => {
     const track = streamRef.current?.getVideoTracks()[0]; if (!track) return;
-    const adv: any = {};
-    if (hwExposure) adv.exposureCompensation = Math.max(hwExposure.min, Math.min(hwExposure.max, exposure));
-    if (hwZoom) adv.zoom = Math.max(hwZoom.min, Math.min(hwZoom.max, zoom));
-    if (Object.keys(adv).length) track.applyConstraints({ advanced: [adv] } as any).catch(() => {});
-  }, [exposure, zoom, hwExposure, hwZoom]);
+    if (hwBusy.current) { hwDirty.current = true; return; }
+    const w = want.current, adv: any = {};
+    if (w.hwExposure) adv.exposureCompensation = Math.max(w.hwExposure.min, Math.min(w.hwExposure.max, w.exposure));
+    if (w.hwZoom) adv.zoom = Math.max(w.hwZoom.min, Math.min(w.hwZoom.max, w.zoom));
+    if (!Object.keys(adv).length) return;
+    hwBusy.current = true;
+    track.applyConstraints({ advanced: [adv] } as any).catch(() => {}).finally(() => {
+      hwBusy.current = false;
+      if (hwDirty.current) { hwDirty.current = false; pushHw(); }
+    });
+  }, []);
+  useEffect(pushHw, [exposure, zoom, hwExposure, hwZoom]);
   const swFilter = !hwExposure && exposure ? `brightness(${Math.pow(2, exposure / 2).toFixed(2)})` : undefined;
   const swZoom = hwZoom ? 1 : zoom;
+  const swZoomRef = useRef(swZoom); swZoomRef.current = swZoom;
 
   // the square you see on screen is exactly what gets captured
   const viewRef = useRef<HTMLDivElement>(null);
@@ -68,6 +113,7 @@ export function Viewfinder() {
   const frameCrop = () => {
     const v = videoRef.current, box = viewRef.current, fr = frameRef.current;
     if (!v || !v.videoWidth) return null;
+    const swZoom = swZoomRef.current; // read live: the distance-cue interval holds an old closure
     const side0 = Math.min(v.videoWidth, v.videoHeight) / swZoom;
     const centre = { x: (v.videoWidth - side0) / 2, y: (v.videoHeight - side0) / 2, s: side0 };
     if (!box || !fr) return centre;
@@ -98,15 +144,86 @@ export function Viewfinder() {
       setSmall(n >= 2);
     }, 1200);
     return () => clearInterval(iv);
-  }, [cam, swZoom]);
+  }, [cam]);
 
-  const tapFocus = (e: React.PointerEvent<HTMLDivElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+  const tapFocus = (clientX: number, clientY: number, el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    const x = (clientX - r.left) / r.width, y = (clientY - r.top) / r.height;
     setReticle({ x, y }); sfx.tap();
     const track = streamRef.current?.getVideoTracks()[0];
     track?.applyConstraints({ advanced: [{ focusMode: 'single-shot', pointsOfInterest: [{ x, y }] } as any] }).catch(() => {});
   };
+
+  // Live-view gestures: tap = focus · one-finger drag up/down = zoom in/out · pinch = zoom.
+  const pts = useRef(new Map<number, { x: number; y: number }>());
+  const gest = useRef<{ mode: 'tap' | 'drag' | 'pinch' | 'none'; x0: number; y0: number; z0: number; d0: number }>({ mode: 'none', x0: 0, y0: 0, z0: 1, d0: 1 });
+  const dist = () => { const [a, b] = [...pts.current.values()]; return Math.hypot(a.x - b.x, a.y - b.y) || 1; };
+  const onViewDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (peek !== null) return;
+    // buttons inside the view (Merlin's tip, etc.) keep their own clicks
+    if ((e.target as HTMLElement).closest('button, a, input, [role="slider"]')) return;
+    pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.current.size === 1) gest.current = { mode: 'tap', x0: e.clientX, y0: e.clientY, z0: zoomRef.current, d0: 1 };
+    else if (pts.current.size === 2) {
+      gest.current = { mode: 'pinch', x0: 0, y0: 0, z0: zoomRef.current, d0: dist() };
+      for (const id of pts.current.keys()) { try { e.currentTarget.setPointerCapture(id); } catch { /* finger already lifted */ } }
+    }
+  };
+  const onViewMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!pts.current.has(e.pointerId)) return;
+    pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const g = gest.current;
+    if (g.mode === 'tap') {
+      const mx = e.clientX - g.x0, my = e.clientY - g.y0;
+      if (Math.hypot(mx, my) > 10) {
+        g.mode = Math.abs(my) >= Math.abs(mx) ? 'drag' : 'none';
+        // capture only once it's a real drag, so taps still reach their targets
+        if (g.mode === 'drag') e.currentTarget.setPointerCapture?.(e.pointerId);
+      }
+    }
+    if (g.mode === 'drag') {
+      // ~55% of the view height sweeps the whole zoom range, on a log scale so every step feels the same
+      const r = rangeRef.current, h = e.currentTarget.clientHeight || 600;
+      const k = Math.log(r.max / r.min) / (h * 0.55);
+      changeZoom(g.z0 * Math.exp((g.y0 - e.clientY) * k));
+    } else if (g.mode === 'pinch' && pts.current.size >= 2) {
+      changeZoom(g.z0 * (dist() / g.d0));
+    }
+  };
+  const onViewUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!pts.current.has(e.pointerId)) return;
+    const wasTap = gest.current.mode === 'tap' && pts.current.size === 1;
+    pts.current.delete(e.pointerId);
+    if (wasTap) tapFocus(e.clientX, e.clientY, e.currentTarget);
+    // lifting one finger of a pinch must not turn the other into a sudden drag
+    gest.current.mode = 'none';
+  };
+  const onViewCancel = (e: React.PointerEvent<HTMLDivElement>) => { pts.current.delete(e.pointerId); gest.current.mode = 'none'; };
+
+  // zoom button: jump through 1× / 2× / 3× / 5× presets (whatever fits the device), then back to the widest
+  const nextPreset = () => {
+    const r = zoomRange;
+    const presets = [r.min, ...[1, 2, 3, 5, 10].filter((p) => p > r.min + 0.05 && p <= r.max + 0.001)];
+    const next = presets.find((p) => p > zoom + 0.05) ?? r.min;
+    changeZoom(next); sfx.tap();
+  };
+
+  // Likely-bird card over the live camera. It owns one history entry, so the phone's Back
+  // gesture returns to the camera instead of closing it.
+  const guardOn = useRef(false);
+  const peekOpen = peek !== null;
+  useEffect(() => {
+    if (!peekOpen) return;
+    const off = pushBackGuard(nav.stack.length, () => { guardOn.current = false; setPeek(null); });
+    guardOn.current = true;
+    return () => { if (guardOn.current) { off(); guardOn.current = false; } };
+  }, [peekOpen]);
+  const openPeek = (i: number) => { sfx.select(); haptic(8); setPeek(i); };
+  const closePeek = useCallback(() => {
+    sfx.tap();
+    if (guardOn.current) { guardOn.current = false; history.back(); } // popstate → guard → setPeek(null)
+    else setPeek(null);
+  }, []);
 
   const shoot = async () => {
     const v = videoRef.current; if (!v || !v.videoWidth) return;
@@ -172,9 +289,10 @@ export function Viewfinder() {
 
   return (
     <div className="overlay" style={{ background: '#000' }}>
-      <TopBar title={regionCode} onBack={nav.back} backIcon="close"
+      <TopBar title={peek !== null ? 'Likely bird' : regionCode} onBack={peek !== null ? closePeek : nav.back} backIcon={peek !== null ? 'back' : 'close'}
         right={<button className="icon-btn" aria-pressed={grid} aria-label="Toggle grid" onClick={() => setState((s) => ({ ...s, settings: { ...s.settings, grid: !s.settings.grid } }))}><Icon name="grid" size={20} filled={grid} /></button>} />
-      <div className="cam-view" ref={viewRef} onPointerDown={tapFocus}>
+      <div className={`cam-view${peek !== null ? ' peeking' : ''}`} ref={viewRef}
+        onPointerDown={onViewDown} onPointerMove={onViewMove} onPointerUp={onViewUp} onPointerCancel={onViewCancel}>
         <video ref={videoRef} playsInline muted autoPlay style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transform: swZoom > 1 ? `scale(${swZoom})` : undefined, filter: swFilter }} />
         {/* the capture square: centred in the space above the controls */}
         <div className="cam-frame" ref={frameRef} aria-hidden>
@@ -189,25 +307,36 @@ export function Viewfinder() {
         {freeze && <img src={freeze} alt="" className="cam-freeze" />}
         {freeze && <div className="flash" />}
         {cam === 'starting' && <p className="px" style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>Waking the camera…</p>}
-        <div className="cam-tip"><MerlinTip id="camera" placement="inline" /></div>
-        {/* exposure slider: right edge, thumb-reachable */}
-        <input type="range" min={-2} max={2} step={0.5} value={exposure} onChange={(e) => setExposure(Number(e.target.value))} aria-label="Exposure"
-          onPointerDown={(e) => e.stopPropagation()} className="cam-exposure" />
+        {peek === null && <div className="cam-tip"><MerlinTip id="camera" placement="inline" /></div>}
+        {/* zoom (left) and brightness (right): same drag-up/drag-down rail, thumb-reachable */}
+        {cam === 'live' && peek === null && (
+          <>
+            <CamRail side="left" label="Zoom" icon="zoom" value={zoom} min={zoomRange.min} max={zoomRange.max} step={0.1} reset={Math.max(1, zoomRange.min)} log
+              format={fmtZoom} onChange={changeZoom} />
+            <CamRail side="right" label="Brightness" icon="sun" value={exposure} min={evRange.min} max={evRange.max} step={0.1} reset={0}
+              format={fmtEv} onChange={changeExposure} />
+          </>
+        )}
+        {hud && <div className="cam-hud px" aria-hidden>{hud}</div>}
+        {hud === null && peek === null && cam === 'live' && <div className="cam-gesture-hint small" aria-hidden>Drag up/down or pinch to zoom</div>}
         {small && <div className="chip cam-small" role="status">Small in frame — get closer if you can</div>}
 
         {/* controls float over the bottom of the camera */}
         <div className="cam-controls" onPointerDown={(e) => e.stopPropagation()}>
           <div className="cam-likely" role="list" aria-label="Likely birds right now">
             <span className="px cam-likely-label">Likely</span>
-            {short.map(({ sp }) => (
-              <div key={sp.id} role="listitem" className="cam-chip">
-                <RefThumb sp={sp} size={52} />
-                <span className="cam-chip-name">{sp.common}</span>
+            {short.map(({ sp }, i) => (
+              <div key={sp.id} role="listitem">
+                <button className="cam-chip" onClick={() => openPeek(i)} aria-label={`${sp.common}: show ID tips`}>
+                  <RefThumb sp={sp} size={52} />
+                  <span className="cam-chip-name">{sp.common}</span>
+                  <span className="cam-chip-info" aria-hidden>i</span>
+                </button>
               </div>
             ))}
           </div>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <button className="btn ghost small cam-side" onClick={() => setZoom((z) => (z >= 3 ? 1 : z + 1))} aria-label={`Zoom ${zoom} times`}>{zoom}×</button>
+            <button className="btn ghost small cam-side" onClick={nextPreset} aria-label={`Zoom ${fmtZoom(zoom)}. Tap for the next preset, or drag the view up or down`}>{fmtZoom(zoom)}</button>
             <button className="shutter ready" onClick={shoot} disabled={cam !== 'live'} aria-label="Shutter"><Icon name="photo" size={22} color="var(--ink)" /></button>
             <button className="btn ghost small cam-side" onClick={() => fileRef.current?.click()} aria-label="Import a photo from today">Import</button>
           </div>
@@ -215,6 +344,17 @@ export function Viewfinder() {
           {importErr && <p className="small" role="alert" style={{ color: 'var(--oriole)', margin: 0 }}>{importErr}</p>}
         </div>
         {importInput}
+
+        {peek !== null && short[peek] && (
+          <>
+            {/* the live view stays visible above the card; tapping it goes straight back to the camera */}
+            <button className="cam-peek-return" onPointerDown={(e) => e.stopPropagation()} onClick={closePeek} aria-label="Back to camera">
+              <span className="chip">Tap to return to camera</span>
+            </button>
+            <BirdPeek list={short} index={peek} onIndex={setPeek} onClose={closePeek}
+              onMore={(id) => nav.open({ name: 'species', id })} />
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { Component, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import { NavCtx, Nav, Route, Tab } from './nav';
+import { NavCtx, Nav, Route, Tab, consumeBackGuard } from './nav';
 import { useGame, isReady, getState, hungryCount, tickFeeder , welcomeBack } from '../app/store';
 import { Icon, Toast } from './components';
 import { Boot, Onboarding } from './screens/Onboarding';
@@ -91,7 +91,7 @@ export function App() {
   }, [ready, onboarded]);
 
   useEffect(() => {
-    const onPop = () => { if (stackRef.current.length) setStack((s) => s.slice(0, -1)); };
+    const onPop = () => { if (consumeBackGuard(stackRef.current.length)) return; if (stackRef.current.length) setStack((s) => s.slice(0, -1)); };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);

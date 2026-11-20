@@ -649,3 +649,94 @@ section[aria-label], [data-tour], .jgrid { scroll-margin-top: 76px; }
 .bird-card { padding: 5px; gap: 3px; }
 .bird-card img, .bird-card .ph { height: 76px; }
 .bird-card .nm { display: block; -webkit-line-clamp: unset; overflow: visible; overflow-wrap: anywhere; hyphens: auto; font-size: 12px; line-height: 15px; min-height: 45px; }
+
+/* ─── camera: drag-to-zoom, brightness rail, tappable Likely birds ─── */
+.cam-view { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.cam-exposure { display: none; } /* replaced by .cam-rail */
+
+/* zoom (left) and brightness (right) share one rail design: drag up = more, double-tap = reset */
+.cam-rail {
+  position: absolute; top: calc((100% - var(--cam-ui)) / 2); transform: translateY(-50%); z-index: 2;
+  width: 46px; padding: 8px 0 12px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  background: rgba(6,8,10,.45); border: 2px solid rgba(0,0,0,.55); color: #F7F4E9; touch-action: none; cursor: ns-resize;
+}
+.cam-rail.left { left: 6px; } .cam-rail.right { right: 6px; }
+.cam-rail:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.cam-rail.active { background: rgba(6,8,10,.7); }
+.cam-rail-icon { display: flex; }
+.cam-rail-track { position: relative; width: 4px; background: rgba(247,244,233,.35); }
+.cam-rail-fill { position: absolute; left: 0; bottom: 0; width: 100%; background: var(--accent); }
+.cam-rail-zero { position: absolute; left: -6px; width: 16px; height: 2px; margin-bottom: -1px; background: rgba(247,244,233,.8); }
+.cam-rail-thumb { position: absolute; left: 50%; width: 22px; height: 22px; transform: translate(-50%, 50%); background: var(--accent); border: 2px solid #000; box-shadow: 0 0 0 3px var(--accent-glow); }
+.cam-rail.active .cam-rail-thumb { width: 28px; height: 28px; }
+.cam-rail-value {
+  position: absolute; top: 50%; transform: translateY(-50%); white-space: nowrap; padding: 2px 6px;
+  font-family: var(--px); font-size: 12px; background: rgba(6,8,10,.85); color: #F7F4E9; border: 1px solid #000;
+  opacity: 0; transition: opacity 120ms; pointer-events: none;
+}
+.cam-rail.left .cam-rail-value { left: calc(100% + 10px); } .cam-rail.right .cam-rail-value { right: calc(100% + 10px); }
+.cam-rail.active .cam-rail-value, .cam-rail:focus-visible .cam-rail-value { opacity: 1; }
+
+/* big readout while zooming / brightening */
+.cam-hud {
+  position: absolute; left: 50%; top: calc((100% - var(--cam-ui)) / 2); transform: translate(-50%, -50%); z-index: 4; pointer-events: none;
+  padding: 6px 14px; font-size: 26px; color: #F7F4E9; background: rgba(6,8,10,.62); border: 2px solid #000; animation: fadein 120ms;
+}
+.cam-gesture-hint {
+  position: absolute; left: 50%; bottom: calc(var(--cam-ui) + 8px); transform: translateX(-50%); z-index: 2; pointer-events: none;
+  padding: 3px 10px; color: #F7F4E9; background: rgba(6,8,10,.6); white-space: nowrap; animation: hintfade 4.5s forwards;
+}
+@keyframes hintfade { 0%, 75% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+
+/* Likely chips are buttons now */
+button.cam-chip { position: relative; font: inherit; text-align: left; cursor: pointer; }
+button.cam-chip:active { transform: translateY(2px); }
+button.cam-chip:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+.cam-chip-info {
+  position: absolute; top: 3px; right: 4px; width: 15px; height: 15px; display: grid; place-items: center;
+  font-family: var(--px); font-size: 10px; line-height: 1; background: var(--accent); color: var(--accent-ink); border: 1px solid #000;
+}
+
+/* bird card over the live camera */
+.cam-peek-return {
+  position: absolute; inset: 0; z-index: 4; display: flex; align-items: flex-start; justify-content: center; padding-top: 12px;
+  background: linear-gradient(rgba(6,8,10,0) 40%, rgba(6,8,10,.35)); border: 0; cursor: pointer; color: #F7F4E9;
+}
+.cam-peek-return .chip { background: rgba(6,8,10,.75); color: #F7F4E9; border-color: #000; }
+.cam-peek {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; max-height: 64%; display: flex; flex-direction: column;
+  background: var(--plum); color: var(--cream); border-top: 2px solid #000; box-shadow: 0 -4px 0 0 #000;
+  padding-bottom: var(--safe-b); animation: sheetup var(--t-sheet) steps(6); transition: transform 160ms ease-out;
+}
+.cam-peek-head { padding: 2px 8px 0 14px; touch-action: none; cursor: grab; }
+.cam-peek-grab { display: block; width: 48px; height: 4px; background: var(--smoke); margin: 8px auto 2px; }
+.cam-peek-count { color: var(--accent); font-size: 12px; }
+.cam-peek-arrow { font-size: 30px; line-height: 1; font-family: var(--px); }
+.cam-peek-arrow:disabled { opacity: .3; }
+.cam-peek-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 16px 6px; }
+.cam-peek-top { display: flex; gap: 12px; align-items: flex-start; touch-action: none; }
+.cam-peek-photo {
+  flex: none; width: 38%; max-width: 160px; aspect-ratio: 1; display: grid; place-items: center; overflow: hidden;
+  background: var(--slate); border: 2px solid var(--cream); box-shadow: 3px 3px 0 #000;
+}
+.cam-peek-photo img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.cam-peek-id { min-width: 0; flex: 1; }
+.cam-peek-name { margin: 0; font-size: 20px; line-height: 1.15; overflow-wrap: anywhere; }
+.cam-peek-status { font-size: 12px; }
+.cam-peek-blurb { margin: 10px 0 4px; }
+.cam-peek-credit { margin: 4px 0 0; font-size: 11px; }
+.cam-peek-foot { padding: 8px 16px 10px; border-top: 2px solid var(--ink); }
+@media (prefers-reduced-motion: reduce) {
+  .cam-peek { animation: none; transition: none; }
+  .cam-gesture-hint { animation: none; opacity: 0; }
+}
+/* real reference photo in the camera bird card */
+.cam-peek-photo { position: relative; }
+.cam-peek-photo img { position: absolute; inset: 0; }
+.cam-peek-photo img.lo { filter: blur(1px); }
+.cam-peek-photo img.hi { opacity: 0; transition: opacity 180ms; }
+.cam-peek-photo img.hi.in { opacity: 1; }
+.cam-peek-photo.loading { animation: blink 1.2s steps(2) infinite; color: var(--stone); }
+.cam-peek-photo.empty, .cam-peek-photo-fail { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 6px; text-align: center; color: var(--stone); }
+.cam-peek-photo-fail { position: absolute; inset: 0; }
+@media (prefers-reduced-motion: reduce) { .cam-peek-photo.loading { animation: none; } .cam-peek-photo img.hi { transition: none; } }
