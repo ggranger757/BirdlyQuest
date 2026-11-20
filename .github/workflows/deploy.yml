@@ -1,19 +1,19 @@
-# Builds and deploys BirdlyQuest to GitHub Pages on every push to main.
-# One-time setup: repo Settings → Pages → Build and deployment → Source: "GitHub Actions".
-name: Deploy to GitHub Pages
+# Rebuilds the app into docs/ on every push to main and commits it.
+# GitHub Pages serves this repo's branch: index.html sends visitors to the prebuilt app in docs/,
+# so docs/ must always hold a fresh build of src/. Nothing to do by hand.
+name: Build app into docs/
 
 on:
   push:
     branches: [main]
+    paths-ignore: ['docs/**']
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
+  group: build-docs
   cancel-in-progress: true
 
 jobs:
@@ -27,17 +27,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - run: npx vite build
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - run: npm run build   # vite build → dist/, then copied to docs/
+      - name: Commit the new build
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A docs
+          if git diff --cached --quiet; then echo "docs/ already up to date"; exit 0; fi
+          git commit -m "Build app into docs/ for $(git rev-parse --short HEAD)"
+          git push
