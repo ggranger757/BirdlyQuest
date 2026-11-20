@@ -38,14 +38,14 @@ export function LensList({ onBought, onEquip }: { onBought?: (id: LensId) => voi
               <span className="name">{l.name}</span> <span className="tier-tag" style={{ borderColor: TIER_META[l.tier].color }}>{TIER_META[l.tier].label}</span>{on && <span className="small" style={{ color: 'var(--accent)' }}> · in use</span>}
               <br /><span className="lens-power">{l.power ? `+${l.power} Snap Power` : 'No Snap Power boost'}</span>
               <br /><span className="small muted">{l.desc}</span>
-              {short && <><br /><span className="small" style={{ color: 'var(--oriole)' }}>Need {l.price - st.feathers} more Feathers</span></>}
+              {short && <><br /><span className="small" style={{ color: 'var(--oriole)' }}>Need {l.price - st.feathers} more Feather Coins</span></>}
             </span>
             {owned ? (
               <button className="btn small" disabled={on} aria-label={on ? `${l.name} in use` : `Use ${l.name}`} onClick={() => { equipLens(id); sfx.select(); onEquip?.(id); }}>{on ? 'Using' : 'Use'}</button>
             ) : locked ? (
               <span className="btn small lens-locked" aria-label={`${l.name} unlocks at level ${l.level}`}>🔒 Lv {l.level}</span>
             ) : (
-              <button className="btn small primary price-btn" disabled={short} aria-label={`Buy ${l.name} for ${l.price} Feathers`}
+              <button className="btn small primary price-btn" disabled={short} aria-label={`Buy ${l.name} for ${l.price} Feather Coins`}
                 onClick={() => { if (buyLens(id)) { playClip('buy'); onBought?.(id); } else sfx.error(); }}>
                 <FeatherIcon size={14} /> {l.price}
               </button>

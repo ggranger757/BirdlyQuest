@@ -8,13 +8,40 @@ import { regionEntries, ensureRegion, onProviderChange, providerStatus } from '.
 import { typesOf, BirdType, GROUP_PLURAL, GROUP_TYPES, PLACE_TYPES } from '../../core/rarity';
 import { Segmented } from '../kit';
 import type { Sighting } from '../../core/model';
-import { Sprite, Meter, VERIFY_META, formatDate } from '../components';
+import { Sprite, Icon, VERIFY_META, formatDate } from '../components';
+import { FeatherIcon } from '../FeatherIcon';
+import { haptic } from '../../app/audio';
 import { Types, dexNo, HpBar } from '../game';
 import { PageHeader, FeatherChip } from '../kit';
 import { hpNow } from '../../core/pets';
 import { HEX } from '../../core/palette';
 
 type Filter = 'all' | 'found' | 'missing';
+
+// each goal gets its own colour and pixel emblem so the row reads like a quest board
+const GOAL_LOOK: Record<string, { icon: string; color: string }> = {
+  backyard: { icon: 'house', color: 'var(--moss)' },
+  park: { icon: 'tree', color: 'var(--lichen)' },
+  water: { icon: 'wave', color: 'var(--river)' },
+  hunters: { icon: 'talon', color: 'var(--oriole)' },
+};
+const goalLook = (id: string) => GOAL_LOOK[id] ?? { icon: 'star', color: 'var(--sun)' };
+const goalStars = (n: number, total: number) => (n >= total ? 3 : Math.floor((n / total) * 3));
+
+/** Feather Coins bursting out of an opened chest. */
+function CoinBurst() {
+  const coins = Array.from({ length: 12 }, (_, i) => {
+    const a = (i / 12) * Math.PI * 2 - Math.PI / 2, r = 46 + (i % 3) * 14;
+    return { dx: Math.round(Math.cos(a) * r), dy: Math.round(Math.sin(a) * r - 18), delay: (i % 4) * 40 };
+  });
+  return (
+    <span className="goal-burst" aria-hidden>
+      {coins.map((c, i) => (
+        <span key={i} className="particle" style={{ ['--dx' as string]: `${c.dx}px`, ['--dy' as string]: `${c.dy}px`, animationDelay: `${c.delay}ms` }}><FeatherIcon size={14} /></span>
+      ))}
+    </span>
+  );
+}
 
 export function Dex() {
   const nav = useNav();
@@ -25,6 +52,7 @@ export function Dex() {
   const [place, setPlace] = useState<BirdType | ''>('');
   const [q, setQ] = useState('');
   const [chap, setChap] = useState<string | null>(null);
+  const [burst, setBurst] = useState<string | null>(null);
   useEffect(() => { logEvent('journal_open'); ensureRegion(st.region); return onProviderChange(() => force((x) => x + 1)); }, [st.region]);
   useEffect(() => { if (nav.highlight) { const t = setTimeout(() => nav.setHighlight(null), 2600); return () => clearTimeout(t); } }, [nav.highlight]);
 
@@ -98,24 +126,74 @@ export function Dex() {
     <div className="screen with-tabs dex">
       <PageHeader title="BirdDex" sub={`${region.flag ?? ''} ${region.name} · ${have} of ${entries.length} found · Bird list ${mine.size}`} right={<FeatherChip />} />
 
-      {/* 1. goals */}
-      <div className="section-title"><span>Your goals</span>{chap && <button className="link" style={{ minHeight: 0 }} onClick={() => setChap(null)}>Show all birds</button>}</div>
-      <div className="hscroll chapters" role="list" aria-label="BirdDex chapters">
+      {/* 1. goals: a quest board */}
+      {(() => {
+        const doneCount = chapters.filter((c) => chapterProgress(c, found) >= c.ids.length).length;
+        const chests = chapters.filter((c) => chapterProgress(c, found) >= c.ids.length && !st.chapters?.[c.id]).length;
+        return (
+          <div className="section-title goals-title">
+            <span>Your goals <span className="goals-score">★ {doneCount}/{chapters.length}</span>{chests > 0 && <span className="goals-chests">{chests} chest{chests > 1 ? 's' : ''} to open!</span>}</span>
+            {chap && <button className="link" style={{ minHeight: 0 }} onClick={() => setChap(null)}>Show all birds</button>}
+          </div>
+        );
+      })()}
+      <div className="hscroll chapters goals" role="list" aria-label="BirdDex goals">
         {chapters.map((c) => {
-          const n = chapterProgress(c, found), done = n >= c.ids.length, claimed = !!st.chapters?.[c.id];
+          const n = chapterProgress(c, found), total = c.ids.length, done = n >= total, claimed = !!st.chapters?.[c.id];
+          const look = goalLook(c.id), stars = goalStars(n, total), left = total - n;
+          const isNext = !done && c.id === current?.id;
+          // birds in this goal, found ones first, so the card shows what you've collected
+          const birds = c.ids.map((id) => entries.find((e) => e.sp.id === id)).filter((e): e is (typeof entries)[number] => !!e)
+            .sort((a, b) => Number(mine.has(b.sp.id)) - Number(mine.has(a.sp.id)));
+          const segs = Math.min(total, 12);
+          const lit = done ? segs : Math.floor((n / total) * segs);
+          const state = done ? (claimed ? 'claimed' : 'ready') : isNext ? 'next' : '';
           return (
-            <div key={c.id} role="listitem" className={`chapter ${chap === c.id ? 'on' : ''} ${done ? 'done' : ''}`}>
-              <div className="chapter-card">
-                <button className="chapter-main" onClick={() => setChap(chap === c.id ? null : c.id)} aria-pressed={chap === c.id} aria-label={`${c.name}: ${n} of ${c.ids.length}. ${chap === c.id ? 'Showing only this goal' : 'Show only these birds'}`}>
-                  <span className="name small chapter-name">{c.name}</span>
-                  <span className="small muted chapter-blurb">{c.blurb}</span>
-                  <Meter value={n} max={c.ids.length} tone="sun" label={`${c.name} progress`} />
+            <div key={c.id} role="listitem" className={`chapter goal ${state} ${chap === c.id ? 'on' : ''} ${done ? 'done' : ''}`} style={{ ['--goal' as string]: look.color }}>
+              <div className="chapter-card goal-card">
+                {state === 'ready' && <span className="goal-ribbon">Complete!</span>}
+                {state === 'next' && <span className="goal-ribbon">Next goal</span>}
+                {state === 'claimed' && <span className="goal-ribbon muted-ribbon">Mastered</span>}
+                <button className="goal-main" onClick={() => { haptic(6); setChap(chap === c.id ? null : c.id); }} aria-pressed={chap === c.id}
+                  aria-label={`${c.name}: ${n} of ${total} found, ${stars} of 3 stars. ${chap === c.id ? 'Showing only these birds' : 'Show only these birds'}`}>
+                  <span className="goal-head">
+                    <span className="goal-emblem"><Icon name={look.icon} size={22} /></span>
+                    <span className="goal-title">
+                      <span className="goal-name">{c.name}</span>
+                      <span className="goal-togo">{done ? 'All found!' : `${left} to go`}</span>
+                    </span>
+                  </span>
+                  <span className="goal-blurb small">{c.blurb}</span>
+                  <span className="goal-birds" aria-hidden>
+                    {birds.slice(0, 6).map((e) => {
+                      const s0 = mine.get(e.sp.id)?.[0];
+                      return <span key={e.sp.id} className={`goal-bird ${s0 ? 'got' : ''}`}><Sprite species={e.sp} parts={s0?.sprite.parts} mode={s0 ? 'static' : 'silhouette'} scale={1} /></span>;
+                    })}
+                    {birds.length > 6 && <span className="goal-more">+{birds.length - 6}</span>}
+                  </span>
+                  <span className="goal-bar" aria-hidden>
+                    {Array.from({ length: segs }, (_, i) => <i key={i} className={i < lit ? 'lit' : ''} />)}
+                    {[1, 2, 3].map((k) => <b key={k} className={`goal-pip ${stars >= k ? 'on' : ''}`} style={{ left: `${(k / 3) * 100}%` }}>★</b>)}
+                  </span>
                 </button>
-                <div className="chapter-foot small">
-                  <span className="num">{n}/{c.ids.length}</span>
-                  {done && !claimed
-                    ? <button className="btn small primary chapter-claim" onClick={() => { if (claimChapter(c.id, c.reward)) { playClip('levelUp'); nav.toast(`${c.name} complete! +${c.reward} Feathers`); } }}>Claim +{c.reward}</button>
-                    : <span className="muted">{claimed ? '✓ Claimed' : `+${c.reward} Feathers`}</span>}
+                <div className="goal-foot">
+                  <span className="goal-stars" aria-hidden>{[1, 2, 3].map((k) => <span key={k} className={stars >= k ? 'on' : ''}>★</span>)}</span>
+                  <span className="goal-count num">{n}/{total}</span>
+                  {done && !claimed ? (
+                    <button className="goal-chest ready" onClick={() => {
+                      if (claimChapter(c.id, c.reward)) {
+                        playClip('levelUp'); haptic(20); setBurst(c.id); setTimeout(() => setBurst(null), 1100);
+                        nav.toast(`${c.name} complete! +${c.reward} Feather Coins`);
+                      }
+                    }} aria-label={`Open the chest: +${c.reward} Feather Coins`}>
+                      <Icon name="chest" size={18} /><span>Open</span><span className="goal-reward"><FeatherIcon size={12} />+{c.reward}</span>
+                    </button>
+                  ) : (
+                    <span className={`goal-chest ${claimed ? 'open' : 'locked'}`} aria-label={claimed ? `Reward collected: ${c.reward} Feather Coins` : `Reward: ${c.reward} Feather Coins`}>
+                      <Icon name={claimed ? 'chestOpen' : 'chest'} size={18} /><span className="goal-reward"><FeatherIcon size={12} />{claimed ? '✓' : `+${c.reward}`}</span>
+                    </span>
+                  )}
+                  {burst === c.id && <CoinBurst />}
                 </div>
               </div>
             </div>

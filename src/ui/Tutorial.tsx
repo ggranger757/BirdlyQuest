@@ -16,9 +16,9 @@ const STEPS: Step[] = [
   { tab: 'explore', target: '.tabbar .tab.cam', text: 'Then tell me which bird it is. I turn your photo into a pixel bird coloured from YOUR shot, and you record it with your Snap Lens.' },
   { tab: 'dex', target: '.jgrid', text: 'Your BirdDex holds every bird in your region. Silhouettes are birds still waiting to be discovered.' },
   { tab: 'aviary', target: '[data-tour="aviary"]', text: 'Your Aviary! Birds you discover live here as pets. Their HP slowly drops, so they need food.' },
-  { tab: 'aviary', target: '[role="tablist"][aria-label="Aviary sections"]', text: 'Keep the FEEDER full. Hungry birds fly in and eat by themselves. Buy food in my shop with Feathers.' },
+  { tab: 'aviary', target: '[role="tablist"][aria-label="Aviary sections"]', text: 'Keep the FEEDER full. Hungry birds fly in and eat by themselves. Buy food in my shop with Feather Coins.' },
   { tab: 'you', section: 'lenses', target: '[aria-label="Your Snap Lenses"]', text: 'Your Snap Lenses. Better lenses add Snap Power to every photo, and each has its own recording effect.' },
-  { tab: 'you', section: 'quests', target: '[role="tablist"][aria-label="Trainer sections"]', text: 'Quests and badges earn XP and Feathers. Level up to unlock new Bird Homes for your Aviary.' },
+  { tab: 'you', section: 'quests', target: '[role="tablist"][aria-label="Trainer sections"]', text: 'Quests and badges earn XP and Feather Coins. Level up to unlock new Bird Homes for your Aviary.' },
   { tab: 'explore', text: 'That is everything! Go outside and find your first bird. You can replay this tour in Settings.' },
 ];
 

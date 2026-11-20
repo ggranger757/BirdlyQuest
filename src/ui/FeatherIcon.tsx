@@ -1,4 +1,4 @@
-// The in-game currency: a golden pixel feather. Used on every price and balance so Feathers read as money.
+// The in-game currency: a golden pixel feather. Used on every price and balance so Feather Coins read as money.
 const ROWS = [
   '..........kk',
   '........kkGk',

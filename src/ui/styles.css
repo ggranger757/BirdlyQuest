@@ -758,3 +758,58 @@ button.cam-chip:focus-visible { outline: 3px solid var(--accent); outline-offset
 .cam-rail.idle { opacity: 0; pointer-events: none; }
 .cam-rail.idle:focus-visible { opacity: 1; pointer-events: auto; }
 @media (prefers-reduced-motion: reduce) { .cam-rail { transition: none; } }
+
+/* ─── BirdDex goals: quest board (v1.18) ─── */
+.goals-title > span { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.goals-score { font-family: var(--px); font-size: 11px; color: var(--sun); }
+.goals-chests { font-family: var(--px); font-size: 10px; text-transform: uppercase; padding: 2px 6px; background: var(--sun); color: #1A1200; border: 1px solid #000; animation: goalpulse 1.2s steps(2) infinite; }
+.chapters.goals { gap: 12px; padding: 10px 2px 8px; }
+.goal { width: 232px; }
+.goal-card { position: relative; background: linear-gradient(180deg, color-mix(in srgb, var(--goal) 22%, var(--slate)) 0 38px, var(--slate) 38px); border-color: #000; }
+.goal.next .goal-card { box-shadow: 0 0 0 2px var(--goal), 4px 4px 0 2px #000; }
+.goal.ready .goal-card { border-color: var(--sun); box-shadow: 0 0 0 2px var(--sun), 0 0 14px 2px rgba(242,193,78,.45), 4px 4px 0 2px #000; }
+.goal.claimed .goal-card { border-color: var(--goal); }
+.goal.on .goal-card { outline: 3px solid var(--accent); outline-offset: -3px; }
+.goal-ribbon {
+  position: absolute; top: -9px; right: 8px; z-index: 1; padding: 2px 7px; font-family: var(--px); font-size: 10px; text-transform: uppercase;
+  background: var(--goal); color: #0A0F02; border: 2px solid #000; box-shadow: 2px 2px 0 #000;
+}
+.goal.ready .goal-ribbon { background: var(--sun); animation: goalbob 1s steps(2) infinite; }
+.goal-ribbon.muted-ribbon { background: var(--slate); color: var(--goal); }
+.goal-main { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 8px 10px 4px; text-align: left; background: none; border: 0; color: var(--text); cursor: pointer; font: inherit; }
+.goal-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.goal-emblem { flex: none; width: 38px; height: 38px; display: grid; place-items: center; background: var(--goal); color: #0A0F02; border: 2px solid #000; box-shadow: 2px 2px 0 #000; }
+.goal.claimed .goal-emblem { box-shadow: 0 0 0 2px var(--sun), 2px 2px 0 2px #000; }
+.goal-title { display: flex; flex-direction: column; min-width: 0; }
+.goal-name { font-family: var(--px); font-size: 13px; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.goal-togo { font-size: 12px; color: var(--goal); font-weight: 600; }
+.goal-blurb { color: var(--stone); line-height: 16px; height: 32px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.goal-birds { display: flex; align-items: center; gap: 4px; height: 30px; }
+.goal-bird { width: 28px; height: 28px; display: grid; place-items: center; overflow: hidden; background: rgba(0,0,0,.25); border: 1px solid rgba(0,0,0,.6); }
+.goal-bird canvas { max-width: 26px; max-height: 26px; image-rendering: pixelated; }
+.goal-bird:not(.got) { opacity: .55; }
+.goal-bird.got { border-color: var(--goal); background: color-mix(in srgb, var(--goal) 20%, transparent); }
+.goal-more { font-family: var(--px); font-size: 10px; color: var(--stone); padding-left: 2px; }
+.goal-bar { position: relative; display: flex; gap: 2px; height: 12px; margin: 6px 0 4px; padding: 2px; background: #000; }
+.goal-bar i { flex: 1; background: rgba(247,244,233,.12); }
+.goal-bar i.lit { background: var(--goal); box-shadow: inset 0 -3px 0 rgba(0,0,0,.25); }
+.goal.ready .goal-bar i.lit, .goal.claimed .goal-bar i.lit { background: var(--sun); }
+.goal-pip { position: absolute; top: 50%; transform: translate(-60%, -50%); font-size: 13px; line-height: 1; color: #3a3a3a; text-shadow: 1px 1px 0 #000; pointer-events: none; }
+.goal-pip.on { color: var(--sun); }
+.goal-foot { position: relative; display: flex; align-items: center; gap: 8px; padding: 4px 10px 10px; }
+.goal-stars { display: flex; gap: 1px; font-size: 14px; line-height: 1; color: #4a4a4a; text-shadow: 1px 1px 0 #000; }
+.goal-stars .on { color: var(--sun); }
+.goal-count { font-size: 12px; color: var(--stone); flex: 1; }
+.goal-chest { display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 2px 8px; font-family: var(--px); font-size: 11px; border: 2px solid #000; background: rgba(0,0,0,.3); color: var(--stone); }
+.goal-chest.locked .icon, .goal-chest.locked svg:first-child { opacity: .8; }
+.goal-chest.open { color: var(--sun); border-color: color-mix(in srgb, var(--sun) 50%, #000); }
+button.goal-chest.ready { min-height: 44px; cursor: pointer; background: var(--sun); color: #1A1200; box-shadow: 0 3px 0 #000, 0 0 12px rgba(242,193,78,.6); text-transform: uppercase; animation: goalbob 1s steps(2) infinite; }
+button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0 #000; }
+.goal-reward { display: inline-flex; align-items: center; gap: 3px; }
+.goal-burst { position: absolute; right: 40px; top: 50%; width: 0; height: 0; pointer-events: none; z-index: 3; }
+@keyframes goalbob { 50% { transform: translateY(-2px); } }
+@keyframes goalpulse { 50% { opacity: .6; } }
+@media (prefers-reduced-motion: reduce) {
+  .goals-chests, .goal.ready .goal-ribbon, button.goal-chest.ready { animation: none; }
+  .goal-burst { display: none; }
+}

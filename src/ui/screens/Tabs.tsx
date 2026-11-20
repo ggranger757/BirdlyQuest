@@ -106,7 +106,7 @@ export function HabitatTab() {
           <b>{hungry} bird{hungry > 1 ? 's are' : ' is'} hungry.</b><br />The feeder is {st.feeder.level ? 'almost' : ''} empty.
         </Alert>
       )}
-      {gift > 0 && <Alert tone="good">Your healthy birds brought you <b>{gift}</b> Feathers today.</Alert>}
+      {gift > 0 && <Alert tone="good">Your healthy birds brought you <b>{gift}</b> Feather Coins today.</Alert>}
       <div ref={boxRef} data-tour="aviary" style={{ display: 'flex', justifyContent: 'center', position: 'relative' }}>
         <canvas ref={ref} className="pix" style={{ width: (dims?.w ?? 0) * 2, maxWidth: '100%', border: '2px solid #000', boxShadow: '4px 4px 0 #000', cursor: 'pointer' }} role="img"
           aria-label={`Aviary with ${aviary.length} birds and a feeder ${Math.round(fill * 100)}% full. Tap a bird to say hello.`}
@@ -131,7 +131,7 @@ export function HabitatTab() {
           const c = ref.current!, p = dio.current!.where(hello.key)!, s = c.getBoundingClientRect().width / c.width;
           return (
             <div className="bird-hello" style={{ left: Math.min(c.offsetLeft + c.clientWidth - 112, Math.max(c.offsetLeft + 112, c.offsetLeft + p.x * s)), top: Math.max(c.offsetTop + 46, c.offsetTop + (p.y - 40) * s) }} role="status">
-              {hello.text}{hello.gift ? <b> · brought you {hello.gift} Feathers!</b> : null}
+              {hello.text}{hello.gift ? <b> · brought you {hello.gift} Feather Coins!</b> : null}
             </div>
           );
         })()}
@@ -176,7 +176,7 @@ export function HabitatTab() {
             ));
           })()}
           <button className="btn block" onClick={() => setSheet('box')}>Bird Box · {box.length} resting</button>
-          <p className="small muted">Aviary birds eat from the feeder and earn you Feathers. Birds in the Bird Box rest and don't get hungry.</p>
+          <p className="small muted">Aviary birds eat from the feeder and earn you Feather Coins. Birds in the Bird Box rest and don't get hungry.</p>
           <div className="section-title"><span>Bird Homes</span><span className="small muted" style={{ textTransform: 'none', fontFamily: 'var(--body)' }}>{Object.values(SCENES).filter((h) => h.level <= lv).length}/{Object.keys(SCENES).length} unlocked</span></div>
           <div className="home-strip" role="radiogroup" aria-label="Bird Homes" ref={stripRef}>
             <button role="radio" className={`home-card auto ${!st.diorama.home ? 'on' : ''}`} aria-checked={!st.diorama.home} onClick={() => { sfx.select(); haptic(8); setHome(undefined); }}>
@@ -224,7 +224,7 @@ export function HabitatTab() {
             <button className="btn primary" onClick={() => setSheet('fill')} disabled={st.feeder.level >= FEEDER_CAP || bags === 0}>Fill feeder</button>
             <button className="btn" onClick={() => nav.open({ name: 'shop' })}>Shop</button>
           </div>
-          <p className="small muted">Buy food with Feathers. Earn Feathers by photographing real birds: +20 for a new species, +12 for a repeat.</p>
+          <p className="small muted">Buy food with Feather Coins. Earn Feather Coins by photographing real birds: +20 for a new species, +12 for a repeat.</p>
         </section>
       )}
 
@@ -242,7 +242,7 @@ export function HabitatTab() {
           ))}
           {(Object.keys(FOODS) as Food[]).every((f) => st.items[f] <= 0) && (
             <>
-              <p className="small">Your pantry is empty. Buy food with the Feathers you earn by discovering birds.</p>
+              <p className="small">Your pantry is empty. Buy food with the Feather Coins you earn by discovering birds.</p>
               <button className="btn primary block" onClick={() => nav.open({ name: 'shop' })}>Go to the food shop</button>
             </>
           )}
@@ -266,7 +266,7 @@ export function HabitatTab() {
       {sheet === 'box' && (
         <Sheet onClose={() => setSheet(null)} label="Bird Box">
           <h3 className="mb8">Bird Box · {box.length}</h3>
-          <p className="small muted" style={{ marginTop: 0 }}>Birds resting here don't get hungry. Up to {AVIARY_MAX} birds can live in the Aviary, where they eat from the feeder and earn you Feathers.</p>
+          <p className="small muted" style={{ marginTop: 0 }}>Birds resting here don't get hungry. Up to {AVIARY_MAX} birds can live in the Aviary, where they eat from the feeder and earn you Feather Coins.</p>
           {[...aviary, ...box].map((s) => {
             const here = st.diorama.birds.includes(s.id);
             return (
@@ -357,13 +357,13 @@ export function YouTab() {
                 <div className="row mt8" style={{ gap: 10 }}>
                   <div className="grow"><Meter value={p.progress} max={p.goal} tone="river" label={p.label} /></div>
                   {slot.claimed ? <span className="px small" style={{ color: 'var(--lichen)' }}>✓ Done</span>
-                    : ready ? <button className="btn small primary" onClick={() => { const xp = claimChallenge(slot); sfx.levelUp(); setQuestCast((k) => k + 1); nav.toast(`Quest complete! +${xp} XP · +${Math.round(xp / 10)} Feathers`); }}>Claim</button>
+                    : ready ? <button className="btn small primary" onClick={() => { const xp = claimChallenge(slot); sfx.levelUp(); setQuestCast((k) => k + 1); nav.toast(`Quest complete! +${xp} XP · +${Math.round(xp / 10)} Feather Coins`); }}>Claim</button>
                       : <span className="num small">{p.progress}/{p.goal}</span>}
                 </div>
               </div>
             );
           })}
-          <p className="small muted">Daily quests reset at midnight and one is always quick. Quests pay XP and Feathers.</p>
+          <p className="small muted">Daily quests reset at midnight and one is always quick. Quests pay XP and Feather Coins.</p>
         </section>
       )}
 

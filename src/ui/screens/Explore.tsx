@@ -387,7 +387,7 @@ function MissionCard({ feed, caught }: { feed: Feed; caught: Set<string | null> 
     const left = Math.max(0, Date.parse(live.until) - Date.now()), h = Math.floor(left / 3600e3), m = Math.floor((left % 3600e3) / 60000);
     return (
       <div className="mission on" role="status">
-        <div className="grow"><span className="mission-tag">Mission</span> Find a <b>{live.name}</b><br /><span className="small muted">{h ? `${h}h ` : ''}{m}m left · +25 Feathers and +25 XP</span></div>
+        <div className="grow"><span className="mission-tag">Mission</span> Find a <b>{live.name}</b><br /><span className="small muted">{h ? `${h}h ` : ''}{m}m left · +25 Feather Coins and +25 XP</span></div>
         <a className="btn small" href={directions(live.lat, live.lng)} target="_blank" rel="noopener">Directions</a>
         <button className="btn small ghost" onClick={() => { sfx.back(); setMission(null); }} aria-label="Drop this mission">✕</button>
       </div>

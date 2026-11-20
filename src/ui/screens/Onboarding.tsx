@@ -114,7 +114,7 @@ function Outro({ r, region, onFinish }: { r: ReturnType<typeof getRegion>; regio
       </div>
       <Dialog speaker="Professor Merlin" lines={[
         `${r.flag ?? ''} ${regionLabel(region)}. Splendid birding country!`,
-        'Every bird you discover earns you FEATHERS, the money of BirdlyQuest. Spend them in my shop on bird food and Snap Lenses.',
+        'Every bird you discover earns you FEATHER COINS, the money of BirdlyQuest. Spend them in my shop on bird food and Snap Lenses.',
         'I will pop up with a tip the first time you open each screen. Off you go!',
       ]} onDone={() => {
         setState((s) => ({ ...s, onboarded: true, diorama: { ...s.diorama, biome: s.habitat } }));

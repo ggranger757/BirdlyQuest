@@ -5,8 +5,8 @@ import { sfx } from '../app/audio';
 
 export const TIPS: Record<string, string> = {
   explore: 'This map shows real birds seen near you. When you spot one, tap the big SNAP button!',
-  dex: 'Your BirdDex! Start with the Backyard 12 chapter. Finish a chapter to earn Feathers.',
-  aviary: 'Birds you discover live here. Keep the feeder full: buy food with Feathers (the gold feather is your money). Tap a bird to say hello!',
+  dex: 'Your BirdDex! Start with the Backyard 12 chapter. Finish a chapter to earn Feather Coins.',
+  aviary: 'Birds you discover live here. Keep the feeder full: buy food with Feather Coins (the gold coin is your money). Tap a bird to say hello!',
   you: 'Your Trainer page: quests, badges and Snap Lenses. Better lenses boost Snap Power.',
   camera: 'Get close and keep the bird sharp for a high Snap Power. Not sure what it is? The Likely list below helps.',
 };

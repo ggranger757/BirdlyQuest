@@ -186,7 +186,7 @@ export async function fileCatch(input: CatchInput): Promise<CatchResult> {
     newSpecies: firstRecord && input.verification !== 'vagrant', regionFirst, fieldcraft: fc?.total ?? 0,
     rarity, streakDays: streak.days, mode: input.mode,
   });
-  // Feathers are the in-game currency: every real catch pays, new species pay most
+  // Feather Coins are the in-game currency: every real catch pays, new species pay most
   const feathers0 = seen ? 4 : (firstRecord ? 20 : 12) + (newPlumage ? 20 : 0);
   // first-bird bonus: the very first discovery pays double, so day one ends with a win
   // missions: find the bird you set out for in time for a bonus
@@ -364,7 +364,7 @@ export function setPartner(sp: Species) {
 }
 
 // ─── achievements outside of discoveries ───
-/** Award any newly met badges (Feathers included) and queue a pop-up for each. */
+/** Award any newly met badges (Feather Coins included) and queue a pop-up for each. */
 export function awardBadges(): Badge[] {
   const earned = newlyEarned(state);
   if (!earned.length) return [];
@@ -411,7 +411,7 @@ export function claimChapter(id: string, reward: number): boolean {
   return after(true);
 }
 
-/** Buy a Snap Lens with Feathers and put it on. */
+/** Buy a Snap Lens with Feather Coins and put it on. */
 export function buyLens(id: LensId): boolean {
   const l = LENSES[id];
   if (!l || state.lenses.includes(id) || state.feathers < l.price || trainerLevel(state.xp).level < l.level) return false;
@@ -444,7 +444,7 @@ export function tickFeeder(now = new Date()): Meal[] {
   return after(r.meals);
 }
 
-/** Tapping a bird: once a day each one brings you a little gift. Returns Feathers gained. */
+/** Tapping a bird: once a day each one brings you a little gift. Returns Feather Coins gained. */
 export function petBird(id: string, now = new Date()): number {
   const day = dayKey(now);
   if (id === 'partner' || state.petGifts?.[id] === day) return 0;
@@ -475,7 +475,7 @@ export function welcomeBack(now = new Date()): number {
   return fed;
 }
 
-/** Once a day, each healthy Aviary bird brings you 2 Feathers. */
+/** Once a day, each healthy Aviary bird brings you 2 Feather Coins. */
 export function collectAviary(now = new Date()): number {
   const today = dayKey(now);
   if (state.petDay === today) return 0;

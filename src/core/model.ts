@@ -82,7 +82,7 @@ export interface GameState {
   mission?: { speciesId: string; name: string; lat: number; lng: number; until: string } | null; // go-find-it mission from a live sighting    // one-time Merlin tips already dismissed
   chapters?: Record<string, string>; // claimed BirdDex chapter rewards (id → ISO date) // Merlin's guided tour finished or skipped // owned Snap Lenses and the one in use
   feeder: { level: number };       // food points in the Aviary feeder
-  petDay: string | null;           // last day the aviary paid out Feathers
+  petDay: string | null;           // last day the aviary paid out Feather Coins
   stats: { fills: number; spent: number; quests: number };
   badgeQueue: string[];            // newly earned badges waiting for their pop-up
 }

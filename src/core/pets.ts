@@ -10,7 +10,7 @@ export const FEEDER_CAP = 200;       // feeder holds this many food points
 export const AVIARY_MAX = 12;
 
 export type Food = 'seeds' | 'berries' | 'worms';
-/** Bags you buy with Feathers and pour into the feeder. Bigger bags are better value. */
+/** Bags you buy with Feather Coins and pour into the feeder. Bigger bags are better value. */
 export const FOODS: Record<Food, { name: string; points: number; price: number; icon: string; desc: string }> = {
   seeds: { name: 'Seed Mix', points: 25, price: 10, icon: '🌾', desc: 'Small bag. Fills the feeder by 25' },
   berries: { name: 'Berry Mash', points: 60, price: 22, icon: '🫐', desc: 'Medium bag. Fills the feeder by 60' },

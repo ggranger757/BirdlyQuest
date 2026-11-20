@@ -17,7 +17,7 @@ export function Shop() {
   const nav = useNav();
   const st = useGame((s) => s);
   const [shopCast, setShopCast] = useState(0);
-  const [shopLine, setShopLine] = useState('Seeds, berries, mealworms and lenses! Fair prices, paid in Feathers.');
+  const [shopLine, setShopLine] = useState('Seeds, berries, mealworms and lenses! Fair prices, paid in Feather Coins.');
   return (
     <div className="overlay" style={{ background: 'transparent' }}>
       <Sheet onClose={nav.back} label="Merlin's Shop">
@@ -25,12 +25,12 @@ export function Shop() {
           <div className="wallet">
             <FeatherIcon size={36} />
             <div className="grow">
-              <div className="wallet-amount"><span className="num">{st.feathers}</span> Feathers</div>
-              <div className="small">Feathers are BirdlyQuest's money. Every price here is in Feathers.</div>
+              <div className="wallet-amount"><span className="num">{st.feathers}</span> Feather Coins</div>
+              <div className="small">Feather Coins are BirdlyQuest's money. Every price here is in Feather Coins.</div>
             </div>
           </div>
           <details className="earn mb8">
-            <summary className="small">How do I earn Feathers?</summary>
+            <summary className="small">How do I earn Feather Coins?</summary>
             <ul className="small">
               <li>Discover a bird with your camera: <b>+12</b>, or <b>+20</b> for a new species (double for your very first bird)</li>
               <li>Finish a quest, a BirdDex goal or a mission</li>
@@ -48,7 +48,7 @@ export function Shop() {
             <div key={f} className="srow">
               <FoodIcon food={f} size={40} />
               <span className="grow"><span className="name">{FOODS[f].name}</span> <span className="small muted">· have {st.items[f]}</span><br /><span className="small muted">{FOODS[f].desc}</span></span>
-              <button className="btn small primary price-btn" aria-label={`Buy ${FOODS[f].name} for ${FOODS[f].price} Feathers`} disabled={st.feathers < FOODS[f].price} onClick={() => { if (buyFood(f)) { playClip('buy'); setShopCast((k) => k + 1); setShopLine(SHOP_THANKS[(shopCast + 1) % SHOP_THANKS.length]); nav.toast(`Bought ${FOODS[f].name}`); } else { sfx.error(); setShopLine('Not enough Feathers, friend. Go and find some birds!'); } }}>
+              <button className="btn small primary price-btn" aria-label={`Buy ${FOODS[f].name} for ${FOODS[f].price} Feather Coins`} disabled={st.feathers < FOODS[f].price} onClick={() => { if (buyFood(f)) { playClip('buy'); setShopCast((k) => k + 1); setShopLine(SHOP_THANKS[(shopCast + 1) % SHOP_THANKS.length]); nav.toast(`Bought ${FOODS[f].name}`); } else { sfx.error(); setShopLine('Not enough Feather Coins, friend. Go and find some birds!'); } }}>
                 <FeatherIcon size={14} /> {FOODS[f].price}
               </button>
             </div>

@@ -27,7 +27,7 @@ export function QuickLog() {
     <div className="overlay">
       <div className="topbar"><button className="icon-btn" onClick={nav.back} aria-label="Back">◀</button><h2>Saw it, no photo</h2></div>
       <div className="screen">
-        <div className="npc mb8"><Professor height={96} /><div className="bubble"><b>Professor Merlin</b>Birds fly off all the time! Log what you saw for a few Feathers. To discover it for your BirdDex and Aviary, you'll still need a photo.</div></div>
+        <div className="npc mb8"><Professor height={96} /><div className="bubble"><b>Professor Merlin</b>Birds fly off all the time! Log what you saw for a few Feather Coins. To discover it for your BirdDex and Aviary, you'll still need a photo.</div></div>
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${region.name} birds…`} aria-label="Search birds"
           style={{ width: '100%', minHeight: 48, padding: '8px 12px', background: 'var(--well)', border: '2px solid var(--smoke)', fontSize: 16 }} />
         <div className="label mt16 mb8">{q ? 'Matches' : 'Likely right now'}</div>

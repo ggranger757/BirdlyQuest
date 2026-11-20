@@ -31,7 +31,7 @@ export function BadgePopup({ blocked }: { blocked: boolean }) {
         <p className="small" style={{ margin: '6px 0' }}>{b.desc}</p>
         <div className="row" style={{ justifyContent: 'center', gap: 8 }}>
           <span className="chip" style={{ background: TIER_COL[b.tier], color: '#0A0C0F', borderColor: '#000' }}>{b.tier}</span>
-          <span className="chip">+{TIER_FEATHERS[b.tier]} Feathers</span>
+          <span className="chip">+{TIER_FEATHERS[b.tier]} Feather Coins</span>
         </div>
         <div className="row mt16" style={{ gap: 8 }}>
           <button className="btn grow" onClick={async () => {

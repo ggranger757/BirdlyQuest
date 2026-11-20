@@ -184,10 +184,10 @@ function CaughtText({ result, onContinue }: { result: CatchResult; onContinue: (
   const s = result.sighting, sp = result.species;
   const lines = [
     s.speciesId ? `Discovered! ${sp.common.toUpperCase()} was recorded in the BirdDex${s.dex ? ` as ${dexNo(s.dex)}` : ''}.` : 'Discovered! An unidentified bird was recorded in your BirdDex. Name it later.',
-    ...(result.firstEver ? ['★ YOUR FIRST BIRD! First-bird bonus: double XP and Feathers!'] : []),
-    ...(result.missionDone ? ['★ MISSION COMPLETE! You found the bird you set out for: +25 XP and +25 Feathers!'] : []),
+    ...(result.firstEver ? ['★ YOUR FIRST BIRD! First-bird bonus: double XP and Feather Coins!'] : []),
+    ...(result.missionDone ? ['★ MISSION COMPLETE! You found the bird you set out for: +25 XP and +25 Feather Coins!'] : []),
     ...(s.firstRecord ? ['★ NEW ENTRY! You have never found this bird before.'] : s.newPlumage ? ['A new plumage! This one looks different from your others.'] : [`You have found this species ${s.timesSeen} times.`]),
-    `${sp.common} is Lv ${s.level ?? 5}. You gained ${s.xp} XP and ${s.feathers} Feathers — spend them on food for your feeder.`,
+    `${sp.common} is Lv ${s.level ?? 5}. You gained ${s.xp} XP and ${s.feathers} Feather Coins — spend them on food for your feeder.`,
     ...(getState().diorama.birds.includes(s.id) ? [getState().sightings.length === 1 ? 'Your new bird lives in the Aviary now. Keep the feeder filled and it will stay healthy!' : `${sp.common} moved into your Aviary.`] : [`Your Aviary is full, so ${sp.common} is resting in the Bird Box.`]),
     ...(s.sprite.variant !== 'normal' ? [`Incredible — a rare ${s.sprite.variant} bird!`] : []),
     ...(result.badges.length === 1 ? [`You earned the ${result.badges[0].name.toUpperCase()} badge!`]

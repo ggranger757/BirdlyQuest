@@ -103,7 +103,7 @@ export const BADGES: Badge[] = [
   { id: 'first-fill', name: 'First Fill', category: 'Care', tier: 'bronze', desc: 'Fill the bird feeder', goal: 1, progress: (s) => s.stats?.fills ?? 0 },
   { id: 'well-fed', name: 'Well Fed', category: 'Care', tier: 'silver', desc: '5 thriving birds in the Aviary', goal: 5, progress: (s) => s.sightings.filter((x) => s.diorama.birds.includes(x.id) && hpNow(x) >= 75).length },
   { id: 'full-house', name: 'Full House', category: 'Care', tier: 'gold', desc: '12 birds living in the Aviary', goal: 12, progress: (s) => s.diorama.birds.length },
-  { id: 'big-spender', name: 'Big Spender', category: 'Care', tier: 'platinum', desc: 'Spend 500 Feathers', goal: 500, progress: (s) => s.stats?.spent ?? 0 },
+  { id: 'big-spender', name: 'Big Spender', category: 'Care', tier: 'platinum', desc: 'Spend 500 Feather Coins', goal: 500, progress: (s) => s.stats?.spent ?? 0 },
 
   { id: 'midnight', name: 'Midnight', category: 'Time', tier: 'gold', desc: 'A discovery between 00:00 and 04:00', goal: 1, progress: (s) => (s.sightings.some((x) => x.hour < 4) ? 1 : 0) },
   { id: 'weekender', name: 'Weekender', category: 'Time', tier: 'bronze', desc: 'Discover birds on a Saturday and the Sunday after', goal: 1, progress: (s) => weekend(s) },
