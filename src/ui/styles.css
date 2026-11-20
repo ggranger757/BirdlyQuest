@@ -740,3 +740,16 @@ button.cam-chip:focus-visible { outline: 3px solid var(--accent); outline-offset
 .cam-peek-photo.empty, .cam-peek-photo-fail { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 6px; text-align: center; color: var(--stone); }
 .cam-peek-photo-fail { position: absolute; inset: 0; }
 @media (prefers-reduced-motion: reduce) { .cam-peek-photo.loading { animation: none; } .cam-peek-photo img.hi { transition: none; } }
+
+/* camera v1.16: brightness is a button; slimmer bottom controls give the camera more room */
+.cam-view { --cam-ui: 164px; }
+.cam-controls { gap: 4px; padding: 6px 12px calc(4px + var(--safe-b)); background: linear-gradient(rgba(6,8,10,0), rgba(6,8,10,.78) 22%, rgba(6,8,10,.9)); }
+.cam-chip { width: 150px; min-height: 48px; padding: 3px 8px 3px 3px; gap: 6px; }
+.cam-chip-name { font-size: 13px; line-height: 15px; }
+.cam-likely-label { font-size: 10px; }
+.cam-controls .shutter { width: 56px; height: 56px; }
+.cam-side { min-width: 72px; min-height: 44px; }
+.cam-bright { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-family: var(--px); }
+.cam-bright.on { color: var(--accent); border-color: var(--accent); }
+.cam-flew { min-height: 28px; font-size: 12px; padding: 2px 0; }
+.cam-tip { top: 4px; }

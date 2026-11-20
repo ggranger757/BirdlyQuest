@@ -200,12 +200,11 @@ export function Viewfinder() {
   };
   const onViewCancel = (e: React.PointerEvent<HTMLDivElement>) => { pts.current.delete(e.pointerId); gest.current.mode = 'none'; };
 
-  // zoom button: jump through 1× / 2× / 3× / 5× presets (whatever fits the device), then back to the widest
-  const nextPreset = () => {
-    const r = zoomRange;
-    const presets = [r.min, ...[1, 2, 3, 5, 10].filter((p) => p > r.min + 0.05 && p <= r.max + 0.001)];
-    const next = presets.find((p) => p > zoom + 0.05) ?? r.min;
-    changeZoom(next); sfx.tap();
+  // brightness button: each tap steps 0 → +1 → +2 → −1 → back to 0 (clamped to what the camera allows)
+  const nextBrightness = () => {
+    const steps = [0, 1, 2, -1].map((v) => Math.max(evRange.min, Math.min(evRange.max, v)));
+    const i = steps.findIndex((v) => Math.abs(v - exposure) < 0.05);
+    changeExposure(steps[(i + 1) % steps.length]); sfx.tap(); haptic(6);
   };
 
   // Likely-bird card over the live camera. It owns one history entry, so the phone's Back
@@ -308,14 +307,10 @@ export function Viewfinder() {
         {freeze && <div className="flash" />}
         {cam === 'starting' && <p className="px" style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>Waking the camera…</p>}
         {peek === null && <div className="cam-tip"><MerlinTip id="camera" placement="inline" /></div>}
-        {/* zoom (left) and brightness (right): same drag-up/drag-down rail, thumb-reachable */}
+        {/* zoom gauge: left edge, drag up/down (brightness is the button beside the shutter) */}
         {cam === 'live' && peek === null && (
-          <>
-            <CamRail side="left" label="Zoom" icon="zoom" value={zoom} min={zoomRange.min} max={zoomRange.max} step={0.1} reset={Math.max(1, zoomRange.min)} log
-              format={fmtZoom} onChange={changeZoom} />
-            <CamRail side="right" label="Brightness" icon="sun" value={exposure} min={evRange.min} max={evRange.max} step={0.1} reset={0}
-              format={fmtEv} onChange={changeExposure} />
-          </>
+          <CamRail side="left" label="Zoom" icon="zoom" value={zoom} min={zoomRange.min} max={zoomRange.max} step={0.1} reset={Math.max(1, zoomRange.min)} log
+            format={fmtZoom} onChange={changeZoom} />
         )}
         {hud && <div className="cam-hud px" aria-hidden>{hud}</div>}
         {hud === null && peek === null && cam === 'live' && <div className="cam-gesture-hint small" aria-hidden>Drag up/down or pinch to zoom</div>}
@@ -328,7 +323,7 @@ export function Viewfinder() {
             {short.map(({ sp }, i) => (
               <div key={sp.id} role="listitem">
                 <button className="cam-chip" onClick={() => openPeek(i)} aria-label={`${sp.common}: show ID tips`}>
-                  <RefThumb sp={sp} size={52} />
+                  <RefThumb sp={sp} size={40} />
                   <span className="cam-chip-name">{sp.common}</span>
                   <span className="cam-chip-info" aria-hidden>i</span>
                 </button>
@@ -336,7 +331,10 @@ export function Viewfinder() {
             ))}
           </div>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <button className="btn ghost small cam-side" onClick={nextPreset} aria-label={`Zoom ${fmtZoom(zoom)}. Tap for the next preset, or drag the view up or down`}>{fmtZoom(zoom)}</button>
+            <button className={`btn ghost small cam-side cam-bright${exposure ? ' on' : ''}`} onClick={nextBrightness}
+              aria-label={`Brightness ${fmtEv(exposure)}. Tap to change`}>
+              <Icon name="sun" size={16} /> {fmtEv(exposure)}
+            </button>
             <button className="shutter ready" onClick={shoot} disabled={cam !== 'live'} aria-label="Shutter"><Icon name="photo" size={22} color="var(--ink)" /></button>
             <button className="btn ghost small cam-side" onClick={() => fileRef.current?.click()} aria-label="Import a photo from today">Import</button>
           </div>
