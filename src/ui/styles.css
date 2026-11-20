@@ -753,3 +753,8 @@ button.cam-chip:focus-visible { outline: 3px solid var(--accent); outline-offset
 .cam-bright.on { color: var(--accent); border-color: var(--accent); }
 .cam-flew { min-height: 28px; font-size: 12px; padding: 2px 0; }
 .cam-tip { top: 4px; }
+/* v1.17: the zoom gauge hides until used */
+.cam-rail { transition: opacity 200ms ease-out; }
+.cam-rail.idle { opacity: 0; pointer-events: none; }
+.cam-rail.idle:focus-visible { opacity: 1; pointer-events: auto; }
+@media (prefers-reduced-motion: reduce) { .cam-rail { transition: none; } }

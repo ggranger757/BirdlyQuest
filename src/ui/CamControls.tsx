@@ -94,9 +94,13 @@ function PeekPhoto({ sp, state, retry }: { sp: Species; state: PhotoState; retry
  * your finger), double-tap resets, arrow keys work, and it is a proper ARIA slider.
  * `log` maps the track logarithmically (zoom: 1→2× gets the same travel as 2→4×).
  */
-export function CamRail({ label, icon, value, min, max, step, reset, log, format, onChange, side, travel = 170 }: {
+export function CamRail({ label, icon, value, min, max, step, reset, log, format, onChange, side, travel = 170, idle, onActive }: {
   label: string; icon: string; value: number; min: number; max: number; step: number; reset: number; log?: boolean;
   format: (v: number) => string; onChange: (v: number) => void; side: 'left' | 'right'; travel?: number;
+  /** hidden until used: faded out and not touchable (keyboard focus still reveals it) */
+  idle?: boolean;
+  /** told when a finger goes down on / lifts off the rail, so the parent can keep it shown */
+  onActive?: (active: boolean) => void;
 }) {
   const toT = (v: number) => (log ? Math.log(v / min) / Math.log(max / min) : (v - min) / (max - min));
   const fromT = (t: number) => { const tt = clamp(t, 0, 1); return log ? min * Math.pow(max / min, tt) : min + tt * (max - min); };
@@ -117,7 +121,7 @@ export function CamRail({ label, icon, value, min, max, step, reset, log, format
   };
 
   return (
-    <div className={`cam-rail ${side}${active ? ' active' : ''}`}
+    <div className={`cam-rail ${side}${active ? ' active' : ''}${idle && !active ? ' idle' : ''}`}
       role="slider" tabIndex={0} aria-label={label} aria-orientation="vertical"
       aria-valuemin={min} aria-valuemax={max} aria-valuenow={Number(value.toFixed(2))} aria-valuetext={format(value)}
       onKeyDown={(e) => {
@@ -134,14 +138,15 @@ export function CamRail({ label, icon, value, min, max, step, reset, log, format
         lastTap.current = now;
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
         drag.current = { y0: e.clientY, t0: t, id: e.pointerId };
-        setActive(true);
+        setActive(true); onActive?.(true);
       }}
       onPointerMove={(e) => {
         const d = drag.current; if (!d || d.id !== e.pointerId) return;
         set(fromT(d.t0 + (d.y0 - e.clientY) / travel));
       }}
-      onPointerUp={() => { drag.current = null; setActive(false); }}
-      onPointerCancel={() => { drag.current = null; setActive(false); }}>
+      onPointerUp={() => { drag.current = null; setActive(false); onActive?.(false); }}
+      onPointerCancel={() => { drag.current = null; setActive(false); onActive?.(false); }}
+      onFocus={() => onActive?.(true)} onBlur={() => onActive?.(false)}>
       <span className="cam-rail-icon" aria-hidden><Icon name={icon} size={18} /></span>
       <span className="cam-rail-track" style={{ height: travel }} aria-hidden>
         <span className="cam-rail-fill" style={{ height: `${t * 100}%` }} />

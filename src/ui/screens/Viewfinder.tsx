@@ -77,13 +77,27 @@ export function Viewfinder() {
     hudTimer.current = setTimeout(() => setHud(null), 900);
   }, []);
   useEffect(() => () => clearTimeout(hudTimer.current), []);
+
+  // the zoom gauge only shows while it's in use: touching the view or zooming reveals it,
+  // and it fades out ~1.6s after the last touch (it stays while a finger is on it)
+  const [railOn, setRailOn] = useState(false);
+  const railTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const railHeld = useRef(false);
+  const showRail = useCallback(() => {
+    setRailOn(true);
+    clearTimeout(railTimer.current);
+    if (!railHeld.current) railTimer.current = setTimeout(() => setRailOn(false), 1600);
+  }, []);
+  const holdRail = useCallback((held: boolean) => { railHeld.current = held; showRail(); }, [showRail]);
+  useEffect(() => () => clearTimeout(railTimer.current), []);
+
   const changeZoom = useCallback((z: number) => {
     const r = rangeRef.current;
     const nz = Math.round(Math.max(r.min, Math.min(r.max, z)) * 10) / 10;
     if (nz === zoomRef.current) return;
     zoomRef.current = nz;
-    setZoom(nz); flashHud(fmtZoom(nz));
-  }, [flashHud]);
+    setZoom(nz); flashHud(fmtZoom(nz)); showRail();
+  }, [flashHud, showRail]);
   const changeExposure = (v: number) => { setExposure(v); flashHud(`☀ ${fmtEv(v)}`); };
 
   // hardware constraints: dragging fires many updates, so keep one applyConstraints in flight and coalesce the rest
@@ -162,6 +176,7 @@ export function Viewfinder() {
     if (peek !== null) return;
     // buttons inside the view (Merlin's tip, etc.) keep their own clicks
     if ((e.target as HTMLElement).closest('button, a, input, [role="slider"]')) return;
+    showRail();
     pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.current.size === 1) gest.current = { mode: 'tap', x0: e.clientX, y0: e.clientY, z0: zoomRef.current, d0: 1 };
     else if (pts.current.size === 2) {
@@ -307,10 +322,10 @@ export function Viewfinder() {
         {freeze && <div className="flash" />}
         {cam === 'starting' && <p className="px" style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>Waking the camera…</p>}
         {peek === null && <div className="cam-tip"><MerlinTip id="camera" placement="inline" /></div>}
-        {/* zoom gauge: left edge, drag up/down (brightness is the button beside the shutter) */}
+        {/* zoom gauge: left edge, appears only while zooming / touching the view */}
         {cam === 'live' && peek === null && (
           <CamRail side="left" label="Zoom" icon="zoom" value={zoom} min={zoomRange.min} max={zoomRange.max} step={0.1} reset={Math.max(1, zoomRange.min)} log
-            format={fmtZoom} onChange={changeZoom} />
+            format={fmtZoom} onChange={changeZoom} idle={!railOn} onActive={holdRail} />
         )}
         {hud && <div className="cam-hud px" aria-hidden>{hud}</div>}
         {hud === null && peek === null && cam === 'live' && <div className="cam-gesture-hint small" aria-hidden>Drag up/down or pinch to zoom</div>}
@@ -331,12 +346,12 @@ export function Viewfinder() {
             ))}
           </div>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <button className="btn ghost small cam-side" onClick={() => fileRef.current?.click()} aria-label="Import a photo from today">Import</button>
+            <button className="shutter ready" onClick={shoot} disabled={cam !== 'live'} aria-label="Shutter"><Icon name="photo" size={22} color="var(--ink)" /></button>
             <button className={`btn ghost small cam-side cam-bright${exposure ? ' on' : ''}`} onClick={nextBrightness}
               aria-label={`Brightness ${fmtEv(exposure)}. Tap to change`}>
               <Icon name="sun" size={16} /> {fmtEv(exposure)}
             </button>
-            <button className="shutter ready" onClick={shoot} disabled={cam !== 'live'} aria-label="Shutter"><Icon name="photo" size={22} color="var(--ink)" /></button>
-            <button className="btn ghost small cam-side" onClick={() => fileRef.current?.click()} aria-label="Import a photo from today">Import</button>
           </div>
           <button className="link cam-flew" onClick={() => nav.replace({ name: 'quicklog' })}>It flew off? Log it without a photo</button>
           {importErr && <p className="small" role="alert" style={{ color: 'var(--oriole)', margin: 0 }}>{importErr}</p>}
