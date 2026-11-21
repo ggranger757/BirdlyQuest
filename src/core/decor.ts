@@ -1,4 +1,4 @@
-// Aviary decor (v1.29): 50 bird feeders and 50 perches, sold in Merlin's Shop.
+// Aviary decor (v1.29): 50 bird feeders and 50 perches, sold in Woods' Shop.
 // Each is a design × a colourway; the pixel art lives in src/render/decor.ts.
 
 export type FeederShape = 'tube' | 'cottage' | 'platform' | 'globe' | 'lantern' | 'suet' | 'hopper' | 'teacup' | 'gourd' | 'tower';

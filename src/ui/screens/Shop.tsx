@@ -1,6 +1,6 @@
 import { FeatherIcon } from '../FeatherIcon';
 import { FoodIcon } from '../FoodIcon';
-// Merlin's Shop (v1.28): tabs for Food, Lenses, Bird Homes, Feeders and Perches, with Merlin in an RPG dialogue box.
+// Woods' Shop (v1.28): tabs for Food, Lenses, Bird Homes, Feeders and Perches, with Professor Woods in an RPG dialogue box.
 import { useEffect, useRef, useState } from 'react';
 import { useNav } from '../nav';
 import { useGame, buyFood, buyHome, ownsHome, setHome, buyDecor, ownsDecor, equipDecor } from '../../app/store';
@@ -12,6 +12,7 @@ import { paintDecorThumb } from '../../render/decor';
 import { trainerLevel } from '../../core/xp';
 import { LensList } from '../LensList';
 import { MerlinSays } from '../MerlinSays';
+import type { WoodsMood } from '../Characters';
 import { Sheet } from '../components';
 import { sfx, playClip } from '../../app/audio';
 
@@ -24,7 +25,7 @@ const TABS: { id: Tab; label: string; hello: string }[] = [
   { id: 'feeders', label: 'Feeders', hello: 'Fifty feeders, from humble tubes to grand towers. Your birds eat from the one you hang.' },
   { id: 'perches', label: 'Perches', hello: 'Fences, statues, ancient ruins, glowing crystals… Birds will land on whichever perch you set out.' },
 ];
-const THANKS = ['A fine choice. Your birds will sing for it.', 'Splendid! The birds thank you.', 'Into the bag it goes!', 'Excellent taste, my friend.'];
+const THANKS = ['A fine choice. Your birds will sing for it.', 'Wonderful! The birds thank you.', 'Into the bag it goes!', 'Excellent taste, my friend.'];
 
 function Thumb({ paint, w = 44, h = 44 }: { paint: (c: HTMLCanvasElement) => void; w?: number; h?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -40,8 +41,9 @@ export function Shop({ tab: startTab = 'food' }: { tab?: ShopTab }) {
   const [cast, setCast] = useState(0);
   const [line, setLine] = useState(TABS.find((t) => t.id === startTab)!.hello);
   const [showEarn, setShowEarn] = useState(false);
-  const thank = (t?: string) => { playClip('buy'); setCast((k) => k + 1); setLine(t ?? THANKS[(cast + 1) % THANKS.length]); };
-  const broke = () => { sfx.error(); setLine('Not enough Feather Coins, friend. Go and find some birds!'); };
+  const [mood, setMood] = useState<WoodsMood>('curious');
+  const thank = (t?: string) => { playClip('buy'); setCast((k) => k + 1); setMood('delighted'); setLine(t ?? THANKS[(cast + 1) % THANKS.length]); };
+  const broke = () => { sfx.error(); setMood('focused'); setLine('Not enough Feather Coins, friend. Go and find some birds!'); };
   const priceBtn = (price: number, label: string, onBuy: () => void) => (
     <button className="btn small primary price-btn" aria-label={`Buy ${label} for ${price} Feather Coins`} disabled={st.feathers < price} onClick={onBuy}>
       <FeatherIcon size={14} /> {price}
@@ -75,9 +77,9 @@ export function Shop({ tab: startTab = 'food' }: { tab?: ShopTab }) {
 
   return (
     <div className="overlay" style={{ background: 'transparent' }}>
-      <Sheet onClose={nav.back} label="Merlin's Shop">
+      <Sheet onClose={nav.back} label="Woods' Shop">
         <div className="shop-head">
-          <h3>Merlin's Shop</h3>
+          <h3>Woods' Shop</h3>
           <button className="wallet-chip" onClick={() => setShowEarn((v) => !v)} aria-expanded={showEarn} aria-label={`${st.feathers} Feather Coins. How to earn more`}>
             <FeatherIcon size={18} /> <b className="num">{st.feathers}</b> <span className="small muted">{showEarn ? '▴' : '▾'}</span>
           </button>
@@ -89,10 +91,10 @@ export function Shop({ tab: startTab = 'food' }: { tab?: ShopTab }) {
             <li>Tap each Aviary bird once a day (<b>+3</b>); healthy Aviary birds bring <b>+2</b> each per day.</li>
           </ul>
         )}
-        <MerlinSays text={line} cast={cast} />
+        <MerlinSays text={line} cast={cast} mood={mood} />
         <div className="shop-tabs" role="tablist" aria-label="Shop sections">
           {TABS.map((t) => (
-            <button key={t.id} role="tab" aria-selected={tab === t.id} className={`shop-tab ${tab === t.id ? 'on' : ''}`} onClick={() => { sfx.move(); setTab(t.id); setLine(t.hello); }}>{t.label}</button>
+            <button key={t.id} role="tab" aria-selected={tab === t.id} className={`shop-tab ${tab === t.id ? 'on' : ''}`} onClick={() => { sfx.move(); setTab(t.id); setMood('curious'); setLine(t.hello); }}>{t.label}</button>
           ))}
         </div>
 

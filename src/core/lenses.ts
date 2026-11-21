@@ -66,7 +66,7 @@ const DEFS: Def[] = [
   ['storm', 'Storm Lens', 'rare', 11, 145, 'bubble', 'rain', '#2F5FE0', 'A sudden downpour of blue raindrops.', hue(30, 'saturate(1.3)')],
   ['sunflare', 'Sunflare Lens', 'rare', 12, 160, 'ember', 'orbit', '#FFD02E', 'Golden flares orbit your bird.', hue(25, 'brightness(1.15)')],
   // epic
-  ['arcane', 'Arcane Lens', 'epic', 15, 180, 'arcane', 'ring3', '#B98AFF', 'Violet crescents: Merlin’s own favourite.'],
+  ['arcane', 'Arcane Lens', 'epic', 15, 180, 'arcane', 'ring3', '#B98AFF', 'Violet crescents: Professor Woods’ favourite.'],
   ['nebula', 'Nebula Lens', 'epic', 16, 200, 'phantom', 'single', '#4B5BFF', 'A swirl of star-stuff that fades to sparkles.', hue(-100)],
   ['aurora', 'Aurora Lens', 'epic', 16, 210, 'ripple', 'ring6', '#2FD6A0', 'Six shimmering rings, like the northern lights.', hue(140, 'saturate(1.4)')],
   ['inferno', 'Inferno Lens', 'epic', 17, 220, 'ember', 'ring6', '#E8402B', 'A blazing crown of red fire.', hue(-20, 'saturate(1.6)')],

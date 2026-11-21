@@ -11,7 +11,7 @@ export function FeatherChip({ label = true }: { label?: boolean }) {
   const f = useGame((s) => s.feathers);
   const nav = useNav();
   return (
-    <button className="chip feather-chip" aria-label={`You have ${f} Feather Coins, the in-game money. Open Merlin's Shop`} onClick={() => nav.open({ name: 'shop' })}>
+    <button className="chip feather-chip" aria-label={`You have ${f} Feather Coins, the in-game money. Open Woods' Shop`} onClick={() => nav.open({ name: 'shop' })}>
       <FeatherIcon size={14} /><span className="num">{f}</span>{label && <span className="feather-word">Feather Coins</span>}
     </button>
   );

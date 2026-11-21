@@ -10,7 +10,7 @@ import { TopBar, Sprite, Icon, useReducedMotion } from '../components';
 import { FeatherChip } from '../kit';
 import { FeatherIcon } from '../FeatherIcon';
 import { FoodIcon } from '../FoodIcon';
-import { Professor } from '../Characters';
+import { Professor, WOODS_RATIO } from '../Characters';
 import { runBackdrop } from '../../render/diorama';
 import { dayKey, trainerLevel } from '../../core/xp';
 import type { Species } from '../../data/types';
@@ -67,12 +67,13 @@ function Edge({ move, vs }: { move: Contest; vs: Contest }) {
   return e ? <span className={`tedge ${e > 0 ? 'up' : 'down'}`}>{e > 0 ? '▲ Strong' : '▼ Weak'}</span> : null;
 }
 
-/** A rival trainer's portrait (Professor Merlin uses his own sprite). */
+/** A rival trainer's portrait. Professor Woods is drawn whole (never cropped): her 3:4 picture is fitted inside the box. */
 export function Face({ face, merlin, name, size = 56, className, tall }: { face?: string; merlin?: boolean; name: string; size?: number; className?: string; tall?: boolean }) {
   const h = tall ? Math.round(size * 1.5) : size;
+  const inner = (n: number) => n - 4; // inside the 2px border
   return (
-    <span className={`tface ${tall ? 'tall' : ''} ${className ?? ''}`} style={{ width: size, height: h }}>
-      {merlin ? <Professor height={Math.max(48, h - 8)} /> : face ? <img src={face} alt={name} width={size} height={h} draggable={false} /> : null}
+    <span className={`tface ${tall ? 'tall' : ''} ${merlin ? 'woods-face' : ''} ${className ?? ''}`} style={{ width: size, height: h }}>
+      {merlin ? <Professor mood="focused" height={Math.floor(Math.min(inner(h), inner(size) / WOODS_RATIO))} /> : face ? <img src={face} alt={name} width={size} height={h} draggable={false} /> : null}
     </span>
   );
 }
@@ -586,8 +587,8 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
       <div className={`ttray ${live ? '' : 'busy'}`} onClick={live ? undefined : advance}>
         {step && (
           <div className="ttut dialog" role="dialog" aria-label="Battle tutorial">
-            <span className="dialog-name">Merlin · {tut + 1}/{steps.length}</span>
-            <div className="ttut-merlin"><Professor height={48} /></div>
+            <span className="dialog-name">Professor Woods · {tut + 1}/{steps.length}</span>
+            <div className="ttut-merlin woods-frame"><Professor height={64} /></div>
             <div className="ttut-body">
               <p className="dialog-text">{step.text}</p>
               {step.info && <button className="btn primary small" onClick={() => {

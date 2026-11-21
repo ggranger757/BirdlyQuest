@@ -59,8 +59,8 @@ export interface GameState {
   challenges: { day: string; daily: ChallengeSlot[]; week: string; weekly: ChallengeSlot | null; seasonal: ChallengeSlot | null; history: Record<string, string[]> };
   events: { sitSpots: string[]; shares: string[] };
   diorama: { biome: Habitat; home?: string /* chosen Bird Home scene id; unset = follows time of day */; birds: string[]; decor: Record<string, string>; feeder?: string /* feeder design in use */; perch?: string /* perch in use */ }; // `decor` is legacy
-  ownedDecor: string[];                // feeders and perches bought in Merlin's Shop (v1.28)
-  ownedHomes?: string[];               // Bird Homes bought in Merlin's Shop (v1.28)
+  ownedDecor: string[];                // feeders and perches bought in Woods' Shop (v1.28)
+  ownedHomes?: string[];               // Bird Homes bought in Woods' Shop (v1.28)
   settings: Settings;
   sessions: number;
   lastSession: string | null;
@@ -74,7 +74,7 @@ export interface GameState {
   items: { seeds: number; berries: number; worms: number }; // food bags in the pantry
   lenses: string[]; lens: string;
   tutorialDone?: boolean;
-  tourSeen?: number;      // version of Merlin's tour last finished or skipped (v1.28 tour = 2)
+  tourSeen?: number;      // version of Professor Woods' tour last finished or skipped (v1.28 tour = 2)
   tourOn?: boolean;       // Merlin's full tour is running (started from Settings)
   tipsSeen?: string[];
   petGifts?: Record<string, string>; // bird id → day it last brought a gift

@@ -1322,3 +1322,24 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 .trials-entry-title, .shop-hub-title, .feeder-name { font-family: var(--px) !important; font-size: 12px !important; font-weight: 400 !important; letter-spacing: .08em !important; text-transform: uppercase; }
 :root.theme-field .trials-entry-title, :root.theme-field .shop-hub-title, :root.theme-field .feeder-name { font-family: var(--head) !important; font-size: 14px !important; font-weight: 600 !important; letter-spacing: -0.05em !important; }
 .shop-hub-title, .feeder-name { color: var(--stone); }
+
+/* ── Professor Woods (v1.31): always whole, never cropped; every frame wraps her 3:4 picture exactly ── */
+:root { --woods-bg: radial-gradient(circle at 50% 26%, #F4FAFF 0 15%, #C4E0F4 48%, #86B6DC 82%, #6A9CC6); }
+.woods { display: block; max-width: none; object-fit: contain; object-position: 50% 100%; image-rendering: auto; user-select: none; -webkit-user-drag: none; }
+.woods-frame { display: inline-block; flex: none; line-height: 0; padding: 0; overflow: hidden; vertical-align: bottom;
+  background: var(--woods-bg); border: 3px solid #000; box-shadow: 3px 3px 0 #000, inset 0 0 0 2px rgba(255,255,255,.55); }
+/* the dialogue box portrait (shop, trainer, quick log): no more gold, no zoom or transforms */
+.shop-npc-portrait.woods-frame { width: auto !important; height: auto !important; display: block !important; place-items: unset !important; padding: 0 !important;
+  background: var(--woods-bg) !important; box-shadow: 3px 3px 0 #000, inset 0 0 0 2px rgba(255,255,255,.55) !important; }
+.shop-npc-portrait.woods-frame > * { zoom: 1 !important; transform: none !important; margin: 0 !important; }
+@media (max-width: 380px) { .shop-npc-portrait .woods { width: 66px !important; height: 88px !important; } }
+/* rival portraits: she is fitted inside the box, bottom-aligned on the same sky */
+.tface.woods-face { place-items: end center; background: var(--woods-bg); }
+.tface.woods-face img.woods { object-fit: contain; }
+.ttut-merlin.woods-frame { width: auto; border-width: 2px; box-shadow: 2px 2px 0 #000; }
+.merlin-tip-bird .woods-frame { border-width: 2px; box-shadow: 2px 2px 0 #000; }
+.merlin-stage .woods-frame { box-shadow: 4px 4px 0 #000, inset 0 0 0 2px rgba(255,255,255,.55); }
+/* rival boxes can be resized by CSS (small screens): the picture fills the box and contains itself, so she is never cut */
+.tface.woods-face img.woods { width: 100% !important; height: 100% !important; object-fit: contain; object-position: 50% 100%; }
+.tface.woods-face { position: relative; }
+.tface.woods-face img.woods { position: absolute; inset: 0; margin: auto; }

@@ -232,3 +232,25 @@ One line per meaningful choice, with the reason.
 - **v1.30.1 (owner):**
   - **Merlin's portrait** no longer crops his wings. The frame's inside is wider than his 96px sprite, and on ≤380px screens he's shrunk with `zoom` rather than `transform`, so he stays centred.
   - **Aviary headings** all share the section-title style: Silkscreen 12px in Neon, Courier Prime 14px semibold in Field. That covers Field Trials, Bird Homes, Pantry, Merlin's Shop, In your Aviary and the feeder name.
+- **v1.31: Professor Woods replaces Professor Merlin everywhere (owner request).**
+  - **Art:** the owner's three illustrations (curious, focused, delighted) share the same 3:4 canvas. They're exported at 300×400 WebP (about 31KB each) to `public/chars/woods-*.webp`. The old Merlin sprite sheet is removed.
+  - **Component:** `Professor` renders her picture at a 3:4 size (`height`, width = ¾), optionally `framed`. The three expressions are preloaded so switching doesn't flicker. The bobbing animation is gone so she always sits still and aligned.
+  - **Never cropped** (browser-audited on 20 placements across both themes and 390/320px: loaded, fully inside the frame, 3:4, bottom-flush). The placements are:
+    - onboarding
+    - the tour
+    - just-in-time tips
+    - the shop, Trainer quests and quick log dialogue box
+    - the battle tutorial
+    - the final rival on the ladder, party card, intro and speech box
+  - Frames wrap her picture exactly, and her body edge sits on the frame's bottom border.
+  - In rival boxes (square, or resized by CSS on small screens) the picture is pinned to the box and uses `object-fit: contain`. The picture always fits whole, whatever the box size.
+  - **Frame colour:** the gold lamp-lit backdrop is replaced by a soft sky-blue gradient (`--woods-bg`) that sets off her green field jacket. It's used in every Woods frame, including the shop and Aviary.
+  - **Expressions:**
+    - curious: normal talk
+    - delighted: purchases, quests ready to claim, onboarding, the tour's last step
+    - focused: battle tips in the tour, running out of coins, and as the final rival
+  - **Text:**
+    - "Professor Merlin" becomes "Professor Woods", and "Merlin's Shop" becomes "Woods' Shop".
+    - Her onboarding greeting is rewritten (no more falcon), and her rival bio uses "she".
+    - The tour, Settings, the welcome-back toast and the Arcane lens description are updated.
+    - Code identifiers (`MerlinSays`, `MerlinTip`, the `merlin` rival id) are unchanged so saves keep working.

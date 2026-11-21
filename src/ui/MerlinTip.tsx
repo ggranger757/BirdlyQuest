@@ -17,9 +17,9 @@ export function MerlinTip({ id, placement = 'above-tabs' }: { id: string; placem
   const close = () => { sfx.select(); setState((s) => ({ ...s, tipsSeen: [...(s.tipsSeen ?? []), id] })); };
   return (
     <div className={`merlin-tip ${placement}`} role="status" aria-live="polite">
-      <div className="merlin-tip-bird"><Professor height={48} /></div>
+      <div className="merlin-tip-bird"><Professor framed height={64} /></div>
       <div className="merlin-tip-body">
-        <b>Professor Merlin</b>
+        <b>Professor Woods</b>
         <span>{TIPS[id]}</span>
       </div>
       <button className="btn small primary" onClick={close}>Got it</button>

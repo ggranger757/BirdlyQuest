@@ -1,5 +1,5 @@
 // Owner-supplied character sprite sheets, drawn on a fixed grid so animation frames stay aligned.
-//   Merlin (Professor): public/chars/merlin.png — 48px cells, row 0 = 4-frame wing-flap hover.
+//   Professor Woods:    public/chars/woods-{curious,focused,delighted}.webp — 300×400 illustrations (not a sheet).
 //   Rowan the druid:    public/chars/druid.png  — 84px cells (art drawn at 2×):
 //     row 0 idle (4) · row 1 run (6) · row 2 hurt (3) · row 3 vanish (5) · row 4 staff sweep (6) · row 5 leap (6)
 import { useEffect, useRef, useState } from 'react';
@@ -70,8 +70,14 @@ export function SheetSprite({ src, cell, row, fps = 8, scale = 2, label, once, i
     style={{ width: cell * scale, height: cell * scale, transform: flip ? 'scaleX(-1)' : undefined }} />;
 }
 
-/** Professor Merlin: hovers on a 4-frame wing-flap loop. */
-export function Professor({ height = 144 }: { height?: number }) {
-  const scale = Math.max(1, Math.floor(height / 48));
-  return <div className="hover-bob"><SheetSprite src="chars/merlin.png" cell={48} row={0} fps={6} scale={scale} label="Professor Merlin" /></div>;
+/** Professor Woods (v1.31): the owner's illustrated mentor, in three expressions on the same 3:4 canvas.
+ *  Always shown whole (never cropped) and bottom-aligned; `height` is the picture's height in px (width = 3/4 of it). */
+export type WoodsMood = 'curious' | 'focused' | 'delighted';
+export const WOODS_RATIO = 0.75;
+const MOODS: WoodsMood[] = ['curious', 'focused', 'delighted'];
+if (typeof window !== 'undefined') for (const m of MOODS) { const i = new Image(); i.src = `chars/woods-${m}.webp`; } // no flicker when she changes expression
+export function Professor({ height = 144, mood = 'curious', framed }: { height?: number; mood?: WoodsMood; framed?: boolean }) {
+  const w = Math.round(height * WOODS_RATIO);
+  const img = <img className="woods" src={`chars/woods-${mood}.webp`} alt="Professor Woods" width={w} height={height} style={{ width: w, height }} draggable={false} />;
+  return framed ? <span className="woods-frame">{img}</span> : img;
 }

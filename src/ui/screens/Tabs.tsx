@@ -105,7 +105,7 @@ export function HabitatTab() {
   return (
     <div className="screen with-tabs">
       <PageHeader title="Aviary" sub={`${aviary.length}/${AVIARY_MAX} birds · feeder ${Math.round(fill * 100)}% full`}
-        right={<><FeatherChip label={false} /><button className="btn primary small shop-btn" onClick={() => { sfx.select(); nav.open({ name: 'shop' }); }} aria-label="Open Merlin's Shop"><Icon name="bag" size={14} /> Shop</button></>} />
+        right={<><FeatherChip label={false} /><button className="btn primary small shop-btn" onClick={() => { sfx.select(); nav.open({ name: 'shop' }); }} aria-label="Open Woods' Shop"><Icon name="bag" size={14} /> Shop</button></>} />
       {hungry > 0 && st.feeder.level < 20 && (
         <Alert action={<button className="btn small primary" onClick={fillOrShop}>{bags > 0 ? 'Fill' : 'Buy food'}</button>}>
           <b>{hungry} bird{hungry > 1 ? 's are' : ' is'} hungry.</b><br />The feeder is {st.feeder.level ? 'almost' : ''} empty.
@@ -267,10 +267,10 @@ export function HabitatTab() {
             })}
           </div>
 
-          {/* 3. Merlin's Shop: one tap to every department */}
+          {/* 3. Woods' Shop: one tap to every department */}
           <div className="shop-hub">
             <div className="shop-hub-head">
-              <span className="shop-hub-title">Merlin's Shop</span>
+              <span className="shop-hub-title">Woods' Shop</span>
               <span className="wallet-chip"><FeatherIcon size={16} /> <b className="num">{st.feathers}</b></span>
             </div>
             <div className="shop-hub-grid">
@@ -281,7 +281,7 @@ export function HabitatTab() {
                 { tab: 'homes', label: 'Homes', sub: `${Object.keys(SCENES).filter((id) => ownsHome(st, id)).length}/${Object.keys(SCENES).length}`, art: <HomeThumb id={st.diorama.home ?? 'valley'} /> },
                 { tab: 'lenses', label: 'Lenses', sub: `${st.lenses.length}/${LENS_ORDER.length}`, art: <Capsule size={44} lens={st.lens} /> },
               ] as const).map((t) => (
-                <button key={t.tab} className={`shop-hub-tile t-${t.tab}`} onClick={() => { sfx.select(); nav.open({ name: 'shop', tab: t.tab }); }} aria-label={`Open Merlin's Shop: ${t.label}, ${t.sub} owned`}>
+                <button key={t.tab} className={`shop-hub-tile t-${t.tab}`} onClick={() => { sfx.select(); nav.open({ name: 'shop', tab: t.tab }); }} aria-label={`Open Woods' Shop: ${t.label}, ${t.sub} owned`}>
                   <span className="shop-hub-art" aria-hidden>{t.art}</span>
                   <b>{t.label}</b><span className="small muted">{t.sub}</span>
                 </button>
@@ -420,7 +420,7 @@ export function YouTab() {
 
       {section === 'quests' && (
         <section aria-label="Quests">
-          <MerlinSays cast={questCast} name="Professor Merlin · Quests"
+          <MerlinSays cast={questCast} mood={claimable ? 'delighted' : 'curious'} name="Professor Woods · Quests"
             text={claimable ? `You have ${claimable} quest${claimable > 1 ? 's' : ''} to hand in. Claim your reward!` : 'Head out and find birds. I will reward you for every quest you finish.'} />
           {slots.map(({ slot, kind }) => {
             const p = challengeProgress(st, slot, now);

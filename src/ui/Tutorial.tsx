@@ -8,7 +8,7 @@ type Tab = 'explore' | 'dex' | 'aviary' | 'you';
 interface Step { tab?: Tab; section?: string; target?: string; text: string }
 
 const STEPS: Step[] = [
-  { tab: 'explore', text: 'Welcome, birder! I’m Professor Merlin. Let me walk you through your whole field kit. It takes a minute, and you can skip any time.' },
+  { tab: 'explore', text: 'Welcome, birder! I’m Professor Woods. Let me walk you through your whole field kit. It takes a minute, and you can skip any time.' },
   // Explore
   { tab: 'explore', target: '.map-wrap', text: 'This is your MAP. Real birds people have reported near you in the last 30 days show up here, live. Parks marked with a pin are good birding spots.' },
   { tab: 'explore', target: '.drawer .seg', text: 'LATEST shows the newest sightings around you. LIKELY shows the birds you’re most likely to find right now, here, at this time of day.' },
@@ -77,13 +77,13 @@ export function Tutorial({ setTab, onDone }: { setTab: (t: Tab) => void; onDone:
   const pad = 6;
   const below = !rect || rect.top + rect.height / 2 < window.innerHeight * 0.45; // put Merlin away from the target
   return (
-    <div className="tour" role="dialog" aria-modal="true" aria-label={`Merlin's tour, step ${i + 1} of ${STEPS.length}`}>
+    <div className="tour" role="dialog" aria-modal="true" aria-label={`Professor Woods' tour, step ${i + 1} of ${STEPS.length}`}>
       {rect ? <div className="tour-hole" style={{ left: rect.left - pad, top: rect.top - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 }} />
         : <div className="tour-dim" />}
       <div className="tour-card" style={below ? { bottom: 'calc(var(--tab-h) + var(--safe-b) + 16px)' } : { top: 'calc(16px + var(--safe-t))' }}>
-        <div className="tour-merlin"><Professor height={96} /></div>
+        <div className="tour-merlin"><Professor framed height={96} mood={i === STEPS.length - 1 ? 'delighted' : i >= 12 && i <= 14 ? 'focused' : 'curious'} /></div>
         <div className="dialog" style={{ cursor: 'default' }}>
-          <span className="dialog-name">Professor Merlin · {i + 1}/{STEPS.length}</span>
+          <span className="dialog-name">Professor Woods · {i + 1}/{STEPS.length}</span>
           <span className="tour-progress" aria-hidden><i style={{ width: `${((i + 1) / STEPS.length) * 100}%` }} /></span>
           <p className="dialog-text" aria-live="polite">{step.text}</p>
           <div className="row mt8" style={{ gap: 8 }}>

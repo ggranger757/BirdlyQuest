@@ -49,9 +49,8 @@ export function Onboarding({ onFinish }: { onFinish: () => void }) {
 
   const prof = (
     <div className="merlin-stage">
-      <div style={{ filter: 'drop-shadow(4px 4px 0 #000)' }}><Professor height={144} /></div>
-      <i className="merlin-shadow" aria-hidden />
-    </div>
+      <Professor framed height={168} mood="delighted" />
+          </div>
   );
 
   if (step === 'intro') {
@@ -59,8 +58,8 @@ export function Onboarding({ onFinish }: { onFinish: () => void }) {
       <div className="screen onb" style={{ justifyContent: 'flex-end' }}>
         <SceneBackdrop />
         {prof}
-        <Dialog speaker="Professor Merlin" lines={[
-          'Kee-kee! Welcome to the world of BIRDS! I am Professor Merlin, a falcon of the old woods.',
+        <Dialog speaker="Professor Woods" lines={[
+          'Hello there! Welcome to the world of BIRDS! I’m Professor Woods. I’ve spent my whole life following birds through forests, marshes and city streets.',
           'Real wild birds live all around you — in parks, on rooftops, by the water.',
           'Snap a photo of one and it is discovered: it joins your BirdDex as a pixel companion, while the real bird flies on.',
           'Every bird you discover is drawn from YOUR photo. No two explorers have the same birds.',
@@ -76,7 +75,7 @@ export function Onboarding({ onFinish }: { onFinish: () => void }) {
         <SceneBackdrop />
         {prof}
         <div className="onb-card">
-        <Dialog speaker="Professor Merlin" lines={['What should I call you, explorer?']} />
+        <Dialog speaker="Professor Woods" lines={['What should I call you, explorer?']} />
         <label className="label mt16" htmlFor="tname" style={{ display: 'block', marginBottom: 6 }}>Trainer name</label>
         <input id="tname" autoFocus value={name} maxLength={16} onChange={(e) => setName(e.target.value)} placeholder="Your name"
           style={{ minHeight: 56, padding: '8px 14px', background: 'var(--well)', border: '3px solid var(--accent)', fontFamily: 'var(--px)', fontSize: 20, textTransform: 'uppercase', borderRadius: 0 }} />
@@ -90,7 +89,7 @@ export function Onboarding({ onFinish }: { onFinish: () => void }) {
     return (
       <div className="screen onb">
         <SceneBackdrop dim={0.7} />
-        <div className="row" style={{ alignItems: 'flex-end', gap: 10, marginTop: 8 }}><Professor height={96} /><div className="grow"><Dialog speaker="Professor Merlin" lines={[`${name.trim() || 'Birder'}! Where do you live? Every place has its own birds.`]} /></div></div>
+        <div className="row" style={{ alignItems: 'flex-end', gap: 10, marginTop: 8 }}><Professor framed height={96} /><div className="grow"><Dialog speaker="Professor Woods" lines={[`${name.trim() || 'Birder'}! Where do you live? Every place has its own birds.`]} /></div></div>
         <div className="mt16">
           <RegionPicker value={getState().onboarded ? region : undefined} onPick={(code) => { setRegion(code); setStep('partner'); }} />
         </div>
@@ -109,10 +108,9 @@ function Outro({ r, region, onFinish }: { r: ReturnType<typeof getRegion>; regio
     <div className="screen onb" style={{ justifyContent: 'flex-end' }}>
       <SceneBackdrop />
       <div className="merlin-stage">
-        <div style={{ filter: 'drop-shadow(4px 4px 0 #000)' }}><Professor height={144} /></div>
-        <i className="merlin-shadow" aria-hidden />
-      </div>
-      <Dialog speaker="Professor Merlin" lines={[
+        <Professor framed height={168} mood="delighted" />
+              </div>
+      <Dialog speaker="Professor Woods" lines={[
         `${r.flag ?? ''} ${regionLabel(region)}. Splendid birding country!`,
         'Every bird you discover earns you FEATHER COINS, the money of BirdlyQuest. Spend them in my shop on bird food and Snap Lenses.',
         'I will pop up with a tip the first time you open each screen. Off you go!',
@@ -147,7 +145,7 @@ function PartnerPick({ region, onDone }: { region: string; onDone: () => void })
   return (
     <div className="screen onb">
       <SceneBackdrop dim={0.7} />
-      <div className="row" style={{ alignItems: 'flex-end', gap: 10, marginTop: 8 }}><Professor height={96} /><div className="grow"><Dialog speaker="Professor Merlin" lines={['Every trainer needs a partner. These three are common where you live. Choose one!']} /></div></div>
+      <div className="row" style={{ alignItems: 'flex-end', gap: 10, marginTop: 8 }}><Professor framed height={96} /><div className="grow"><Dialog speaker="Professor Woods" lines={['Every trainer needs a partner. These three are common where you live. Choose one!']} /></div></div>
       {!ready && <p className="small muted mt8">Looking up the birds of {regionLabel(region)}…</p>}
       {!ready && <div className="col mt16" style={{ gap: 12 }}>{[0, 1, 2].map((i) => <div key={i} className="panel skeleton" style={{ margin: 0, height: 84 }} />)}</div>}
       <div className="col mt16" style={{ gap: 12 }}>

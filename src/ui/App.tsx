@@ -90,7 +90,7 @@ export function App() {
   // welcome back: Merlin looks after weak birds if you've been away a while
   useEffect(() => {
     if (!ready || !onboarded) return;
-    const check = () => { if (document.visibilityState !== 'visible') return; const n = welcomeBack(); if (n) setToast(`Welcome back! Merlin fed ${n} hungry bird${n > 1 ? 's' : ''} while you were away.`); };
+    const check = () => { if (document.visibilityState !== 'visible') return; const n = welcomeBack(); if (n) setToast(`Welcome back! Professor Woods fed ${n} hungry bird${n > 1 ? 's' : ''} while you were away.`); };
     check();
     document.addEventListener('visibilitychange', check);
     return () => document.removeEventListener('visibilitychange', check);

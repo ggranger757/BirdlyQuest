@@ -517,9 +517,9 @@ export const RIVALS: RivalDef[] = [
     lose: 'Patience, young birder. The ridge will still be here. Come back stronger.',
   },
   {
-    id: 'merlin', name: 'Professor Merlin', title: 'Grand finale', styles: ['song', 'display', 'sky'], size: 3, level: 18, quality: 70, scene: 'nfb', coins: 120, xp: 250, time: 7, music: 'music/battle/elven.mp3', merlin: true,
-    bio: 'Your mentor and the keeper of the shop. Claims he was birding before binoculars had lenses.',
-    motive: 'The final exam: has his student learned that every bird’s real-life talent is its true strength?',
+    id: 'merlin', name: 'Professor Woods', title: 'Grand finale', styles: ['song', 'display', 'sky'], size: 3, level: 18, quality: 70, scene: 'nfb', coins: 120, xp: 250, time: 7, music: 'music/battle/elven.mp3', merlin: true,
+    bio: 'Your mentor and the keeper of the shop. Thirty years in the field, and she still gasps at every sparrow.',
+    motive: 'The final exam: has her student learned that every bird’s real-life talent is its true strength?',
     line: 'So, you’ve come this far. Every bird has a true talent. Today, show me you’ve learned to see it.',
     send: ['Come, {bird}. One more lesson to teach.', '{bird}, my old friend. Show them.'],
     faint: ['Splendid! You were watching closely.', 'Well spotted. Rest now, {bird}.'],

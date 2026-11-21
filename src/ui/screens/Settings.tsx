@@ -80,8 +80,8 @@ export function Settings() {
 
         <div className="label mb8">Help</div>
         <div className="panel">
-          <p className="small" style={{ marginTop: 0 }}>Professor Merlin can walk you through the app again.</p>
-          <button className="btn block" onClick={() => { setState((x) => ({ ...x, tourOn: true })); nav.closeAll(); nav.setTab('explore'); }}>Replay Merlin’s tour</button>
+          <p className="small" style={{ marginTop: 0 }}>Professor Woods can walk you through the app again.</p>
+          <button className="btn block" onClick={() => { setState((x) => ({ ...x, tourOn: true })); nav.closeAll(); nav.setTab('explore'); }}>Replay Professor Woods’ tour</button>
         </div>
 
         <div className="label mb8">Theme</div>

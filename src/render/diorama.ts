@@ -78,7 +78,7 @@ export const SCENES: Record<string, SceneDef> = {
 };
 
 // New players start with two homes (the default day/night pair); every other home unlocks one level later,
-// and then has to be bought with Feather Coins in Merlin's Shop (v1.28).
+// and then has to be bought with Feather Coins in Woods' Shop (v1.28).
 for (const sc of Object.values(SCENES)) sc.level = sc.id === 'skyday' || sc.id === 'dusk' ? 1 : sc.level + 1;
 export const FREE_HOMES = ['skyday', 'dusk'];
 /** Price of a Bird Home in Feather Coins: grows with the level it unlocks at. */
@@ -298,7 +298,7 @@ export class Diorama {
     canvas.width = this.W; canvas.height = this.H;
     this.ctx = canvas.getContext('2d')!;
     this.L = layout(this.scene, this.W, this.H);
-    // the player's own perch (from Merlin's Shop): birds can land on it
+    // the player's own perch (from Woods' Shop): birds can land on it
     const pd = perchOf(opts.perch);
     if (pd) {
       const { x, ground, h } = perchGeom(this.L, this.W, this.H), scratch = document.createElement('canvas');
