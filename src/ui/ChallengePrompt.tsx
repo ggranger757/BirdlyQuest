@@ -15,14 +15,14 @@ export function ChallengePrompt() {
   const who = WANDERERS[[...sighting.id].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7) % WANDERERS.length];
   return (
     <div className="tchallenge" role="dialog" aria-modal="true" aria-label="Battle challenge">
-      <div className="tchallenge-card">
+      <div className="tchallenge-card panel">
         <span className="thero-kicker">Challenge!</span>
         <div className="tchallenge-bird"><Sprite species={sp} parts={sighting.sprite?.parts} scale={3} mode="idle" /></div>
         <b className="tchallenge-title">{who} wants a Field Trial</b>
         <p>They spotted your new <b>{sp.common}</b> and want to see its talents in a quick battle.</p>
         <div className="tchallenge-row">
-          <button className="tbtn ghost" onClick={() => { sfx.back(); clearChallenge(); }}>Not now</button>
-          <button className="tbtn" onClick={() => { playClip('tStart'); clearChallenge(); nav.open({ name: 'trials', wild: sighting.id }); }}>Battle!</button>
+          <button className="btn ghost" onClick={() => { sfx.back(); clearChallenge(); }}>Not now</button>
+          <button className="btn primary" onClick={() => { playClip('tStart'); clearChallenge(); nav.open({ name: 'trials', wild: sighting.id }); }}>Battle!</button>
         </div>
       </div>
     </div>

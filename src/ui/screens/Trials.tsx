@@ -55,7 +55,7 @@ function useTeam(): Contender[] {
   }, [sightings, partner]);
 }
 
-interface Setup { foeName: string; title: string; scene: string; foe: Contender[]; time: number; merlin?: boolean; line: string }
+interface Setup { foeName: string; title: string; scene: string; foe: Contender[]; time: number; merlin?: boolean; line: string; music: string }
 type Prize = { coins: number; xp: number; first: boolean; levelled: string[] };
 
 export function Trials({ wild }: { wild?: string }) {
@@ -83,10 +83,10 @@ export function Trials({ wild }: { wild?: string }) {
       const name = hashName(wild), lead = party[0];
       let s = [...wild].reduce((n, ch) => n + ch.charCodeAt(0), 0) + seed;
       const r = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
-      return { foeName: name, title: 'Wandering birder', scene: WILD.scenes[Math.floor(r() * WILD.scenes.length)], foe: wildTeam(pool.length ? pool : team.map((t) => t.sp), lead?.level ?? 5, r, lead?.sp.id), time: WILD.time, line: `I spotted your new ${lead?.sp.common ?? 'bird'}! Let's see what it can do!` };
+      return { foeName: name, title: 'Wandering birder', scene: WILD.scenes[Math.floor(r() * WILD.scenes.length)], foe: wildTeam(pool.length ? pool : team.map((t) => t.sp), lead?.level ?? 5, r, lead?.sp.id), time: WILD.time, music: WILD.music[Math.floor(r() * WILD.music.length)], line: `I spotted your new ${lead?.sp.common ?? 'bird'}! Let's see what it can do!` };
     }
     const r = RIVALS[ri];
-    return { foeName: r.name, title: r.title, scene: r.scene, foe: rivalTeam(r, pool.length ? pool : team.map((t) => t.sp), ri, avg(party.length ? party : team.slice(0, 3))), time: r.time, merlin: r.merlin, line: r.line };
+    return { foeName: r.name, title: r.title, scene: r.scene, foe: rivalTeam(r, pool.length ? pool : team.map((t) => t.sp), ri, avg(party.length ? party : team.slice(0, 3))), time: r.time, merlin: r.merlin, line: r.line, music: r.music };
   }, [wild, ri, pool, party, team, seed]);
 
   const choose = (i: number) => { sfx.select(); setRi(i); setParty(team.slice(0, 3)); setPhase('party'); };
@@ -124,7 +124,7 @@ function Ladder({ team, pool, cleared, wins, onPick, onCamera }: { team: Contend
   const avg = team.slice(0, 3).reduce((n, c) => n + c.level, 0) / Math.max(1, Math.min(3, team.length));
   return (
     <div className="trials-body">
-      <div className="thero">
+      <div className="thero panel">
         <span className="thero-kicker">Battle mode</span>
         <b className="thero-title">Field Trials</b>
         <span className="thero-sub">Birds compete with their real-life talents. Beat each rival birder to unlock the next.</span>
@@ -153,7 +153,7 @@ function Ladder({ team, pool, cleared, wins, onPick, onCamera }: { team: Contend
               </div>
               <div className="trival-side">
                 {locked ? <span className="trival-lock" aria-label="Locked: beat the rival above first">Locked</span> : (
-                  <button className="tbtn small" disabled={team.length === 0} onClick={() => onPick(i)} aria-label={`${beaten ? 'Rematch' : 'Battle'} ${r.name}`}>{beaten ? 'Rematch' : 'Battle'}</button>
+                  <button className="btn primary small" disabled={team.length === 0} onClick={() => onPick(i)} aria-label={`${beaten ? 'Rematch' : 'Battle'} ${r.name}`}>{beaten ? 'Rematch' : 'Battle'}</button>
                 )}
                 <span className="trival-prize">{beaten ? <span className="trival-done">✓ Beaten</span> : rw.coins ? <><FeatherIcon size={12} /> {rw.coins}</> : null}</span>
               </div>
@@ -176,7 +176,7 @@ function Party({ setup, size, team, party, setParty, onGo }: { setup: Setup; siz
   };
   return (
     <div className="trials-body">
-      <div className="tvs-card">
+      <div className="tvs-card panel">
         <div className="trival-portrait">{setup.merlin ? <Professor height={48} /> : <Sprite species={setup.foe[0].sp} scale={2} mode="silhouette" flip />}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <b className="trival-name">{setup.foeName}</b>
@@ -201,7 +201,7 @@ function Party({ setup, size, team, party, setParty, onGo }: { setup: Setup; siz
         })}
       </div>
       <div className="trials-cta">
-        <button className="tbtn big block" disabled={!party.length} onClick={onGo}>Start battle</button>
+        <button className="btn primary big block" disabled={!party.length} onClick={onGo}>Start battle</button>
       </div>
     </div>
   );
@@ -234,7 +234,7 @@ function HpBar({ hp, max }: { hp: number; max: number }) {
         <i className="trail" style={{ width: `${pct}%` }} />
         <i className={`fill ${pct > 50 ? 'hi' : pct > 20 ? 'mid' : 'lo'}`} style={{ width: `${pct}%` }} />
       </span>
-      <span className="thp-num"><b>{shown}</b>/{max} HP</span>
+      <span className="thp-num"><b>{shown}</b>/{max}<span className="thp-unit"> HP</span></span>
     </span>
   );
 }
@@ -282,7 +282,7 @@ function BattleView({ setup, party, onEnd }: { setup: Setup; party: Contender[];
   const step = shown && tut >= 0 && tut < steps.length ? steps[tut] : null;
 
   useEffect(() => { const cv = canvas.current; if (!cv) return; return runBackdrop(cv, setup.scene, { focus: 0.5, reduced }); }, [setup.scene, reduced]);
-  useEffect(() => { battleMusic(true); }, []);
+  useEffect(() => { battleMusic(true, setup.music); }, []);
 
   const setSide = (s: Side, f: (v: SideView) => SideView) => (s === 'you' ? setYou(f) : setFoe(f));
   const anim = async (s: Side, a: Anim, ms: number) => { setSide(s, (v) => ({ ...v, anim: a })); await sleep(reduced ? Math.min(ms, 150) : ms); setSide(s, (v) => ({ ...v, anim: v.anim === a ? '' : v.anim })); };
@@ -422,7 +422,7 @@ function BattleView({ setup, party, onEnd }: { setup: Setup; party: Contender[];
             <span className="thud-pips">{bat.you.map((f, i) => <i key={i} className={f.out ? 'out' : i === bat.yi ? 'on' : ''} />)}</span>
           </div>
           {clock != null ? (
-            <div className={`ttimer ${clock < 3 ? 'urgent' : ''}`} aria-label={`${Math.ceil(clock)} seconds left`} style={{ ['--p' as string]: `${(clock / setup.time) * 100}%` }}><b>{Math.ceil(clock)}</b></div>
+            <div className={`ttimer ${clock < 3 ? 'urgent' : ''}`} aria-label={`${Math.ceil(clock)} seconds left`}><b>{Math.ceil(clock)}</b><i style={{ width: `${(clock / setup.time) * 100}%` }} /></div>
           ) : <div className="tvs-dot" aria-hidden>VS</div>}
           <div className={`thud-card foe ${foe.hidden ? 'dim' : ''}`}>
             <div className="thud-top"><b className="thud-name">{them.c.sp.common}</b><span className="thud-lv">Lv{them.c.level}</span></div>
@@ -451,7 +451,7 @@ function BattleView({ setup, party, onEnd }: { setup: Setup; party: Contender[];
         {proj && <span key={proj.key} className={`tproj3 from-${proj.from}`}><Fx sheet={proj.sheet} scale={proj.big ? 4 : 3} ms={260} loop style={proj.from === 'foe' ? { transform: 'scaleX(-1)' } : undefined} /></span>}
 
         {charging && <div className="tbanner-warn" role="status">Big Move incoming · Guard!</div>}
-        <div className="tlog" role="status" aria-live="polite">{msg}</div>
+        <div className="tlog dialog" role="status" aria-live="polite"><p className="dialog-text">{msg}</p></div>
 
         {intro && (
           <div className="tintro" aria-hidden>
@@ -464,12 +464,12 @@ function BattleView({ setup, party, onEnd }: { setup: Setup; party: Contender[];
 
       <div className="ttray">
         {step && (
-          <div className="ttut" role="dialog" aria-label="Battle tutorial">
+          <div className="ttut dialog" role="dialog" aria-label="Battle tutorial">
+            <span className="dialog-name">Merlin · {tut + 1}/{steps.length}</span>
             <div className="ttut-merlin"><Professor height={48} /></div>
             <div className="ttut-body">
-              <span className="ttut-k">Merlin's tip · {tut + 1}/{steps.length}</span>
-              <p>{step.text}</p>
-              {step.info && <button className="tbtn small" onClick={() => {
+              <p className="dialog-text">{step.text}</p>
+              {step.info && <button className="btn primary small" onClick={() => {
                 sfx.select(); const n = tut + 1 >= steps.length ? -1 : tut + 1; setTut(n); tutRef.current = n;
                 if (steps[n]?.id === 'super') { const nb = { ...batRef.current, gauge: 100 }; setBat(nb); batRef.current = nb; setGauge(100); }
                 if (n < 0) setMsg(`What will ${cur.c.sp.common} do?`);
@@ -491,7 +491,7 @@ function BattleView({ setup, party, onEnd }: { setup: Setup; party: Contender[];
               <Act id="guard" cls="guard" icon={<Fx sheet={FX_RING} scale={1} frame={3} />} name="Guard" sub="Block 60% of next hit" onClick={() => { sfx.select(); act({ kind: 'guard' }); }} />
               <Act id="snack" cls="snack" icon={<FoodIcon food="berries" size={26} />} name="Snack" sub={snacks ? `${snacks} in pantry` : 'Pantry empty'} disabled={!snacks} onClick={() => { sfx.select(); setPanel('snack'); }} />
             </div>
-            <button className="trun" disabled={panel !== 'menu' || !!step} onClick={() => { sfx.back(); act({ kind: 'run' }); }}>Run away</button>
+            <button className="btn ghost small trun" disabled={panel !== 'menu' || !!step} onClick={() => { sfx.back(); act({ kind: 'run' }); }}>Run away</button>
           </>
         ) : (
           <div className="tsnacks">
@@ -502,7 +502,7 @@ function BattleView({ setup, party, onEnd }: { setup: Setup; party: Contender[];
                 <span className="tsnack-n">×{items[it] ?? 0}</span>
               </button>
             ))}
-            <button className="trun" onClick={() => { sfx.back(); setPanel('menu'); }}>Back</button>
+            <button className="btn ghost small trun" onClick={() => { sfx.back(); setPanel('menu'); }}>Back</button>
           </div>
         )}
       </div>
@@ -539,9 +539,9 @@ function Result({ setup, won, prize, party, wild, onRematch, onLadder, onNext }:
       )}
       {!won && <p className="small muted">Tip: Guard when the rival announces a Big Move, use your signature skill whenever it's ready, and save your Super for a strong bird.</p>}
       <div className="trials-cta col">
-        {onNext && idx >= 0 && idx + 1 < RIVALS.length && <button className="tbtn big block" onClick={onNext}>Next rival: {RIVALS[idx + 1].name}</button>}
-        {onRematch && <button className={`tbtn block ${onNext ? 'ghost' : 'big'}`} onClick={onRematch}>{won ? 'Rematch' : 'Try again'}</button>}
-        <button className="tbtn ghost block" onClick={onLadder}>{wild ? 'Done' : 'Back to rivals'}</button>
+        {onNext && idx >= 0 && idx + 1 < RIVALS.length && <button className="btn primary big block" onClick={onNext}>Next rival: {RIVALS[idx + 1].name}</button>}
+        {onRematch && <button className={`btn block ${onNext ? '' : 'primary big'}`} onClick={onRematch}>{won ? 'Rematch' : 'Try again'}</button>}
+        <button className="btn ghost block" onClick={onLadder}>{wild ? 'Done' : 'Back to rivals'}</button>
       </div>
     </div>
   );
