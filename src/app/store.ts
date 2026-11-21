@@ -1,6 +1,6 @@
 // Game state: one local store, persisted to IndexedDB on every change.
 import { SCENES } from '../render/diorama';
-import { LENSES, boostedPower, type LensId } from '../core/lenses';
+import { LENSES, RETIRED_LENSES, boostedPower, type LensId } from '../core/lenses';
 import { useSyncExternalStore } from 'react';
 import type { GameState, Sighting, Verification, ChallengeSlot } from '../core/model';
 import { UNKNOWN } from '../core/model';
@@ -18,7 +18,7 @@ import { deltaE2000 } from '../core/color';
 import { PAL_LAB } from '../core/color';
 import { P } from '../core/pixel/archetypes';
 import { FOODS, Food, hpNow, visitFeeder, rest, wake, Meal, AVIARY_MAX, FEEDER_CAP } from '../core/pets';
-import { RIVALS, rewardFor, WILD } from '../core/trials';
+import { RIVALS, rewardFor, WILD, TICKETS, ticketsOf, battleIsFree } from '../core/trials';
 import { loadState, saveState, putPhoto, getPhoto, photoKeys, deletePhoto as dbDeletePhoto, forgetPhotoURL } from './db';
 
 const VERSION = 1;
@@ -68,6 +68,13 @@ export function logEvent(e: string, d?: unknown) {
 
 function adopt(saved: GameState | undefined) {
   if (saved && saved.version) state = { ...freshState(), ...saved, settings: { ...freshState().settings, ...saved.settings }, items: { ...freshState().items, ...(saved.items ?? {}) }, feeder: saved.feeder ?? freshState().feeder, stats: { ...freshState().stats, ...(saved.stats ?? {}) }, badgeQueue: saved.badgeQueue ?? [], lenses: saved.lenses?.length ? saved.lenses : ['ripple'], lens: saved.lens ?? 'ripple' };
+  // The Legendary lens tier was retired (v1.25): refund what each one cost and fall back to a lens still owned.
+  const retired = state.lenses.filter((id) => RETIRED_LENSES[id] != null);
+  if (retired.length) {
+    const refund = retired.reduce((n, id) => n + RETIRED_LENSES[id], 0);
+    const lenses = state.lenses.filter((id) => LENSES[id]);
+    state = { ...state, feathers: state.feathers + refund, lenses: lenses.length ? lenses : ['ripple'], lens: LENSES[state.lens] ? state.lens : lenses[lenses.length - 1] ?? 'ripple' };
+  }
 }
 
 export async function initStore() {
@@ -133,6 +140,8 @@ export interface CatchResult {
   firstEver?: boolean;
   missionDone?: boolean;
   previousXp: number;
+  /** a Trial Ticket was earned for logging this bird */
+  ticket?: boolean;
 }
 
 function uuid(): string {
@@ -234,6 +243,9 @@ export async function fileCatch(input: CatchInput): Promise<CatchResult> {
     for (const b of earned) { badges[b.id] = at.toISOString(); bonus += TIER_FEATHERS[b.tier]; }
     next = { ...next, badges, feathers: next.feathers + bonus };
   }
+  // every bird you log earns a Trial Ticket for rival battles (up to the cap)
+  const ticket = counts(sighting) && ticketsOf(next.trials) < TICKETS.max;
+  if (ticket) next = { ...next, trials: { cleared: 0, wins: 0, ...next.trials, tickets: ticketsOf(next.trials) + 1 } };
   // sometimes a wandering birder challenges you to show off a newly discovered bird (at most once a day)
   if (sighting.firstRecord && counts(sighting) && next.sightings.filter(counts).length >= 2 && next.trials?.wildDay !== dayKey(at) && Math.random() < WILD.chance) {
     next = { ...next, pendingChallenge: { sightingId: sighting.id, at: at.toISOString() } };
@@ -245,7 +257,7 @@ export async function fileCatch(input: CatchInput): Promise<CatchResult> {
   const rankAfter = rankFor(state.xp).name;
   const lvA = trainerLevel(previousXp).level, lvB = trainerLevel(state.xp).level;
   const homes = Object.values(SCENES).filter((h) => h.level > lvA && h.level <= lvB).map((h) => h.label);
-  return { sighting, species: sp, badges: earned, rankUp: rankAfter !== rankBefore ? rankAfter : null, levelUp: lvB > lvA ? { level: lvB, homes } : null, previousXp, firstEver, missionDone };
+  return { sighting, species: sp, badges: earned, rankUp: rankAfter !== rankBefore ? rankAfter : null, levelUp: lvB > lvA ? { level: lvB, homes } : null, previousXp, firstEver, missionDone, ticket };
 }
 
 function fakeHash(s: string) {
@@ -457,6 +469,15 @@ export function finishWild(won: boolean, birds: string[] = []): { coins: number;
 /** Count a battle played, and mark the battle tutorial as seen. */
 export function noteBattle(tutorialDone: boolean) {
   setState((s) => { const t = s.trials ?? { cleared: 0, wins: 0 }; return { ...s, trials: { ...t, battles: (t.battles ?? 0) + 1, tutorial: t.tutorial || tutorialDone } }; });
+}
+/** Spend a Trial Ticket to start a rival battle (your very first battle is free). */
+export function spendTicket(): boolean {
+  if (battleIsFree(state.trials)) return true;
+  const n = ticketsOf(state.trials);
+  if (n < 1) return false;
+  setState((s) => ({ ...s, trials: { cleared: 0, wins: 0, ...s.trials, tickets: n - 1 } }));
+  logEvent('ticket_used', n - 1);
+  return true;
 }
 export function clearChallenge() { setState((s) => ({ ...s, pendingChallenge: null })); }
 

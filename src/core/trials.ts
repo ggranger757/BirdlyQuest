@@ -4,7 +4,10 @@
 // Your turn, one tap:  Quick move (always ready) · Signature skill (from a real-life fact; recharges)
 //                      · Guard (block 60% of the next hit) · Snack (pantry food) · Super (gauge fills as you battle) · Run
 // The rival:           quick move or its own signature skill, now and then a Big Move it announces a turn ahead (Guard!)
-// Parties:             up to 3 birds a side; when one rests the next flies in automatically.
+// Parties:             up to 3 birds a side; when one rests the next flies in automatically. Swap costs your turn.
+// Growth (v1.25):      birds learn moves as they level (Technique Lv12, upgraded quick move Lv20, mastered skill Lv30,
+//                      Ultra Super Lv40) and your trainer level adds a Bond bonus to every bird you bring.
+// Matchups:            Song beats Display beats Forage beats Sky beats Song (×1.3, or ×0.77 the other way).
 import type { Species } from '../data/types';
 
 // ─── styles: a bird's best talent (sets its quick move, super move, colours and sounds) ───
@@ -25,6 +28,19 @@ export const CONTESTS: Record<Contest, ContestDef> = {
   sky: { id: 'sky', name: 'Sky', quick: 'Gale Wing', super: 'Tempest Dive', big: 'Cyclone Dive', proj: P.wind, boom: P.windBoom, clip: 'tSky', color: 'var(--river)' },
   forage: { id: 'forage', name: 'Forage', quick: 'Quick Peck', super: 'Harvest Frenzy', big: 'Feast Storm', proj: P.leaf, boom: P.leafBoom, clip: 'tForage', color: 'var(--moss)' },
 };
+
+// ─── matchups: each style has an edge over one other (bird-true reasons in MATCHUP_WHY) ───
+export const BEATS: Record<Contest, Contest> = { song: 'display', display: 'forage', forage: 'sky', sky: 'song' };
+export const MATCHUP_WHY: Record<Contest, string> = {
+  song: 'A great song outshines fancy feathers.',
+  display: 'A dazzling display distracts busy foragers.',
+  forage: 'Patient foragers outlast tired fliers.',
+  sky: 'Fast fliers leave singers behind.',
+};
+/** +1 when the move's style has the edge on the defender, −1 when it is at a disadvantage. */
+export const matchup = (move: Contest, defender: Contest): -1 | 0 | 1 => (BEATS[move] === defender ? 1 : BEATS[defender] === move ? -1 : 0);
+export const MATCHUP_MULT = { 1: 1.3, 0: 1, [-1]: 0.77 } as Record<-1 | 0 | 1, number>;
+
 export const FX_CRIT: Sheet = { src: 'fx/trials/fx_blast.png', frames: 8, fw: 48, fh: 48 };
 export const FX_RING: Sheet = { src: 'fx/trials/sa_nova.png', frames: 6, fw: 52, fh: 48 };
 
@@ -71,7 +87,8 @@ export function birdStyle(sp: StatSp): Contest {
 }
 
 // ─── signature skills: each one is a real thing the bird does ───
-export type SkillKind = 'weaken' | 'double' | 'dazzle' | 'crit' | 'gauge' | 'heal' | 'triple' | 'pierce' | 'sure' | 'big' | 'focus' | 'shelter' | 'drain';
+export type SkillKind = 'weaken' | 'double' | 'dazzle' | 'crit' | 'gauge' | 'heal' | 'triple' | 'pierce' | 'sure' | 'big' | 'focus' | 'shelter' | 'drain'
+  | 'rally' | 'veil' | 'tailwind' | 'mend';
 export interface Skill { id: string; name: string; tag: string; fact: string; kind: SkillKind; power: number; hits: number; style: Contest }
 const S = (id: string, name: string, style: Contest, kind: SkillKind, power: number, hits: number, tag: string, fact: string): Skill => ({ id, name, style, kind, power, hits, tag, fact });
 export const SKILLS: Record<string, Skill> = Object.fromEntries([
@@ -109,9 +126,39 @@ export function skillFor(sp: StatSp): Skill {
   return SKILLS[SKILL_BY_FAMILY[sp.family] ?? SKILL_BY_ARCHETYPE[sp.archetype] ?? 'song'];
 }
 
+// ─── techniques: a second move every bird learns at Lv12, one per style ───
+export const TECHNIQUES: Record<Contest, Skill> = {
+  song: S('rally', 'Rally Anthem', 'song', 'rally', 0, 0, 'Power up for 3 turns', 'Birds sing louder and longer when rivals are nearby.'),
+  display: S('veil', 'Mirage Veil', 'display', 'veil', 0, 0, 'Rival may miss · heals 15%', 'Many birds fluff up and flash patterns to confuse a rival.'),
+  sky: S('tailwind', 'Tailwind Strike', 'sky', 'tailwind', 1.3, 1, 'Never misses · Super +25%', 'Migrating birds ride tailwinds to fly farther and faster.'),
+  forage: S('mend', 'Second Helping', 'forage', 'mend', 0, 0, 'Heals 35% HP', 'Foraging birds refuel fast, eating up to a third of their weight a day.'),
+};
+
+// ─── growth: what a bird learns as it levels up ───
+export const GROW = { tech: 12, quick: 20, master: 30, ultra: 40 };
+const QUICK_PLUS: Record<Contest, string> = { song: 'Sonic Trill', display: 'Dazzle Wing', sky: 'Razor Gale', forage: 'Fury Peck' };
+const ULTRA: Record<Contest, string> = { song: 'Maestro Symphony', display: 'Aurora Showcase', sky: 'Hypersonic Dive', forage: 'Grand Harvest' };
+export interface Unlock { level: number; kind: 'tech' | 'quick' | 'master' | 'ultra'; name: string; text: string }
+/** Everything a bird learns on its way to Lv50, in order. */
+export function unlocksFor(sp: StatSp): Unlock[] {
+  const style = birdStyle(sp), sk = skillFor(sp), tech = TECHNIQUES[style];
+  return [
+    { level: GROW.tech, kind: 'tech', name: tech.name, text: `Learned ${tech.name}` },
+    { level: GROW.quick, kind: 'quick', name: QUICK_PLUS[style], text: `${CONTESTS[style].quick} grew into ${QUICK_PLUS[style]}` },
+    { level: GROW.master, kind: 'master', name: `${sk.name}+`, text: `Mastered ${sk.name}: 30% stronger` },
+    { level: GROW.ultra, kind: 'ultra', name: ULTRA[style], text: `Super grew into ${ULTRA[style]}` },
+  ];
+}
+/** Moves learned between two levels (for the "grew to Lv12! Learned…" line). */
+export const learnedBetween = (sp: StatSp, from: number, to: number) => unlocksFor(sp).filter((u) => u.level > from && u.level <= to);
+export const nextUnlock = (sp: StatSp, level: number) => unlocksFor(sp).find((u) => u.level > level) ?? null;
+/** Trainer Bond: +1% HP and power per trainer level after the first, up to +30%. */
+export const bondFor = (trainerLevel: number) => Math.min(0.3, Math.max(0, trainerLevel - 1) * 0.01);
+
 // ─── tuning ───
 export const T = {
   skillCooldown: 2,     // turns before a signature skill is ready again
+  techCooldown: 3,      // turns before a technique is ready again
   guardBlock: 0.6,      // Guard (and Waterproof) cut the next hit by this much
   bigMove: 2.5,         // the rival's announced Big Move
   superPower: 3,        // your Super move
@@ -124,7 +171,12 @@ export const T = {
 // ─── contenders and fighters ───
 export interface Contender { sp: Species; level: number; quality: number; parts?: number[]; sightingId?: string }
 export interface Fighter {
-  c: Contender; style: Contest; skill: Skill; quick: string;
+  c: Contender; style: Contest; skill: Skill; quick: string; quickPow: number;
+  tech: Skill | null;  // learned at Lv12
+  cd2: number;         // turns until the technique is ready
+  skillCd: number;     // signature cooldown length
+  mastered: boolean;   // Lv30: signature skill is 30% stronger (Zen Stalk ×2.6, Aqua Shield heals 35%)
+  superName: string; superPow: number;
   hp: number; max: number; atk: number;
   cd: number;          // turns until the signature skill is ready
   weak: number;        // turns of -30% power (from Dawn Chorus)
@@ -135,11 +187,21 @@ export interface Fighter {
   out: boolean;
 }
 const avgStat = (sp: StatSp) => CONTEST_IDS.reduce((n, c) => n + contestStat(sp, c), 0) / 4;
-export function fighter(c: Contender, hpScale = 1): Fighter {
+export function fighter(c: Contender, hpScale = 1, bond = 0): Fighter {
   const lv = clamp(Math.round(c.level), 1, 50), style = birdStyle(c.sp);
-  const max = Math.round((30 + lv * 4 + avgStat(c.sp) * 0.25) * hpScale);
-  const atk = (6 + lv * 1.1 + clamp(c.quality, 0, 100) / 10) * (contestStat(c.sp, style) / 75);
-  return { c: { ...c, level: lv }, style, skill: skillFor(c.sp), quick: CONTESTS[style].quick, hp: max, max, atk, cd: 0, weak: 0, dazzle: 0, focus: false, fed: 0, shelter: false, out: false };
+  const max = Math.round((30 + lv * 4 + avgStat(c.sp) * 0.25) * hpScale * (1 + bond));
+  const atk = (6 + lv * 1.1 + clamp(c.quality, 0, 100) / 10) * (contestStat(c.sp, style) / 75) * (1 + bond);
+  const base = skillFor(c.sp), mastered = lv >= GROW.master;
+  return {
+    c: { ...c, level: lv }, style, hp: max, max, atk,
+    // a mastered skill hits 30% harder
+    skill: mastered ? { ...base, name: `${base.name}+`, power: base.power * 1.3, tag: base.kind === 'shelter' ? 'Heals 35% · blocks next hit' : base.kind === 'focus' ? 'Next move does ×2.6' : `${base.tag} · +30%` } : base,
+    skillCd: T.skillCooldown, mastered,
+    quick: lv >= GROW.quick ? QUICK_PLUS[style] : CONTESTS[style].quick, quickPow: lv >= GROW.quick ? 1.3 : 1,
+    tech: lv >= GROW.tech ? TECHNIQUES[style] : null, cd2: 0,
+    superName: lv >= GROW.ultra ? ULTRA[style] : CONTESTS[style].super, superPow: lv >= GROW.ultra ? T.superPower * 1.2 : T.superPower,
+    cd: 0, weak: 0, dazzle: 0, focus: false, fed: 0, shelter: false, out: false,
+  };
 }
 
 // ─── battle ───
@@ -150,14 +212,15 @@ export const SNACKS: Record<Item, { name: string; tag: string }> = {
   berries: { name: 'Berry Mash', tag: 'Heals 60% HP' },
   worms: { name: 'Mealworms', tag: '+40% power, 3 turns' },
 };
-export type Action = { kind: 'quick' } | { kind: 'skill' } | { kind: 'guard' } | { kind: 'super' } | { kind: 'snack'; item: Item } | { kind: 'run' } | { kind: 'wait' };
-export type MoveKind = 'quick' | 'skill' | 'super' | 'big';
+export type Action = { kind: 'quick' } | { kind: 'skill' } | { kind: 'tech' } | { kind: 'guard' } | { kind: 'super' } | { kind: 'snack'; item: Item } | { kind: 'swap'; to: number } | { kind: 'run' } | { kind: 'wait' };
+export type MoveKind = 'quick' | 'skill' | 'tech' | 'super' | 'big';
 export type Ev =
   | { t: 'log'; text: string }
   | { t: 'move'; side: Side; kind: MoveKind; name: string; style: Contest }
   | { t: 'guard'; side: Side }
   | { t: 'charge'; side: Side }
-  | { t: 'dmg'; side: Side; amount: number; crit: boolean; blocked: boolean; style: Contest; big: boolean }
+  | { t: 'dmg'; side: Side; amount: number; crit: boolean; blocked: boolean; style: Contest; big: boolean; eff: -1 | 0 | 1 }
+  | { t: 'recall'; side: Side }
   | { t: 'miss'; side: Side }
   | { t: 'heal'; side: Side; amount: number }
   | { t: 'buff'; side: Side; text: string; good: boolean }
@@ -174,8 +237,8 @@ export interface Battle {
   foeGuard: boolean;
 }
 
-export function startBattle(you: Contender[], foe: Contender[], foeName: string, opts: { foeHp?: number } = {}): Battle {
-  return { you: you.map((c) => fighter(c)), foe: foe.map((c) => fighter(c, opts.foeHp ?? 1)), yi: 0, fi: 0, turn: 0, over: null, foeName, gauge: 0, guarding: false, foeCharging: false, foeGuard: false };
+export function startBattle(you: Contender[], foe: Contender[], foeName: string, opts: { foeHp?: number; bond?: number } = {}): Battle {
+  return { you: you.map((c) => fighter(c, 1, opts.bond ?? 0)), foe: foe.map((c) => fighter(c, opts.foeHp ?? 1)), yi: 0, fi: 0, turn: 0, over: null, foeName, gauge: 0, guarding: false, foeCharging: false, foeGuard: false };
 }
 const clone = (b: Battle): Battle => ({ ...b, you: b.you.map((f) => ({ ...f })), foe: b.foe.map((f) => ({ ...f })) });
 export const active = (b: Battle, s: Side) => (s === 'you' ? b.you[b.yi] : b.foe[b.fi]);
@@ -189,14 +252,17 @@ function strike(b: Battle, side: Side, mult: number, style: Contest, rng: () => 
   if (d.out) return 0;
   if (!o.sure && a.dazzle > 0 && rng() < 0.5) { a.dazzle = 0; ev.push({ t: 'miss', side: other(side) }, { t: 'log', text: `${nameOf(b, side)} is dazzled and misses!` }); return 0; }
   const crit = rng() < (o.critChance ?? T.crit);
-  let dmg = power(a) * mult * (0.9 + rng() * 0.2) * (crit ? T.critMult : 1) * (a.focus ? 2.2 : 1);
+  const eff = matchup(style, d.style);
+  let dmg = power(a) * mult * MATCHUP_MULT[eff] * (0.9 + rng() * 0.2) * (crit ? T.critMult : 1) * (a.focus ? (a.mastered ? 2.6 : 2.2) : 1);
   a.focus = false;
   const guarded = !o.pierce && ((side === 'foe' && b.guarding) || (side === 'you' && b.foeGuard) || d.shelter);
   if (guarded) { dmg *= 1 - T.guardBlock; d.shelter = false; }
   const amount = Math.max(1, Math.round(dmg));
   d.hp = Math.max(0, d.hp - amount);
-  ev.push({ t: 'dmg', side: other(side), amount, crit, blocked: guarded, style, big: !!o.big }, { t: 'hp', side: other(side), value: d.hp, max: d.max });
+  ev.push({ t: 'dmg', side: other(side), amount, crit, blocked: guarded, style, big: !!o.big, eff }, { t: 'hp', side: other(side), value: d.hp, max: d.max });
   if (crit) ev.push({ t: 'log', text: 'Critical!' });
+  if (eff === 1) ev.push({ t: 'log', text: 'Strong matchup! It hits hard!' });
+  else if (eff === -1) ev.push({ t: 'log', text: 'Weak matchup… it barely lands.' });
   if (guarded) ev.push({ t: 'log', text: `${nameOf(b, other(side))} guarded! Most of it was blocked.` });
   if (other(side) === 'you') { b.gauge = Math.min(100, b.gauge + T.gauge.hurt); ev.push({ t: 'gauge', value: b.gauge }); }
   return amount;
@@ -218,18 +284,21 @@ function checkRest(b: Battle, side: Side, ev: Ev[]) {
   ev.push({ t: 'send', side, index: next }, { t: 'log', text: side === 'you' ? `Go, ${list[next].c.sp.common}!` : `${b.foeName} sends out ${list[next].c.sp.common}!` });
 }
 
-/** Use a signature skill (either side). */
-function useSkill(b: Battle, side: Side, rng: () => number, ev: Ev[]) {
-  const f = active(b, side), s = f.skill;
-  f.cd = T.skillCooldown;
-  ev.push({ t: 'move', side, kind: 'skill', name: s.name, style: s.style }, { t: 'log', text: `${nameOf(b, side)} uses ${s.name}!` });
+/** Use a signature skill or a learned technique (either side). */
+function useSkill(b: Battle, side: Side, rng: () => number, ev: Ev[], slot: 'skill' | 'tech' = 'skill') {
+  const f = active(b, side), s = slot === 'tech' && f.tech ? f.tech : f.skill;
+  if (slot === 'tech') f.cd2 = T.techCooldown; else f.cd = f.skillCd;
+  ev.push({ t: 'move', side, kind: slot, name: s.name, style: s.style }, { t: 'log', text: `${nameOf(b, side)} uses ${s.name}!` });
   const foe = active(b, other(side));
   switch (s.kind) {
     case 'focus': f.focus = true; ev.push({ t: 'buff', side, text: 'Focused!', good: true }, { t: 'log', text: `${nameOf(b, side)} waits perfectly still. Its next move will be huge!` }); return;
-    case 'shelter': heal(b, side, f.max * 0.25, ev); f.shelter = true; ev.push({ t: 'buff', side, text: 'Aqua Shield!', good: true }); return;
+    case 'shelter': heal(b, side, f.max * (f.mastered ? 0.35 : 0.25), ev); f.shelter = true; ev.push({ t: 'buff', side, text: 'Aqua Shield!', good: true }); return;
+    case 'rally': f.fed = Math.max(f.fed, 3); f.weak = 0; ev.push({ t: 'buff', side, text: 'Power up!', good: true }, { t: 'log', text: `${nameOf(b, side)} is fired up! Power rises for 3 turns.` }); return;
+    case 'veil': foe.dazzle = 1; ev.push({ t: 'buff', side: other(side), text: 'Dazzled', good: false }); heal(b, side, f.max * 0.15, ev); return;
+    case 'mend': heal(b, side, f.max * 0.35, ev); return;
   }
   let total = 0;
-  for (let i = 0; i < s.hits && !foe.out; i++) total += strike(b, side, s.power, s.style, rng, ev, { pierce: s.kind === 'pierce', sure: s.kind === 'sure', critChance: s.kind === 'crit' ? T.critRaptor : undefined });
+  for (let i = 0; i < s.hits && !foe.out; i++) total += strike(b, side, s.power, s.style, rng, ev, { pierce: s.kind === 'pierce', sure: s.kind === 'sure' || s.kind === 'tailwind', critChance: s.kind === 'crit' ? T.critRaptor : undefined });
   if (s.hits > 1 && total) ev.push({ t: 'log', text: `Hit ${s.hits} times!` });
   if (!total) return;
   if (s.kind === 'weaken') { foe.weak = 2; ev.push({ t: 'buff', side: other(side), text: 'Power down', good: false }); }
@@ -237,6 +306,7 @@ function useSkill(b: Battle, side: Side, rng: () => number, ev: Ev[]) {
   if (s.kind === 'heal') heal(b, side, f.max * 0.2, ev);
   if (s.kind === 'drain') heal(b, side, total / 2, ev);
   if (s.kind === 'gauge' && side === 'you') { b.gauge = Math.min(100, b.gauge + 35); ev.push({ t: 'gauge', value: b.gauge }); }
+  if (s.kind === 'tailwind' && side === 'you') { b.gauge = Math.min(100, b.gauge + 25); ev.push({ t: 'gauge', value: b.gauge }); }
 }
 
 /** The rival's turn. */
@@ -254,27 +324,30 @@ function foeTurn(b: Battle, rng: () => number, ev: Ev[], forceCharge = false) {
     ev.push({ t: 'charge', side: 'foe' }, { t: 'log', text: `${nameOf(b, 'foe')} is powering up ${CONTESTS[f.style].big}! Guard!` });
   } else if (f.cd === 0 && rng() < 0.45) {
     useSkill(b, 'foe', rng, ev);
+  } else if (f.tech && f.cd2 === 0 && rng() < (f.tech.kind === 'mend' ? (f.hp < f.max * 0.5 ? 0.6 : 0) : 0.3)) {
+    useSkill(b, 'foe', rng, ev, 'tech');
   } else if (f.hp < f.max * 0.3 && rng() < 0.25) {
     b.foeGuard = true; ev.push({ t: 'guard', side: 'foe' }, { t: 'log', text: `${nameOf(b, 'foe')} puffs up and guards.` });
   } else {
     ev.push({ t: 'move', side: 'foe', kind: 'quick', name: f.quick, style: f.style }, { t: 'log', text: `${nameOf(b, 'foe')} uses ${f.quick}!` });
-    strike(b, 'foe', 1, f.style, rng, ev);
+    strike(b, 'foe', f.quickPow, f.style, rng, ev);
   }
   checkRest(b, 'you', ev);
 }
-const tick = (f: Fighter) => { if (f.cd > 0) f.cd--; if (f.weak > 0) f.weak--; if (f.fed > 0) f.fed--; };
+const tick = (f: Fighter) => { if (f.cd > 0) f.cd--; if (f.cd2 > 0) f.cd2--; if (f.weak > 0) f.weak--; if (f.fed > 0) f.fed--; };
 
 /** The rival may act before your very first move. */
 export function ambush(b0: Battle, rng: () => number): { b: Battle; ev: Ev[] } {
   const b = clone(b0), ev: Ev[] = [{ t: 'log', text: `${b.foeName}'s ${active(b, 'foe').c.sp.common} moves first!` }];
   const f = active(b, 'foe');
   ev.push({ t: 'move', side: 'foe', kind: 'quick', name: f.quick, style: f.style });
-  strike(b, 'foe', 1, f.style, rng, ev);
+  strike(b, 'foe', f.quickPow, f.style, rng, ev);
   checkRest(b, 'you', ev);
   return { b, ev };
 }
 
 export const skillReady = (b: Battle) => active(b, 'you').cd === 0;
+export const techReady = (b: Battle) => { const f = active(b, 'you'); return !!f.tech && f.cd2 === 0; };
 export const superReady = (b: Battle) => b.gauge >= 100;
 
 /** Resolve one turn: your action, then the rival's. Returns what happened, in order, for the screen to play. */
@@ -289,9 +362,23 @@ export function takeTurn(b0: Battle, mine: Action, rng: () => number, opts: { fo
     case 'wait': ev.push({ t: 'log', text: `Too slow! ${me.c.sp.common} hesitates.` }); break;
     case 'quick':
       ev.push({ t: 'move', side: 'you', kind: 'quick', name: me.quick, style: me.style }, { t: 'log', text: `${me.c.sp.common} uses ${me.quick}!` });
-      strike(b, 'you', 1, me.style, rng, ev);
+      strike(b, 'you', me.quickPow, me.style, rng, ev);
       b.gauge = Math.min(100, b.gauge + T.gauge.quick); ev.push({ t: 'gauge', value: b.gauge });
       break;
+    case 'tech':
+      if (!me.tech || me.cd2 > 0) { ev.push({ t: 'log', text: me.tech ? `${me.tech.name} is still recharging.` : `${me.c.sp.common} hasn't learned a technique yet.` }); return { b: b0, ev }; }
+      useSkill(b, 'you', rng, ev, 'tech');
+      b.gauge = Math.min(100, b.gauge + T.gauge.skill); ev.push({ t: 'gauge', value: b.gauge });
+      break;
+    case 'swap': {
+      const to = b.you[mine.to];
+      if (!to || to.out || mine.to === b.yi) return { b: b0, ev };
+      ev.push({ t: 'recall', side: 'you' }, { t: 'log', text: `Come back, ${me.c.sp.common}! Go, ${to.c.sp.common}!` });
+      me.focus = false;
+      b.yi = mine.to;
+      ev.push({ t: 'send', side: 'you', index: mine.to });
+      break;
+    }
     case 'skill':
       if (me.cd > 0) { ev.push({ t: 'log', text: `${me.skill.name} is still recharging.` }); return { b: b0, ev }; }
       useSkill(b, 'you', rng, ev);
@@ -304,9 +391,9 @@ export function takeTurn(b0: Battle, mine: Action, rng: () => number, opts: { fo
     case 'super': {
       if (b.gauge < 100) { ev.push({ t: 'log', text: 'Your Super move isn’t ready yet.' }); return { b: b0, ev }; }
       b.gauge = 0;
-      const name = CONTESTS[me.style].super;
+      const name = me.superName;
       ev.push({ t: 'gauge', value: 0 }, { t: 'move', side: 'you', kind: 'super', name, style: me.style }, { t: 'log', text: `${me.c.sp.common} unleashes ${name}!` });
-      strike(b, 'you', T.superPower, me.style, rng, ev, { pierce: true, sure: true, big: true });
+      strike(b, 'you', me.superPow, me.style, rng, ev, { pierce: true, sure: true, big: true });
       break;
     }
     case 'snack': {
@@ -329,15 +416,15 @@ export interface RivalDef {
   coins: number; xp: number; time: number; music: string; face?: string; merlin?: boolean;
 }
 export const RIVALS: RivalDef[] = [
-  { id: 'pip', name: 'Pip', title: 'Backyard rookie', line: "My birds sing all morning. Bet yours can't keep up!", win: 'Whoa! Your birds are good!', lose: 'Ha! Told you my birds were the best!', styles: ['song'], size: 1, level: 3, quality: 30, scene: 'valley', coins: 25, xp: 40, time: 12, music: 'music/battle/default-1.mp3', face: 'trainers/t015.png' },
-  { id: 'wren', name: 'Wren', title: 'Dawn chorus fan', line: 'A good song beats bright feathers. Prove me wrong.', win: 'Fine, fine. That was a lovely performance.', lose: 'Listen to that chorus! Come back when you can match it.', styles: ['song', 'forage'], size: 2, level: 5, quality: 40, scene: 'pine', coins: 35, xp: 60, time: 10, music: 'music/battle/battle-6.mp3', face: 'trainers/t019.png' },
+  { id: 'pip', name: 'Pip', title: 'Backyard rookie', line: "My birds sing all morning. Bet yours can't keep up!", win: 'Whoa! Your birds are good!', lose: 'Ha! Told you my birds were the best!', styles: ['song'], size: 1, level: 3, quality: 30, scene: 'valley', coins: 25, xp: 40, time: 12, music: 'music/battle/default-1.mp3', face: 'trainers/t002.png' },
+  { id: 'wren', name: 'Wren', title: 'Dawn chorus fan', line: 'A good song beats bright feathers. Prove me wrong.', win: 'Fine, fine. That was a lovely performance.', lose: 'Listen to that chorus! Come back when you can match it.', styles: ['song', 'forage'], size: 2, level: 5, quality: 40, scene: 'pine', coins: 35, xp: 60, time: 10, music: 'music/battle/battle-6.mp3', face: 'trainers/t016.png' },
   { id: 'gale', name: 'Captain Gale', title: 'Shoreline racer', line: 'Out on the coast, it’s all about the wind.', win: 'You sailed right past me!', lose: 'The wind was on my side today.', styles: ['sky', 'forage'], size: 2, level: 8, quality: 48, scene: 'n3', coins: 45, xp: 80, time: 9, music: 'music/battle/battle-4.mp3', face: 'trainers/t023.png' },
   { id: 'mara', name: 'Mara', title: 'Plumage collector', line: 'Colour is everything. Show me your brightest!', win: 'Stunning. Absolutely stunning.', lose: 'Not quite bright enough, darling.', styles: ['display', 'song'], size: 3, level: 11, quality: 55, scene: 'n1', coins: 60, xp: 110, time: 8, music: 'music/battle/default-3.mp3', face: 'trainers/t024.png' },
   { id: 'hawkins', name: 'Old Hawkins', title: 'Ridge watcher', line: 'Forty years on this ridge. My birds know every trick.', win: 'Well I never. You’ve got a real eye.', lose: 'Patience, young birder. Come back stronger.', styles: ['sky', 'display', 'forage'], size: 3, level: 14, quality: 62, scene: 'dusk', coins: 80, xp: 150, time: 8, music: 'music/battle/battle-8.mp3', face: 'trainers/t020.png' },
   { id: 'merlin', name: 'Professor Merlin', title: 'Grand finale', line: 'So, you’ve come this far. Show me what your birds can do!', win: 'Magnificent! You are a true birder.', lose: 'Not yet, my friend. Not yet.', styles: ['song', 'display', 'sky'], size: 3, level: 18, quality: 70, scene: 'nfb', coins: 120, xp: 250, time: 7, music: 'music/battle/elven.mp3', merlin: true },
 ];
 /** Wandering birders who challenge you after you discover a new bird; each gets a portrait from the trainer set. */
-const RIVAL_FACES = new Set(['015', '019', '023', '024', '020']);
+const RIVAL_FACES = new Set(['002', '016', '023', '024', '020']);
 const WANDERER_FACES = Array.from({ length: 60 }, (_, i) => String(i + 1).padStart(3, '0')).filter((n) => !RIVAL_FACES.has(n));
 export const hashStr = (s: string) => [...s].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7);
 export const wandererFace = (key: string) => `trainers/t${WANDERER_FACES[hashStr(key + 'face') % WANDERER_FACES.length]}.png`;
@@ -371,7 +458,11 @@ export function wildTeam(pool: Species[], level: number, rng: () => number, excl
 
 // ─── rewards ───
 export const REMATCH = { coins: 5, xp: 15, perDay: 3 };
-export interface TrialsState { cleared: number; wins: number; day?: string; rematches?: number; tutorial?: boolean; battles?: number; wildDay?: string }
+/** Trial Tickets: earned by logging birds, spent on rival battles (wandering challenges and your first battle are free). */
+export const TICKETS = { start: 3, max: 5 };
+export interface TrialsState { cleared: number; wins: number; day?: string; rematches?: number; tutorial?: boolean; battles?: number; wildDay?: string; tickets?: number }
+export const ticketsOf = (st?: TrialsState) => st?.tickets ?? TICKETS.start;
+export const battleIsFree = (st?: TrialsState) => !st?.tutorial;
 export function rewardFor(st: TrialsState | undefined, index: number, today: string): { coins: number; xp: number; first: boolean } {
   const r = RIVALS[index];
   if ((st?.cleared ?? 0) <= index) return { coins: r.coins, xp: r.xp, first: true };

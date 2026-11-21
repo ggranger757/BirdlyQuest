@@ -96,7 +96,7 @@ One line per meaningful choice, with the reason.
   - **Verified:** at 320×568, 360×640, 390×844 and 430×932, in both themes, both HP panels sit on screen, the tray is fully visible and nothing overflows.
   - **Battle music:** the owner's 7 tracks are in `public/music/battle/`: Pip default-1, Wren battle-6, Captain Gale battle-4, Mara default-3, Old Hawkins battle-8, Professor Merlin elven, and wandering birders rotate through battle-2/8/6 and default-1. They play when Music is on in Settings, the previous music resumes afterwards, and the chiptune battle theme is the fallback.
 - **Rival trainer portraits and RPG-style move names (v1.24, user request).**
-  - **Portraits:** the owner's 60 trainer portraits are in `public/trainers/` (trimmed to a common frame, 128×192, quantised; 756KB total instead of 6MB). Cast: Pip t015, Wren t019, Captain Gale t023, Mara t024, Old Hawkins t020 (recast in v1.24.1 when the owner supplied a cel-shaded set to replace the first one). Professor Merlin keeps his own sprite as the mascot. Wandering birders get one of the other 55, picked by the challenge's id.
+  - **Portraits:** the owner's 60 trainer portraits are in `public/trainers/` (trimmed to a common frame, 128×192, quantised; 756KB total instead of 6MB). Cast: Pip t002, Wren t016, Captain Gale t023, Mara t024, Old Hawkins t020 (recast in v1.24.1 and again in v1.25 as the owner refreshed the set). Professor Merlin keeps his own sprite as the mascot. Wandering birders get one of the other 55, picked by the challenge's id.
   - **Where they appear:** the rival ladder (greyed when locked), the party screen, the battle intro card, the result quote, and the challenge pop-up (portrait vs your new bird).
   - **Rival speech:** whenever the rival speaks in battle (opening line, sending out their next bird, conceding or gloating), the dialogue box shows their name tag and portrait with the line in quotes. Narration stays plain.
   - **Move names:**
@@ -104,3 +104,23 @@ One line per meaningful choice, with the reason.
     - Super: Symphony Burst, Prismatic Dance, Tempest Dive, Harvest Frenzy.
     - Rival Big Moves are named per style (Thunder Chorus, Radiant Plume, Cyclone Dive, Feast Storm) and announced as "…is powering up Cyclone Dive! Guard!".
     - Signature skills (each still tied to its real-life fact): Daybreak Aria, Mirror Mimic, Prism Flash, Falcon Stoop, Crow's Gambit, Hidden Cache, Thunder Drum, Phantom Glide, Hyper Hover, Homing Comet, Aero Ace, Zen Stalk, Aqua Shield, Plunder Dive, Flock Rally.
+- **Battle mode v1.25: growth, matchups, swapping and Trial Tickets (owner asked to enhance battle mode, and for birds to grow stronger and learn skills as players level up).**
+  - **Birds learn moves as they level up** (birds level when they win):
+    - Lv12: a style Technique fills the 4th move slot. Rally Anthem (Song) powers up for 3 turns; Mirage Veil (Display) makes the rival likely to miss and heals 15%; Tailwind Strike (Sky) never misses and adds 25% Super; Second Helping (Forage) heals 35%. Each recharges over 3 turns. Before Lv12 the slot shows locked with "Learns at Lv12", so players always see what's coming.
+    - Lv20: the quick move upgrades (Sonic Trill, Dazzle Wing, Razor Gale, Fury Peck), ×1.3.
+    - Lv30: the signature skill is mastered (name gets "+", 30% stronger; Zen Stalk ×2.6, Aqua Shield heals 35%).
+    - Lv40: the Super becomes an Ultra move (Maestro Symphony, Aurora Showcase, Hypersonic Dive, Grand Harvest), ×1.2.
+    - The party picker shows each bird's next move and level. The result screen announces what a bird learned when it levels up.
+    - Rival birds follow the same rules, so later rivals use Techniques too.
+  - **Trainer Bond:** +1% HP and power per trainer level after the first, capped at +30%. It's shown on the ladder, the party screen and the trainer level-up message, so leveling up as a player makes your birds stronger.
+  - **Style matchups:** Song > Display > Forage > Sky > Song, each with a bird-true reason. A strong matchup is ×1.3, a weak one ×0.77, flagged as "Strong!/Weak…" on hits. Moves show ▲ Strong / ▼ Weak tags, and the party picker marks birds as ▲ Good pick or ▼ Risky against the rival's team. This adds real decisions to party order and swapping.
+  - **Swap:** a Pokémon-style switch that uses your turn. Snack, Swap and Run moved to a row under the 2×2 move grid; the swap list shows HP and the matchup.
+  - **Trial Tickets** (answers the owner's "users shouldn't battle whenever they please"):
+    - Every rival battle or rematch costs one ticket.
+    - Each logged bird earns one, capped at 5. Existing players start with 3.
+    - The tutorial battle and wandering-birder challenges are free.
+    - Shown on the ladder, the party button and the catch screen ("You earned a TRIAL TICKET!").
+    - A "How it works" panel on the ladder explains tickets, matchups, growth and Bond.
+- **Lenses (v1.25, owner request):**
+  - The Legendary tier is removed. Owners are refunded each retired lens's price in Feather Coins on load and switched back to a lens they still own.
+  - Rare lenses each have their own colour on the whole capsule body, with the hues spread out so no two look alike.

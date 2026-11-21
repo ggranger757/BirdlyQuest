@@ -87,25 +87,22 @@ const BODIES: Record<string, string[]> = {
     '.......ss.......', '......aAAa......', '....aaAAAAaa....', 't..aAAAAAAAAa..t', 'tt.kkkkkkkkkk.tt', 'ttwwwwwwwwwwwwtt', '.twkkkkkkkkkkwt.', '..wkLLLLLLLLkw..',
     '..wkLeeeeeeLkw..', '..wkLegggseLkw..', '..wkLeggggeLkw..', '..wkLeeeeeeLkw..', '..wkLLLLLLLLkw..', '..wkkkkkkkkkkw..', '...wwwwwwwwww...', '....kkkkkkkk....',
   ],
-  legendary: [
-    '...t.s..s..s.t..', '...tttttttttt...', '..aAAAAAAAAAAa..', '..aAAAAsAAAAAa..', 'ttkkkkkkkkkkkktt', 'twwwwwwwwwwwwwwt', '.twkkkkkkkkkkwt.', '..wkLLLLLLLLkw..',
-    '..wkLeeeeeeLkw..', '..wkLeggsgeLkw..', '..wkLeggggeLkw..', '..wkLeeeeeeLkw..', '..wkLLLLLLLLkw..', '..wkkkkkkkkkkw..', '...tttttttttt...', '....kkkkkkkk....',
-  ],
 };
 const BODY_COL: Record<string, Record<string, string>> = {
   common: { k: '#0A0C0F', w: '#2F3A45', L: '#B6C0C9', e: '#1B2229', t: '#B6C0C9', s: '#FFFFFF' },
   rare: { k: '#0A0C0F', w: '#3A5A80', L: '#DDE6F0', e: '#14243A', t: '#C9D1D8', s: '#FFFFFF' },
   epic: { k: '#120A1F', w: '#4A2A78', L: '#E6D4FF', e: '#1E1033', t: '#B48BE0', s: '#FFFFFF' },
-  legendary: { k: '#2A1A04', w: '#8A6414', L: '#FFE7A0', e: '#3A2408', t: '#F2C14E', s: '#FF3D5E' },
 };
 const CAP_COL: Record<string, string> = { a: '#8DB80F', A: '#C6FF1A', g: '#C6FF1A' };
 export function Capsule({ size = 48, glow, className, style, lens }: { size?: number; glow?: boolean; className?: string; style?: React.CSSProperties; lens?: string }) {
   const L = lens ? lensOf(lens) : null;
   const tier = L?.tier ?? 'common';
-  const body = BODIES[tier], bc = BODY_COL[tier];
+  const body = BODIES[tier];
+  // Rare lenses wear their own colour on the whole body (frame, rim and trim), so each one is easy to tell apart.
+  const bc = L && tier === 'rare' ? { ...BODY_COL.rare, w: L.colors.a, t: L.colors.A, L: L.colors.g } : BODY_COL[tier];
   const col = (ch: string) => (L && (ch === 'A' || ch === 'a' || ch === 'g') ? L.colors[ch as 'A' | 'a' | 'g'] : CAP_COL[ch] ?? bc[ch]);
   return (
-    <svg width={size} height={size} viewBox="0 0 16 16" shapeRendering="crispEdges" className={`${className ?? ''} ${tier === 'legendary' ? 'lens-shine' : ''}`} style={style} aria-hidden>
+    <svg width={size} height={size} viewBox="0 0 16 16" shapeRendering="crispEdges" className={className} style={style} aria-hidden>
       {body.flatMap((row, y) => [...row].map((ch, x) => (ch === '.' ? null : <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill={glow && ch === 'g' ? '#F7F4E9' : col(ch)} />)))}
     </svg>
   );
@@ -238,7 +235,7 @@ export function LensFx({ lens, size = 140 }: { lens?: string; size?: number }) {
   return (
     <div aria-hidden style={{ position: 'relative', width: 0, height: 0 }}>
       {body}
-      {L.particles && <ParticleBurst {...L.particles} radius={size * 0.62} size={L.tier === 'legendary' ? 16 : L.tier === 'epic' ? 14 : 12} />}
+      {L.particles && <ParticleBurst {...L.particles} radius={size * 0.62} size={L.tier === 'epic' ? 14 : 12} />}
     </div>
   );
 }

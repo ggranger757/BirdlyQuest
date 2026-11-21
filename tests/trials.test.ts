@@ -4,6 +4,7 @@ import { SPECIES_BY_ID } from '../src/data/species';
 import {
   contestStat, birdStyle, skillFor, fighter, startBattle, takeTurn, ambush, active, superReady, skillReady,
   rivalTeam, wildTeam, rewardFor, RIVALS, REMATCH, SKILLS, CONTEST_IDS, T, rng, type Contender, type Battle,
+  TECHNIQUES, learnedBetween, nextUnlock, techReady, matchup, bondFor, ticketsOf, battleIsFree, TICKETS,
 } from '../src/core/trials';
 
 const sp = (id: string) => SPECIES_BY_ID[id];
@@ -113,5 +114,67 @@ describe('field trials: rivals and rewards', () => {
     expect(rewardFor({ cleared: 1, wins: 1 }, 0, '2026-11-20')).toEqual({ coins: REMATCH.coins, xp: REMATCH.xp, first: false });
     expect(rewardFor({ cleared: 1, wins: 4, day: '2026-11-20', rematches: REMATCH.perDay }, 0, '2026-11-20').coins).toBe(0);
     expect(T.guardBlock).toBeGreaterThan(0.5);
+  });
+});
+
+describe('field trials v1.25: growth, matchups, swap, bond, tickets', () => {
+  it('birds learn moves as they level up', () => {
+    const lv = (n: number) => fighter(bird('rethaw', n));
+    expect(lv(11).tech).toBe(null);
+    expect(lv(12).tech?.name).toBe(TECHNIQUES.sky.name);
+    expect(lv(19).quick).toBe('Gale Wing');
+    expect(lv(20).quick).not.toBe('Gale Wing');
+    expect(lv(20).quickPow).toBeGreaterThan(1);
+    expect(lv(29).skill.name).toBe('Falcon Stoop');
+    expect(lv(30).skill.name).toBe('Falcon Stoop+');
+    expect(lv(30).skill.power).toBeGreaterThan(lv(29).skill.power);
+    expect(lv(40).superName).not.toBe(lv(39).superName);
+    expect(learnedBetween(sp('rethaw'), 11, 12).map((u) => u.kind)).toEqual(['tech']);
+    expect(nextUnlock(sp('rethaw'), 12)?.kind).toBe('quick');
+    expect(nextUnlock(sp('rethaw'), 40)).toBe(null);
+  });
+  it('techniques work and recharge', () => {
+    let b = startBattle([bird('bkcchi', 15)], [bird('amerob', 15)], 'Rival');
+    expect(takeTurn(startBattle([bird('bkcchi', 5)], [bird('amerob', 5)], 'R'), { kind: 'tech' }, rng(1)).ev.some((e) => e.t === 'move')).toBe(false);
+    b.you[0].hp = 10;
+    const r = takeTurn(b, { kind: 'tech' }, rng(2));
+    expect(r.ev.some((e) => e.t === 'heal' && e.side === 'you')).toBe(true);
+    expect(techReady(r.b)).toBe(false);
+  });
+  it('style matchups: song > display > forage > sky > song', () => {
+    expect(matchup('song', 'display')).toBe(1);
+    expect(matchup('display', 'forage')).toBe(1);
+    expect(matchup('forage', 'sky')).toBe(1);
+    expect(matchup('sky', 'song')).toBe(1);
+    expect(matchup('display', 'song')).toBe(-1);
+    expect(matchup('song', 'forage')).toBe(0);
+    // a strong matchup hits harder than a weak one with the same bird
+    const dmg = (foe: string) => takeTurn(startBattle([bird('rethaw', 20)], [bird(foe, 20)], 'R'), { kind: 'quick' }, rng(9)).ev.find((e) => e.t === 'dmg' && e.side === 'foe');
+    const strong = dmg('amerob'), weak = dmg('amecro');
+    expect(birdStyle(sp('amerob'))).toBe('song');
+    expect(birdStyle(sp('amecro'))).toBe('forage');
+    expect(strong && weak && strong.t === 'dmg' && weak.t === 'dmg' ? strong.amount > weak.amount && strong.eff === 1 && weak.eff === -1 : false).toBe(true);
+  });
+  it('swapping uses your turn and brings in the chosen bird', () => {
+    const b = startBattle([bird('amerob'), bird('rethaw')], [bird('houspa')], 'Rival');
+    const r = takeTurn(b, { kind: 'swap', to: 1 }, rng(3));
+    expect(r.b.yi).toBe(1);
+    expect(r.ev.some((e) => e.t === 'recall')).toBe(true);
+    expect(r.ev.some((e) => e.t === 'move' && e.side === 'foe')).toBe(true);
+    expect(takeTurn(b, { kind: 'swap', to: 0 }, rng(3)).b).toBe(b); // can't swap to the bird already out
+  });
+  it('trainer Bond makes your birds stronger, capped at +30%', () => {
+    expect(bondFor(1)).toBe(0);
+    expect(Math.abs(bondFor(11) - 0.1) < 1e-9).toBe(true);
+    expect(bondFor(80)).toBe(0.3);
+    const a = startBattle([bird('amerob', 10)], [bird('houspa')], 'R'), c = startBattle([bird('amerob', 10)], [bird('houspa')], 'R', { bond: 0.2 });
+    expect(c.you[0].max).toBeGreaterThan(a.you[0].max);
+    expect(c.you[0].atk).toBeGreaterThan(a.you[0].atk);
+  });
+  it('Trial Tickets: start with 3, first battle is free', () => {
+    expect(ticketsOf(undefined)).toBe(TICKETS.start);
+    expect(ticketsOf({ cleared: 0, wins: 0, tickets: 0 })).toBe(0);
+    expect(battleIsFree(undefined)).toBe(true);
+    expect(battleIsFree({ cleared: 0, wins: 0, tutorial: true })).toBe(false);
   });
 });

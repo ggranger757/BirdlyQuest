@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { LENSES, LENS_ORDER, TIER_META, boostedPower, lensOf } from '../src/core/lenses';
+import { LENSES, LENS_ORDER, LENS_TIERS, TIER_META, RETIRED_LENSES, boostedPower, lensOf } from '../src/core/lenses';
 
 describe('snap lenses', () => {
   it('has a big, well-ordered catalogue', () => {
-    expect(LENS_ORDER.length).toBeGreaterThanOrEqual(35);
+    expect(LENS_ORDER.length).toBeGreaterThanOrEqual(25);
     expect(new Set(LENS_ORDER).size).toBe(LENS_ORDER.length);
     const l = LENS_ORDER.map((id) => LENSES[id]);
     for (let i = 1; i < l.length; i++) {
@@ -12,14 +12,20 @@ describe('snap lenses', () => {
       expect(l[i].level).toBeGreaterThanOrEqual(l[i - 1].level);   // tiers unlock in order
     }
     expect(LENSES.ripple.price).toBe(0);
-    expect(Math.max(...l.map((x) => x.power))).toBeLessThanOrEqual(30);
+    expect(Math.max(...l.map((x) => x.power))).toBeLessThanOrEqual(20);
   });
   it('keeps the five original lenses and their boosts', () => {
     expect([LENSES.ripple.power, LENSES.bubble.power, LENSES.ember.power, LENSES.arcane.power, LENSES.phantom.power]).toEqual([0, 5, 10, 15, 20]);
   });
   it('locks tiers behind trainer levels', () => {
-    expect(LENSES.merlin.level).toBe(TIER_META.legendary.level);
+    expect(LENSES.phantom.level).toBe(TIER_META.epic.level);
     expect(LENSES.dewdrop.level).toBe(1);
+  });
+  it('has no Legendary tier any more, and each rare lens has its own colour', () => {
+    expect(LENS_TIERS).toEqual(['common', 'rare', 'epic']);
+    for (const id of Object.keys(RETIRED_LENSES)) expect(LENSES[id]).toBe(undefined);
+    const rares = LENS_ORDER.filter((id) => LENSES[id].tier === 'rare').map((id) => LENSES[id].colors.A);
+    expect(new Set(rares).size).toBe(rares.length);
   });
   it('adds the bonus and caps Snap Power at 100', () => {
     expect(boostedPower(60, 'ember')).toBe(70);

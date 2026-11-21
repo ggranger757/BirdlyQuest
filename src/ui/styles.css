@@ -1080,3 +1080,40 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 :root.theme-field .tchallenge-x { color: var(--brick); text-shadow: none; }
 .tchallenge-vs .tchallenge-bird { width: 88px; height: 88px; }
 @media (max-width: 360px) { .tlog-face { width: 36px !important; height: 36px !important; } .tchallenge-face, .tchallenge-vs .tchallenge-bird { width: 72px; height: 72px; } }
+
+/* ── Field Trials v1.25: tickets, bond, matchups, techniques, swap, learned moves ── */
+.thero-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+.tticket-chip, .tbond-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; font-family: var(--lbl); font-size: 10px; text-transform: uppercase; letter-spacing: .04em;
+  background: var(--well); border: 2px solid #000; box-shadow: 2px 2px 0 #000; white-space: nowrap; }
+.tticket-chip { color: var(--sun); } .tticket-chip.empty { color: var(--muted); }
+.tbond-chip { color: var(--accent); }
+.thero-stats .btn { margin-left: auto; }
+.thow { margin-top: 8px; padding: 8px 10px; background: var(--well); border: 2px solid #000; font-size: 13px; line-height: 18px; }
+.thow p { margin: 0 0 6px; } .thow p:last-child { margin: 0; }
+.tticket-out { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--sun); text-align: center; }
+.tstyles { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.tstyles i { font-style: normal; padding: 0 5px; font-family: var(--lbl); font-size: 9px; text-transform: uppercase; color: #0C0F14; background: var(--c); border: 1px solid #000; }
+.tedge { font-family: var(--lbl); font-size: 9px; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; padding: 0 4px; border: 1px solid #000; }
+.tedge.up { background: var(--accent-fill, var(--accent)); color: var(--accent-ink, #0C0F14); }
+.tedge.down { background: var(--well); color: var(--muted); }
+.tpick-skill.tech { opacity: .85; }
+.tpick-next { font-size: 10.5px; line-height: 1.2; color: var(--muted); text-align: center; }
+.tcta-note { text-align: center; margin: 6px 0 0; }
+.tact { position: relative; }
+.tact > .tedge { position: absolute; top: -7px; right: 6px; }
+.tact.tech .tact-ic { background: color-mix(in srgb, var(--c) 30%, var(--well)); }
+.tact.locked { opacity: .5; cursor: default; box-shadow: none; border-style: dashed; }
+.tact.locked .tact-ic { font-size: 16px; filter: grayscale(1); }
+.trow { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; }
+.trow .btn { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+.tbag .muted { font-size: 11px; }
+.tsnacks .tact > .tedge { position: static; margin-left: auto; }
+.tact.snackrow .tact-ic canvas, .tact.snackrow .tact-ic img { image-rendering: pixelated; }
+.tswap-note { margin: 0; text-align: center; }
+.tlevel > span { display: flex; flex-direction: column; gap: 2px; }
+.tlevel.learned { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow, transparent); }
+.tlearn { font-family: var(--lbl); font-size: 11px; text-transform: uppercase; color: var(--accent); }
+@media (max-height: 700px) { .trow .btn { min-height: 34px; } }
+@media (max-width: 360px) { .trow { gap: 6px; } .trow .btn { padding-left: 8px; padding-right: 8px; font-size: 11px; } .thero-stats .btn { margin-left: 0; } }
+:root.theme-field .tticket-chip { color: var(--brick); } :root.theme-field .tticket-chip.empty { color: var(--muted); }
+:root.theme-field .tticket-out { color: var(--brick); }

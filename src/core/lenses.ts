@@ -1,7 +1,7 @@
 // Snap Lenses. Each adds Snap Power to camera photos and records birds with its own effect.
 // Effects are built from the owner-supplied fx sheets in public/fx, recoloured and arranged in different patterns.
 export type LensId = string;
-export type LensTier = 'common' | 'rare' | 'epic' | 'legendary';
+export type LensTier = 'common' | 'rare' | 'epic';
 export type LensPattern = 'single' | 'double' | 'ring3' | 'ring6' | 'swarm' | 'rain' | 'orbit' | 'rainbow';
 export type ParticleShape = 'star' | 'heart' | 'drop' | 'leaf' | 'snow' | 'diamond' | 'bolt' | 'feather' | 'sparkle' | 'ring';
 type Sheet = 'ripple' | 'bubble' | 'ember' | 'arcane' | 'phantom';
@@ -34,7 +34,6 @@ export const TIER_META: Record<LensTier, { label: string; level: number; color: 
   common: { label: 'Common', level: 1, color: '#B6C0C9' },
   rare: { label: 'Rare', level: 4, color: '#5AA9C9' },
   epic: { label: 'Epic', level: 8, color: '#B48BE0' },
-  legendary: { label: 'Legendary', level: 12, color: '#F2C14E' },
 };
 
 // shell colour → shell shade and glass tint
@@ -57,15 +56,15 @@ const DEFS: Def[] = [
   ['cinder', 'Cinder Lens', 'common', 5, 70, 'ember', 'single', '#E8743C', 'One bright crescent of campfire light.'],
   ['lilac', 'Lilac Lens', 'common', 5, 75, 'ripple', 'ring3', '#D7A6FF', 'Three little rings bloom like spring lilacs.', hue(40)],
   // rare
-  ['tidepool', 'Tidepool Lens', 'rare', 8, 100, 'bubble', 'orbit', '#3FC1C9', 'Bubbles circle your bird like a rock-pool current.', hue(-20)],
-  ['jade', 'Jade Lens', 'rare', 8, 105, 'ripple', 'double', '#3FAF7A', 'A deep green double pulse of polished jade.', hue(120)],
-  ['frost', 'Frost Lens', 'rare', 9, 110, 'arcane', 'ring3', '#9FD8FF', 'Icy crescents crackle around your bird.', hue(-80, 'brightness(1.3)')],
-  ['coral', 'Coral Lens', 'rare', 9, 115, 'bubble', 'swarm', '#FF8FA3', 'A reef of pink bubbles drifts upward.', hue(150, 'saturate(1.5)')],
-  ['ember', 'Ember Lens', 'rare', 10, 120, 'ember', 'ring3', '#FF9A3C', 'Three flaming crescents spin around your bird.'],
-  ['twilight', 'Twilight Lens', 'rare', 10, 130, 'arcane', 'single', '#7B6CD9', 'A single violet arc, like dusk settling.'],
-  ['blaze', 'Blaze Lens', 'rare', 11, 140, 'ember', 'ring6', '#FF6A2B', 'A full ring of fire crescents.'],
-  ['storm', 'Storm Lens', 'rare', 11, 145, 'bubble', 'rain', '#5B7FD6', 'A sudden downpour of blue raindrops.', hue(30, 'saturate(1.3)')],
-  ['sunflare', 'Sunflare Lens', 'rare', 12, 160, 'ember', 'orbit', '#FFC23C', 'Golden flares orbit your bird.', hue(25, 'brightness(1.15)')],
+  ['tidepool', 'Tidepool Lens', 'rare', 8, 100, 'bubble', 'orbit', '#22C7B8', 'Bubbles circle your bird like a rock-pool current.', hue(-20)],
+  ['jade', 'Jade Lens', 'rare', 8, 105, 'ripple', 'double', '#3DBE4F', 'A deep green double pulse of polished jade.', hue(120)],
+  ['frost', 'Frost Lens', 'rare', 9, 110, 'arcane', 'ring3', '#AEE9FF', 'Icy crescents crackle around your bird.', hue(-80, 'brightness(1.3)')],
+  ['coral', 'Coral Lens', 'rare', 9, 115, 'bubble', 'swarm', '#FF7FA6', 'A reef of pink bubbles drifts upward.', hue(150, 'saturate(1.5)')],
+  ['ember', 'Ember Lens', 'rare', 10, 120, 'ember', 'ring3', '#FF8A1F', 'Three flaming crescents spin around your bird.'],
+  ['twilight', 'Twilight Lens', 'rare', 10, 130, 'arcane', 'single', '#8C5CF6', 'A single violet arc, like dusk settling.'],
+  ['blaze', 'Blaze Lens', 'rare', 11, 140, 'ember', 'ring6', '#E8313A', 'A full ring of fire crescents.'],
+  ['storm', 'Storm Lens', 'rare', 11, 145, 'bubble', 'rain', '#2F5FE0', 'A sudden downpour of blue raindrops.', hue(30, 'saturate(1.3)')],
+  ['sunflare', 'Sunflare Lens', 'rare', 12, 160, 'ember', 'orbit', '#FFD02E', 'Golden flares orbit your bird.', hue(25, 'brightness(1.15)')],
   // epic
   ['arcane', 'Arcane Lens', 'epic', 15, 180, 'arcane', 'ring3', '#B98AFF', 'Violet crescents: Merlin’s own favourite.'],
   ['nebula', 'Nebula Lens', 'epic', 16, 200, 'phantom', 'single', '#7C8CFF', 'A swirl of star-stuff that fades to sparkles.', hue(-100)],
@@ -76,16 +75,6 @@ const DEFS: Def[] = [
   ['starfall', 'Starfall Lens', 'epic', 18, 245, 'bubble', 'rain', '#FFE36B', 'Shooting stars rain down around your bird.', hue(230, 'saturate(1.8) brightness(1.2)')],
   ['moonlight', 'Moonlight Lens', 'epic', 19, 250, 'ripple', 'double', '#E9ECF5', 'Silver rings of moonlight.', 'grayscale(1) brightness(1.6)'],
   ['phantom', 'Phantom Lens', 'epic', 20, 260, 'phantom', 'single', '#FF6BD6', 'A spooky spirit swirl that fades to sparkles.'],
-  // legendary
-  ['phoenix', 'Phoenix Lens', 'legendary', 22, 320, 'ember', 'rainbow', '#FF5A1F', 'A firebird’s halo in every colour of flame.', 'saturate(1.6)'],
-  ['leviathan', 'Leviathan Lens', 'legendary', 23, 340, 'bubble', 'orbit', '#1F8FBF', 'Deep-sea bubbles whirl around your bird.', hue(-40, 'saturate(1.5)')],
-  ['dragon', 'Dragon Lens', 'legendary', 24, 360, 'arcane', 'ring6', '#2FBF71', 'Six emerald dragon scales spin into place.', hue(-200, 'saturate(1.6)')],
-  ['eclipse', 'Eclipse Lens', 'legendary', 25, 380, 'phantom', 'double', '#2B2B3A', 'Darkness, then a ring of light.', 'grayscale(1) contrast(1.4)'],
-  ['galaxy', 'Galaxy Lens', 'legendary', 26, 400, 'phantom', 'orbit', '#6A5BFF', 'A spiral galaxy turns around your bird.', hue(-120, 'saturate(1.5)')],
-  ['thunderbird', 'Thunderbird Lens', 'legendary', 27, 440, 'arcane', 'orbit', '#FFE14D', 'Lightning crescents crackle in orbit.', hue(150, 'brightness(1.5) saturate(1.6)')],
-  ['celestial', 'Celestial Lens', 'legendary', 28, 480, 'ripple', 'rainbow', '#C9D7FF', 'Six rings, each a different star colour.'],
-  ['prism', 'Prism Lens', 'legendary', 29, 520, 'bubble', 'rainbow', '#FF9CF2', 'Bubbles split light into a full rainbow.', 'saturate(1.5)'],
-  ['merlin', 'Merlin’s Eye Lens', 'legendary', 30, 600, 'arcane', 'rainbow', '#F2C14E', 'The lens Merlin carries. Only the greatest explorers earn it.', 'saturate(1.4)'],
 ];
 
 export const LENSES: Record<LensId, Lens> = Object.fromEntries(DEFS.map(([id, name, tier, power, price, sheet, pattern, color, desc, filter]) =>
@@ -99,15 +88,13 @@ const P: Record<string, [ParticleShape, string[], number]> = {
   sunflare: ['star', ['#FFC23C', '#FFF0A8'], 12], arcane: ['star', ['#B98AFF', '#E6D4FF'], 12], nebula: ['star', ['#7C8CFF', '#FF8FD8', '#C9D7FF'], 14],
   aurora: ['sparkle', ['#5FE3B8', '#8FB8FF', '#FF9CF2'], 14], inferno: ['sparkle', ['#E8402B', '#FF8A3C', '#FFD23C'], 16], glacier: ['snow', ['#BFEFFF', '#FFFFFF', '#7FC8F0'], 14],
   wisp: ['ring', ['#9CFFD6', '#E0FFF3'], 12], starfall: ['star', ['#FFE36B', '#FFFFFF'], 16], moonlight: ['star', ['#E9ECF5', '#B6C0C9'], 12], phantom: ['heart', ['#FF6BD6', '#FFC9F1'], 12],
-  phoenix: ['feather', ['#FF5A1F', '#FFC23C', '#FF2B4E'], 16], leviathan: ['drop', ['#1F8FBF', '#7FD3FF', '#0E4F7A'], 16], dragon: ['diamond', ['#2FBF71', '#9FF0C4', '#F2C14E'], 16],
-  eclipse: ['ring', ['#FFFFFF', '#2B2B3A', '#F2C14E'], 14], galaxy: ['star', ['#6A5BFF', '#FF8FD8', '#8FE3FF', '#FFFFFF'], 18], thunderbird: ['bolt', ['#FFE14D', '#FFFFFF', '#F2A33C'], 16],
-  celestial: ['star', ['#C9D7FF', '#FFE36B', '#FF9CF2', '#8FE3FF'], 18], prism: ['diamond', ['#FF5C7A', '#FFC23C', '#7FE37F', '#5AB8FF', '#B98AFF'], 20],
-  merlin: ['feather', ['#F2C14E', '#FFF3B0', '#B98AFF'], 20],
 };
 for (const [id, [shape, colors, count]] of Object.entries(P)) if (LENSES[id]) LENSES[id].particles = { shape, colors, count };
 
 export const LENS_ORDER: LensId[] = DEFS.map((d) => d[0]);
-export const LENS_TIERS: LensTier[] = ['common', 'rare', 'epic', 'legendary'];
+export const LENS_TIERS: LensTier[] = ['common', 'rare', 'epic'];
+/** Lenses that were retired (the old Legendary tier) and what they cost, so owners get their Feather Coins back. */
+export const RETIRED_LENSES: Record<string, number> = { phoenix: 320, leviathan: 340, dragon: 360, eclipse: 380, galaxy: 400, thunderbird: 440, celestial: 480, prism: 520, merlin: 600 };
 export const lensOf = (id?: string): Lens => (id && LENSES[id]) || LENSES.ripple;
 /** Snap Power after the lens bonus (camera photos only), capped at 100. */
 export const boostedPower = (base: number, lens?: string) => Math.min(100, base + lensOf(lens).power);
