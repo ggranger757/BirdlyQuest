@@ -221,3 +221,11 @@ One line per meaningful choice, with the reason.
   - Landing spots snap onto the art (tested), so birds stand on fence tips, statue curls, crystal tips, cap tops and basin rims.
   - **Migration:** v1.28 perches (twig/oak/blossom/pine/driftwood/bamboo/swing/ladder/pillar/arch) map to the new structure in the same slot and colourway position, so owned and equipped perches carry over.
   - **Shop:** feeders and perches are shown as a grid of cards with 2× crisp previews on a little scene: 3 columns on phones, 2 on 320px.
+- **v1.30: Merlin's dialogue everywhere; the Aviary's Feeder page becomes "Feeder & Shop" (owner: "the shop is way too hidden away… needs to be intuitive").**
+  - **Merlin's dialogue box** (framed lamp-lit portrait, name plate, typewriter text, ▼) is now a shared component (`src/ui/MerlinSays.tsx`). It's used on the Trainer quests, the Merlin's Shop and quick log screens. On ≤380px screens the portrait shrinks and the name plate stays on one line.
+  - **Feeder & Shop page** (the renamed Aviary section), in order:
+    1. A feeder card: the hanging feeder's art, how full it is, days of food left, and one big action (Fill feeder, or Buy food when the pantry is empty).
+    2. Pantry tiles you tap to pour that food straight in. An empty tile says "Buy" and opens the shop on Food.
+    3. A Merlin's Shop panel with your coins and five shortcut tiles (Food, Feeders, Perches, Homes, Lenses). Each has a preview and an "x owned" count, and opens the shop straight on that tab (`nav.open({ name: 'shop', tab })`).
+    4. "In your Aviary": the current feeder, perch and home, each with Change or Add one.
+  - **Aviary header:** a "Shop" button with a bag icon sits next to the coin count, so the shop is one tap from the Aviary at all times.

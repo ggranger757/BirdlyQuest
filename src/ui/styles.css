@@ -1267,3 +1267,46 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 .dcard.locked { opacity: .55; }
 :root.theme-field .dcard-name { font-size: 11px; font-weight: 600; }
 @media (max-width: 360px) { :root.theme-field .shop-tab, .shop-tab { font-size: 9px; letter-spacing: 0; font-weight: 600; padding: 0 1px; } }
+
+/* ── Aviary: Feeder & Shop page (v1.30) ── */
+.shop-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 10px; }
+.feeder-card { display: flex; gap: 12px; align-items: center; }
+.feeder-card.low { border-color: var(--oriole); }
+.feeder-card .decor-thumb { flex: none; border: 2px solid #000; box-shadow: 2px 2px 0 #000; }
+.feeder-name { font-family: var(--lbl); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+:root.theme-field .feeder-name { font-size: 13px; font-weight: 600; }
+.feeder-meter { position: relative; height: 14px; margin: 6px 0 4px; background: #000; border: 2px solid #000; }
+.feeder-meter i { position: absolute; inset: 0 auto 0 0; transition: width 500ms steps(10); }
+.feeder-status { margin: 0 0 8px; line-height: 1.35; }
+.pantry .pantry-tile { cursor: pointer; font: inherit; color: inherit; }
+.pantry .pantry-tile:active:not(:disabled) { transform: translateY(2px); }
+.pantry .pantry-tile.empty { opacity: .7; border-style: dashed; }
+.pantry-n { color: var(--accent); } .pantry-tile.empty .pantry-n { font-family: var(--lbl); font-size: 10px; text-transform: uppercase; }
+:root.theme-field .pantry-n { color: var(--brick); }
+.shop-hub { margin: 18px 0 6px; padding: 10px; background: linear-gradient(180deg, color-mix(in srgb, #F2C14E 18%, var(--surface)), var(--surface)); border: 3px solid #000; box-shadow: 3px 3px 0 #000; }
+.shop-hub-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.shop-hub-title { font-family: var(--lbl); font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
+:root.theme-field .shop-hub-title { font-size: 15px; font-weight: 600; }
+.shop-hub .wallet-chip { cursor: default; padding: 3px 8px; }
+.shop-hub-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.shop-hub-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 104px; padding: 8px 4px; color: var(--text); font: inherit;
+  background: var(--well); border: 2px solid #000; box-shadow: 0 3px 0 #000; cursor: pointer; }
+.shop-hub-tile:active { transform: translateY(3px); box-shadow: 0 0 0 #000; }
+.shop-hub-tile b { font-family: var(--lbl); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; font-weight: 400; }
+:root.theme-field .shop-hub-tile b { font-size: 12px; font-weight: 600; }
+.shop-hub-art { height: 58px; display: grid; place-items: center; }
+.shop-hub-art .decor-thumb { border: 1px solid #000; }
+.shop-hub-art .home-thumb { width: 72px; height: 42px; border: 1px solid #000; }
+.shop-hub-tile.t-food { grid-column: span 1; }
+.setup-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin-bottom: 6px; background: var(--well); border: 2px solid #000; }
+.setup-row .label { width: 56px; flex: none; }
+@media (max-width: 360px) { .shop-hub-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .feeder-card .decor-thumb { width: 72px !important; height: 72px !important; } }
+.shop-npc-box .dialog-name { white-space: nowrap; max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 380px) {
+  .shop-npc { gap: 8px; }
+  .shop-npc-portrait { width: 64px !important; height: 76px !important; }
+  .shop-npc-portrait > * { transform: scale(.78); transform-origin: 50% 100%; }
+  .shop-npc-box { padding: 14px 10px 14px; }
+  .shop-npc-box .dialog-text { font-size: 13px; line-height: 18px; }
+  .shop-npc-box .dialog-name { font-size: 9px; letter-spacing: .04em; }
+}

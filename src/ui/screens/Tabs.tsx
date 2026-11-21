@@ -11,9 +11,11 @@ import { LENSES, LENS_ORDER, lensOf } from '../../core/lenses';
 import { LensList } from '../LensList';
 import { factsFor } from '../../data/facts';
 import { PageHeader, Segmented, Alert, FeatherChip } from '../kit';
-import { Professor } from '../Characters';
+import { MerlinSays } from '../MerlinSays';
 import { Diorama, SCENES, paintHomeThumb, homePrice } from '../../render/diorama';
 import { FeatherIcon } from '../FeatherIcon';
+import { FEEDERS, PERCHES, feederOf, perchOf, type DecorDef } from '../../core/decor';
+import { paintDecorThumb } from '../../render/decor';
 import { sunTimes, dayPhase } from '../../core/sun';
 import { rankFor, RANKS, liveStreak, dayKey, trainerLevel } from '../../core/xp';
 import { BADGES, TIER_FEATHERS } from '../../core/badges';
@@ -102,7 +104,8 @@ export function HabitatTab() {
   const fillOrShop = () => setSheet(bags > 0 ? 'fill' : 'shop');
   return (
     <div className="screen with-tabs">
-      <PageHeader title="Aviary" sub={`${aviary.length}/${AVIARY_MAX} birds · feeder ${Math.round(fill * 100)}% full`} right={<FeatherChip />} />
+      <PageHeader title="Aviary" sub={`${aviary.length}/${AVIARY_MAX} birds · feeder ${Math.round(fill * 100)}% full`}
+        right={<><FeatherChip label={false} /><button className="btn primary small shop-btn" onClick={() => { sfx.select(); nav.open({ name: 'shop' }); }} aria-label="Open Merlin's Shop"><Icon name="bag" size={14} /> Shop</button></>} />
       {hungry > 0 && st.feeder.level < 20 && (
         <Alert action={<button className="btn small primary" onClick={fillOrShop}>{bags > 0 ? 'Fill' : 'Buy food'}</button>}>
           <b>{hungry} bird{hungry > 1 ? 's are' : ' is'} hungry.</b><br />The feeder is {st.feeder.level ? 'almost' : ''} empty.
@@ -158,7 +161,7 @@ export function HabitatTab() {
       </button>
       <Segmented label="Aviary sections" value={section} onChange={setSection} options={[
         { id: 'birds', label: 'Birds', badge: hungry || undefined },
-        { id: 'feeder', label: 'Feeder', badge: st.feeder.level < 20 },
+        { id: 'feeder', label: 'Feeder & Shop', badge: st.feeder.level < 20 },
       ]} />
 
       {section === 'birds' && (
@@ -225,32 +228,80 @@ export function HabitatTab() {
       )}
 
       {section === 'feeder' && (
-        <section aria-label="Bird feeder">
-          <div className="panel">
-            <div className="row between"><span className="label">Feeder level</span><span className="num small">{st.feeder.level}/{FEEDER_CAP}</span></div>
-            <div style={{ height: 16, background: '#000', border: '2px solid #000', position: 'relative', marginTop: 6 }} role="meter" aria-label="Feeder level" aria-valuemin={0} aria-valuemax={FEEDER_CAP} aria-valuenow={st.feeder.level}>
-              <i style={{ position: 'absolute', inset: '0 auto 0 0', width: `${fill * 100}%`, background: fill > 0.25 ? 'var(--warbler)' : 'var(--oriole)', transition: 'width 500ms steps(10)' }} />
-            </div>
-            <p className="small" style={{ margin: '8px 0 0' }}>
-              {st.feeder.level === 0 ? 'Empty. Your birds will go hungry until you fill it.'
-                : `About ${Math.max(1, Math.round(st.feeder.level / Math.max(1, aviary.length * 17)))} day(s) of food for ${aviary.length || 1} bird${aviary.length === 1 ? '' : 's'}. Hungry birds fly in and eat by themselves.`}
-            </p>
-          </div>
-          <div className="section-title"><span>Pantry</span><span>{bags} bag{bags === 1 ? '' : 's'}</span></div>
-          <div className="pantry">
-            {(Object.keys(FOODS) as Food[]).map((f) => (
-              <div key={f} className="pantry-tile">
-                <FoodIcon food={f} size={40} />
-                <div className="small pantry-name">{FOODS[f].name}</div>
-                <div className="num" style={{ color: 'var(--accent)' }}>×{st.items[f]}</div>
+        <section aria-label="Feeder and shop">
+          {/* 1. the feeder: what's up, how full, one big action */}
+          <div className={`panel feeder-card ${fill <= 0.25 ? 'low' : ''}`}>
+            <DecorThumb def={feederOf(st.diorama.feeder)} size={96} />
+            <div className="grow">
+              <div className="row between"><b className="feeder-name">{feederOf(st.diorama.feeder).name}</b><span className="num small">{st.feeder.level}/{FEEDER_CAP}</span></div>
+              <div className="feeder-meter" role="meter" aria-label="Feeder level" aria-valuemin={0} aria-valuemax={FEEDER_CAP} aria-valuenow={st.feeder.level}>
+                <i style={{ width: `${fill * 100}%`, background: fill > 0.25 ? 'var(--warbler)' : 'var(--oriole)' }} />
               </div>
-            ))}
+              <p className="small feeder-status">
+                {st.feeder.level === 0 ? 'Empty! Your birds go hungry until you fill it.'
+                  : `About ${Math.max(1, Math.round(st.feeder.level / Math.max(1, aviary.length * 17)))} day(s) of food for ${aviary.length || 1} bird${aviary.length === 1 ? '' : 's'}.`}
+              </p>
+              {bags > 0
+                ? <button className="btn primary small block" onClick={() => setSheet('fill')} disabled={st.feeder.level >= FEEDER_CAP}>{st.feeder.level >= FEEDER_CAP ? 'Feeder is full' : 'Fill feeder'}</button>
+                : <button className="btn primary small block" onClick={() => nav.open({ name: 'shop', tab: 'food' })}>Buy food</button>}
+            </div>
           </div>
-          <div className="btn-pair mt16">
-            <button className="btn primary" onClick={() => setSheet('fill')} disabled={st.feeder.level >= FEEDER_CAP || bags === 0}>Fill feeder</button>
-            <button className="btn" onClick={() => nav.open({ name: 'shop' })}>Shop</button>
+
+          {/* 2. pantry: tap a bag to pour it straight in */}
+          <div className="section-title"><span>Pantry</span><span className="small muted" style={{ textTransform: 'none', fontFamily: 'var(--body)' }}>Tap a bag to pour it in</span></div>
+          <div className="pantry">
+            {(Object.keys(FOODS) as Food[]).map((f) => {
+              const have = st.items[f] ?? 0;
+              return (
+                <button key={f} className={`pantry-tile ${have ? '' : 'empty'}`} aria-label={have ? `Pour ${FOODS[f].name} into the feeder, ${have} left` : `${FOODS[f].name}: none left, buy more`}
+                  disabled={have > 0 && st.feeder.level >= FEEDER_CAP}
+                  onClick={() => {
+                    if (!have) { sfx.select(); nav.open({ name: 'shop', tab: 'food' }); return; }
+                    const n = fillFeeder(f); if (n) { sfx.page(); haptic(12); nav.toast(`Poured ${FOODS[f].name} into the feeder (+${n})`); setTimeout(runFeeder, 600); }
+                  }}>
+                  <FoodIcon food={f} size={40} />
+                  <div className="small pantry-name">{FOODS[f].name}</div>
+                  <div className="num pantry-n">{have ? `×${have}` : 'Buy'}</div>
+                </button>
+              );
+            })}
           </div>
-          <p className="small muted">Buy food with Feather Coins. Earn Feather Coins by photographing real birds: +20 for a new species, +12 for a repeat.</p>
+
+          {/* 3. Merlin's Shop: one tap to every department */}
+          <div className="shop-hub">
+            <div className="shop-hub-head">
+              <span className="shop-hub-title">Merlin's Shop</span>
+              <span className="wallet-chip"><FeatherIcon size={16} /> <b className="num">{st.feathers}</b></span>
+            </div>
+            <div className="shop-hub-grid">
+              {([
+                { tab: 'food', label: 'Food', sub: `${bags} bag${bags === 1 ? '' : 's'}`, art: <FoodIcon food="berries" size={44} /> },
+                { tab: 'feeders', label: 'Feeders', sub: `${FEEDERS.filter((d) => st.ownedDecor.includes(d.id)).length + 1}/50`, art: <DecorThumb def={FEEDERS[8]} size={56} /> },
+                { tab: 'perches', label: 'Perches', sub: `${PERCHES.filter((d) => st.ownedDecor.includes(d.id)).length}/50`, art: <DecorThumb def={PERCHES[15]} size={56} /> },
+                { tab: 'homes', label: 'Homes', sub: `${Object.keys(SCENES).filter((id) => ownsHome(st, id)).length}/${Object.keys(SCENES).length}`, art: <HomeThumb id={st.diorama.home ?? 'valley'} /> },
+                { tab: 'lenses', label: 'Lenses', sub: `${st.lenses.length}/${LENS_ORDER.length}`, art: <Capsule size={44} lens={st.lens} /> },
+              ] as const).map((t) => (
+                <button key={t.tab} className={`shop-hub-tile t-${t.tab}`} onClick={() => { sfx.select(); nav.open({ name: 'shop', tab: t.tab }); }} aria-label={`Open Merlin's Shop: ${t.label}, ${t.sub} owned`}>
+                  <span className="shop-hub-art" aria-hidden>{t.art}</span>
+                  <b>{t.label}</b><span className="small muted">{t.sub}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 4. what's set up in the Aviary right now */}
+          <div className="section-title"><span>In your Aviary</span></div>
+          {([
+            { k: 'Feeder', v: feederOf(st.diorama.feeder).name, tab: 'feeders' },
+            { k: 'Perch', v: perchOf(st.diorama.perch)?.name ?? 'None yet', tab: 'perches' },
+            { k: 'Home', v: st.diorama.home && SCENES[st.diorama.home] ? SCENES[st.diorama.home].label : 'Day & night', tab: 'homes' },
+          ] as const).map((r) => (
+            <div key={r.k} className="setup-row">
+              <span className="label">{r.k}</span><span className="grow">{r.v}</span>
+              <button className="btn ghost small" onClick={() => nav.open({ name: 'shop', tab: r.tab })}>{r.k === 'Perch' && !st.diorama.perch ? 'Add one' : 'Change'}</button>
+            </div>
+          ))}
+          <p className="small muted mt8">Earn Feather Coins by photographing real birds: +20 for a new species, +12 for a repeat, more for rare birds.</p>
         </section>
       )}
 
@@ -369,10 +420,8 @@ export function YouTab() {
 
       {section === 'quests' && (
         <section aria-label="Quests">
-          <div className="npc mb8">
-            <div key={questCast} className={questCast ? 'npc-hop' : ''}><Professor height={96} /></div>
-            <div className="bubble"><b>Professor Merlin · Quests</b>{claimable ? `You have ${claimable} quest${claimable > 1 ? 's' : ''} to hand in. Claim your reward!` : 'Head out and find birds. I will reward you for every quest you finish.'}</div>
-          </div>
+          <MerlinSays cast={questCast} name="Professor Merlin · Quests"
+            text={claimable ? `You have ${claimable} quest${claimable > 1 ? 's' : ''} to hand in. Claim your reward!` : 'Head out and find birds. I will reward you for every quest you finish.'} />
           {slots.map(({ slot, kind }) => {
             const p = challengeProgress(st, slot, now);
             const ready = p.done && !slot.claimed;
@@ -563,6 +612,11 @@ export function YearScreen() {
 
 export { setState, useMemo };
 
+function DecorThumb({ def, size }: { def: DecorDef; size: number }) {
+  const c = useRef<HTMLCanvasElement>(null);
+  useEffect(() => { if (c.current) paintDecorThumb(c.current, def); }, [def.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  return <canvas ref={c} className="pix decor-thumb" style={{ width: size, height: size }} aria-hidden />;
+}
 function HomeThumb({ id }: { id: string }) {
   const c = useRef<HTMLCanvasElement>(null);
   useEffect(() => { if (c.current) paintHomeThumb(c.current, id, 200); }, [id]);

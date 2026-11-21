@@ -19,7 +19,7 @@ export type Route =
   | { name: 'catch'; job: CaptureJob }
   | { name: 'sketch' }
   | { name: 'quicklog' }
-  | { name: 'shop' }
+  | { name: 'shop'; tab?: 'food' | 'lenses' | 'homes' | 'feeders' | 'perches' }
   | { name: 'badges' }
   | { name: 'challenges' }
   | { name: 'settings' }

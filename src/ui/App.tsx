@@ -30,7 +30,7 @@ function renderRoute(r: Route) {
     case 'catch': return <CatchFlow job={r.job} />;
     case 'sketch': return <Sketch />;
     case 'quicklog': return <QuickLog />;
-    case 'shop': return <Shop />;
+    case 'shop': return <Shop tab={r.tab} />;
     case 'badges': return <BadgesScreen />;
     case 'challenges': return <ChallengesScreen />;
     case 'settings': return <Settings />;

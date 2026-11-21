@@ -11,11 +11,12 @@ import { SCENES, homePrice, paintHomeThumb } from '../../render/diorama';
 import { paintDecorThumb } from '../../render/decor';
 import { trainerLevel } from '../../core/xp';
 import { LensList } from '../LensList';
-import { Professor } from '../Characters';
+import { MerlinSays } from '../MerlinSays';
 import { Sheet } from '../components';
 import { sfx, playClip } from '../../app/audio';
 
-type Tab = 'food' | 'lenses' | 'homes' | 'feeders' | 'perches';
+export type ShopTab = 'food' | 'lenses' | 'homes' | 'feeders' | 'perches';
+type Tab = ShopTab;
 const TABS: { id: Tab; label: string; hello: string }[] = [
   { id: 'food', label: 'Food', hello: 'Seeds, berries and mealworms! Fill your feeder and your birds stay happy.' },
   { id: 'lenses', label: 'Lenses', hello: 'Snap Lenses! Each one adds Snap Power to your photos, and they look rather dashing.' },
@@ -25,40 +26,19 @@ const TABS: { id: Tab; label: string; hello: string }[] = [
 ];
 const THANKS = ['A fine choice. Your birds will sing for it.', 'Splendid! The birds thank you.', 'Into the bag it goes!', 'Excellent taste, my friend.'];
 
-/** Merlin's line, typed out letter by letter like a classic RPG. */
-function MerlinSays({ text, cast }: { text: string; cast: number }) {
-  const [n, setN] = useState(0);
-  useEffect(() => {
-    setN(0);
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { setN(text.length); return; }
-    const t = setInterval(() => setN((v) => { if (v >= text.length) { clearInterval(t); return v; } return v + 1; }), 18);
-    return () => clearInterval(t);
-  }, [text]);
-  return (
-    <div className="shop-npc" onClick={() => setN(text.length)}>
-      <div key={cast} className={`shop-npc-portrait ${cast ? "npc-hop" : ""}`}><Professor height={104} /></div>
-      <div className="shop-npc-box dialog">
-        <span className="dialog-name">Professor Merlin</span>
-        <p className="dialog-text" aria-live="polite"><span>{text.slice(0, n)}</span><span className="shop-npc-ghost" aria-hidden>{text.slice(n)}</span></p>
-        {n >= text.length && <span className="shop-npc-next" aria-hidden>▼</span>}
-      </div>
-    </div>
-  );
-}
-
 function Thumb({ paint, w = 44, h = 44 }: { paint: (c: HTMLCanvasElement) => void; w?: number; h?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => { if (ref.current) paint(ref.current); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return <canvas ref={ref} className="pix shop-thumb" style={{ width: w, height: h }} aria-hidden />;
 }
 
-export function Shop() {
+export function Shop({ tab: startTab = 'food' }: { tab?: ShopTab }) {
   const nav = useNav();
   const st = useGame((s) => s);
   const lv = trainerLevel(st.xp).level;
-  const [tab, setTab] = useState<Tab>('food');
+  const [tab, setTab] = useState<Tab>(startTab);
   const [cast, setCast] = useState(0);
-  const [line, setLine] = useState(TABS[0].hello);
+  const [line, setLine] = useState(TABS.find((t) => t.id === startTab)!.hello);
   const [showEarn, setShowEarn] = useState(false);
   const thank = (t?: string) => { playClip('buy'); setCast((k) => k + 1); setLine(t ?? THANKS[(cast + 1) % THANKS.length]); };
   const broke = () => { sfx.error(); setLine('Not enough Feather Coins, friend. Go and find some birds!'); };
