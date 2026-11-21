@@ -813,3 +813,5 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
   .goals-chests, .goal.ready .goal-ribbon, button.goal-chest.ready { animation: none; }
   .goal-burst { display: none; }
 }
+/* v1.19: zoom hint sits in the upper part of the view, clear of the Likely birds and shutter */
+.cam-gesture-hint { bottom: auto; top: calc((100% - var(--cam-ui)) * 0.28); }
