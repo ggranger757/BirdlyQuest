@@ -7,7 +7,8 @@ import { renderFrames } from '../core/pixel/sprite';
 import { FLY_FRAMES, FLY_MS } from '../core/pixel/birds';
 import { drawFrame, onTick } from '../ui/components';
 import { feederOf, perchOf } from '../core/decor';
-import { paintFeederDef, paintPerchDef } from './decor';
+import { paintFeederDef, paintPerchDef, mixKey, type FeederMix } from './decor';
+import type { Food } from '../core/pets';
 
 const C = (n: keyof typeof IDX) => HEX[IDX[n]];
 
@@ -237,11 +238,18 @@ function paintProps(g: CanvasRenderingContext2D, L: Layout, W: number, H: number
   if (L.post) { const [x, y] = L.post; rect(g, x - 3, y, 7, H - y, dark); rect(g, x - 3, y, 7, 2, bark); rect(g, x - 2, y + 6, 1, H - y, bark); }
 }
 
+const sumMix = (m: FeederMix) => m.reduce((n, l) => n + l.k, 0);
+/** Take `k` off the top of the layers. */
+function eatMix(m: FeederMix, k: number): FeederMix {
+  const out = m.map((l) => ({ ...l })); let left = Math.max(0, k);
+  while (left > 1e-9 && out.length) { const top = out[out.length - 1], bite = Math.min(top.k, left); top.k -= bite; left -= bite; if (top.k <= 1e-9) out.pop(); }
+  return out;
+}
 function feederGeom(W: number, H: number) {
   const x = Math.round(W * 0.64), top = Math.round(H * 0.1);
   return { x, top, tubeY: top + 4, tubeH: 26, trayY: top + 32 };
 }
-function paintFeeder(g: CanvasRenderingContext2D, W: number, H: number, fill: number, style?: string) {
+function paintFeeder(g: CanvasRenderingContext2D, W: number, H: number, fill: number | FeederMix, style?: string) {
   const { x, top, trayY } = feederGeom(W, H);
   paintFeederDef(g, x, top, trayY, fill, feederOf(style));
 }
@@ -271,12 +279,12 @@ export interface Bird {
   x: number; y: number; state: 'arriving' | 'perched' | 'leaving' | 'gone';
   t0: number; from: [number, number]; leaveAt: number; flip: boolean; settledAt: number; seed: number;
   blinkAt: number; actionAt: number;
-  home?: Perch; eatUntil?: number;
+  home?: Perch; eatUntil?: number; eat?: number; eatT0?: number; // share of the feeder this bird eats, and when it starts pecking
   hp?: number; hpFrom?: number; hpTo?: number; hpT0?: number; hpT1?: number; // small HP bar, animates while eating
   returnAt?: number; arc?: number; pokeAt?: number; // fly-about: when to head home, and how high the flight arcs
 }
 
-export interface DioramaOpts { sceneId?: string; frame?: boolean; hpBars?: boolean; wander?: boolean; reduced?: boolean; viewW: number; viewH: number; feeder?: number /* 0–1 fill */; feederStyle?: string; perch?: string }
+export interface DioramaOpts { sceneId?: string; frame?: boolean; hpBars?: boolean; wander?: boolean; reduced?: boolean; viewW: number; viewH: number; feeder?: number | FeederMix /* 0–1 seed level, or the food layers inside */; feederStyle?: string; perch?: string }
 
 export class Diorama {
   private ctx: CanvasRenderingContext2D;
@@ -317,13 +325,46 @@ export class Diorama {
     paintProps(g, this.L, this.W, this.H, this.phase === 'night');
     const pd = perchOf(this.opts.perch);
     if (pd) { const { x, ground, h } = perchGeom(this.L, this.W, this.H); paintPerchDef(g, x, ground, h, pd); }
-    if (this.opts.feeder !== undefined) paintFeeder(g, this.W, this.H, this.opts.feeder, this.opts.feederStyle);
+    if (this.opts.feeder !== undefined) paintFeeder(g, this.W, this.H, this.shownMix(), this.opts.feederStyle);
   }
-  /** Update the feeder's fill level (0–1). */
-  setFeeder(fill: number) { this.opts.feeder = fill; if (this.imgs.length) this.bakeFront(); }
+  private mixNow(): FeederMix { const f = this.opts.feeder; return f === undefined ? [] : typeof f === 'number' ? (f > 0 ? [{ food: 'seeds' as Food, k: f }] : []) : f; }
+  // A meal in progress: the feeder shows `base` and drops toward the new contents while birds peck.
+  private meal: { base: FeederMix; total: number; owed: number } | null = null;
+  private mealKey = '';
+  /** What the feeder shows right now. */
+  private shownMix(): FeederMix {
+    if (!this.meal) return this.mixNow();
+    const t = performance.now(); let left = this.meal.owed;
+    for (const b of this.birds) if (b.eat) left += b.eat * (1 - Math.max(0, Math.min(1, (t - (b.eatT0 ?? t)) / Math.max(1, (b.eatUntil ?? t) - (b.eatT0 ?? t)))));
+    return eatMix(this.meal.base, this.meal.total - left);
+  }
+  private feederStep() {
+    if (!this.meal) return;
+    const busy = this.meal.owed > 1e-6 || this.birds.some((b) => b.eat);
+    if (!busy) { this.meal = null; this.mealKey = ''; if (this.imgs.length) this.bakeFront(); return; }
+    const key = mixKey(this.shownMix().map((l) => ({ food: l.food, k: Math.round(l.k * 80) / 80 })));
+    if (key !== this.mealKey) { this.mealKey = key; if (this.imgs.length) this.bakeFront(); }
+  }
+  /**
+   * Update what's in the feeder. With `from` (the contents before birds ate), the feeder keeps showing the old level
+   * and drops bite by bite as each bird pecks, via `visit(…, { eat })`. Food that was eaten without a visit is settled.
+   */
+  setFeeder(fill: number | FeederMix, from?: FeederMix) {
+    const norm = (m: FeederMix) => mixKey(m.map((l) => ({ food: l.food, k: Math.round(l.k * 80) / 80 })));
+    const asM = (f: number | FeederMix): FeederMix => typeof f === 'number' ? (f > 0 ? [{ food: 'seeds' as Food, k: f }] : []) : f;
+    if (!from && norm(asM(fill)) === norm(this.mixNow())) return; // nothing new (e.g. the screen re-rendering mid-meal)
+    const before = this.meal ? this.shownMix() : from;
+    this.opts.feeder = fill;
+    const total = before ? sumMix(before) - sumMix(this.mixNow()) : 0;
+    if (from && total > 1e-6) { this.meal = { base: before!, total, owed: total }; for (const b of this.birds) { b.eat = undefined; } }
+    else { this.meal = null; for (const b of this.birds) b.eat = undefined; }
+    this.mealKey = ''; if (this.imgs.length) this.bakeFront();
+  }
+  /** Food a bird ate without being seen at the feeder (no free spot): take it off at once. */
+  settle(eat: number) { if (this.meal) this.meal.owed = Math.max(0, this.meal.owed - eat); }
 
   /** A bird flies to the feeder, pecks for a while, then flies home. With `hp`, its bar fills while it eats. */
-  visit(key: string, opts: { ms?: number; hp?: [number, number] } = {}) {
+  visit(key: string, opts: { ms?: number; hp?: [number, number]; eat?: number } = {}) {
     const b = this.birds.find((x) => x.key === key);
     if (!b || this.opts.feeder === undefined || b.eatUntil || b.state !== 'perched') return false;
     const { x, trayY } = feederGeom(this.W, this.H);
@@ -335,6 +376,7 @@ export class Diorama {
     b.home = b.home ?? b.perch; b.from = [b.x, b.y]; b.perch = { x: spotX, y: trayY, kind: 'perch' }; b.state = 'arriving'; b.t0 = performance.now(); b.arc = 10;
     const fly = this.opts.reduced ? 200 : 1800;
     b.eatUntil = b.t0 + fly + ms; b.flip = spotX < b.x;
+    if (opts.eat && this.meal) { const e = Math.min(opts.eat, this.meal.owed); this.meal.owed -= e; b.eat = e; b.eatT0 = b.t0 + fly; }
     if (opts.hp) { b.hpFrom = opts.hp[0]; b.hpTo = opts.hp[1]; b.hp = opts.hp[0]; b.hpT0 = b.t0 + fly; b.hpT1 = b.eatUntil; }
     this.onChange?.();
     return true;
@@ -362,17 +404,13 @@ export class Diorama {
       const sky: Perch = { x: Math.round(this.W * (0.15 + Math.random() * 0.7)), y: Math.round(this.H * (0.12 + Math.random() * 0.2)), kind: 'perch' };
       b.home = b.home ?? b.perch; b.from = [b.x, b.y]; b.perch = sky; b.state = 'arriving'; b.t0 = t; b.arc = 24; b.flip = sky.x < b.x;
       b.returnAt = t + 1800 + 300;
-    } else if (r < 0.75) {
+    } else {
       // move to another free spot
       const free = this.freePerches(b.sp).filter((p) => p !== b.perch);
       if (!free.length) return;
       const p = free[Math.floor(Math.random() * free.length)];
       b.home = undefined; b.from = [b.x, b.y]; b.perch = p; b.state = 'arriving'; b.t0 = t; b.arc = 18; b.flip = p.x < b.x;
-    } else if (this.opts.feeder && this.opts.feeder > 0) {
-      // snack time: up to three birds visit the feeder together
-      const group = idle.sort(() => Math.random() - 0.5).slice(0, 1 + Math.floor(Math.random() * Math.min(3, idle.length)));
-      group.forEach((g, i) => setTimeout(() => this.visit(g.key, { ms: 2200 + i * 400 }), i * 350));
-    }
+    } // (no pretend snacks since v1.33: a bird at the feeder is always really eating, so the food visibly goes down)
     this.onChange?.();
   }
 
@@ -429,7 +467,7 @@ export class Diorama {
       } else if (b.state === 'perched' && b.returnAt && t > b.returnAt && b.home) {
         b.from = [b.x, b.y]; b.perch = b.home; b.home = undefined; b.returnAt = undefined; b.state = 'arriving'; b.t0 = t; b.arc = 16; b.flip = b.perch.x < b.x; changed = true;
       } else if (b.state === 'perched' && b.eatUntil && t > b.eatUntil && b.home) {
-        b.from = [b.x, b.y]; b.perch = b.home; b.home = undefined; b.eatUntil = undefined; b.state = 'arriving'; b.t0 = t; b.arc = 12; b.flip = b.perch.x < b.x;
+        b.from = [b.x, b.y]; b.perch = b.home; b.home = undefined; b.eatUntil = undefined; b.eat = undefined; b.state = 'arriving'; b.t0 = t; b.arc = 12; b.flip = b.perch.x < b.x;
         if (b.hpTo !== undefined) { b.hp = b.hpTo; b.hpTo = undefined; }
         changed = true;
       } else if (b.state === 'perched' && t > b.leaveAt) { this.leave(b); changed = true; }
@@ -442,6 +480,7 @@ export class Diorama {
     }
     // HP bars fill while eating
     for (const b of this.birds) if (b.hpTo !== undefined && b.hpT0 && b.hpT1 && t >= b.hpT0) b.hp = b.hpFrom! + (b.hpTo - b.hpFrom!) * Math.min(1, (t - b.hpT0) / (b.hpT1 - b.hpT0));
+    this.feederStep();
     this.wander(t);
     if (changed) { this.birds = this.birds.filter((b) => b.state !== 'gone'); this.onChange?.(); }
   }

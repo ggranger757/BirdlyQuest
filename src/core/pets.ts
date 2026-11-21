@@ -19,6 +19,40 @@ export const FOODS: Record<Food, { name: string; points: number; price: number; 
 
 export interface Pet { hp: number; at: string; resting?: boolean }
 
+/**
+ * What is inside the feeder, as layers poured one on top of another (bottom first).
+ * Birds eat from the top, so the food you poured last is what they eat first and what you see go down.
+ */
+export interface FoodLayer { food: Food; pts: number }
+export interface FeederState { level: number; layers?: FoodLayer[] }
+const sumPts = (ls: FoodLayer[]) => ls.reduce((n, l) => n + l.pts, 0);
+
+/** Pour food on top; the same food as the top layer just makes that layer deeper. */
+export function pourLayers(ls: FoodLayer[], food: Food, pts: number): FoodLayer[] {
+  if (pts <= 0) return ls;
+  const top = ls[ls.length - 1];
+  return top && top.food === food ? [...ls.slice(0, -1), { food, pts: top.pts + pts }] : [...ls, { food, pts }];
+}
+/** Birds eat `pts` from the top down. */
+export function eatLayers(ls: FoodLayer[], pts: number): FoodLayer[] {
+  const out = ls.map((l) => ({ ...l }));
+  let left = Math.max(0, pts);
+  while (left > 0 && out.length) {
+    const top = out[out.length - 1], bite = Math.min(top.pts, left);
+    top.pts -= bite; left -= bite;
+    if (top.pts <= 1e-9) out.pop();
+  }
+  return out;
+}
+/** The feeder's layers, always adding up to its level. Saves from before v1.33 had seed only. */
+export function layersOf(f: FeederState): FoodLayer[] {
+  const ls = (f.layers ?? []).filter((l) => l.pts > 0 && l.food in FOODS);
+  const have = sumPts(ls);
+  if (have > f.level) return eatLayers(ls, have - f.level);
+  if (have < f.level) return [{ food: 'seeds', pts: f.level - have }, ...ls];
+  return ls;
+}
+
 export function hpNow(s: Pick<Sighting, 'pet' | 'capturedAt'>, now = new Date()): number {
   const p = s.pet ?? { hp: 80, at: s.capturedAt };
   if (p.resting) return Math.max(MIN_HP, Math.round(p.hp));

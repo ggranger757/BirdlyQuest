@@ -3,25 +3,49 @@
 // Perches: 48×52 sprites standing on the ground at (24, 51), with landing spots for birds.
 import { Spr, type Mat } from './pixelkit';
 import type { FeederDef, PerchDef } from '../core/decor';
+import type { Food } from '../core/pets';
 
 export const FEEDER_W = 32, FEEDER_H = 40, FEEDER_TRAY = 32;
 export const PERCH_W = 48, PERCH_H = 52, PERCH_GROUND = 51;
 
 const SEED: Mat = { base: '#D9AE4A', light: '#F2D27A', dark: '#8A5A2A', tex: 'seed' };
+const BERRY: Mat = { base: '#3D56B4', light: '#A7BDF6', dark: '#1A2258', tex: 'berry' };
+const WORM: Mat = { base: '#E2A85A', light: '#FBE1A6', dark: '#6E3E1C', tex: 'worm' };
+const FOOD_MAT: Record<Food, Mat> = { seeds: SEED, berries: BERRY, worms: WORM };
+const FOOD_DOT: Record<Food, [string, string]> = { seeds: ['#D9AE4A', '#8A5A2A'], berries: ['#3D56B4', '#A7BDF6'], worms: ['#D69C62', '#7E4E2A'] };
+/** What's in the feeder: food layers bottom to top, each as a share (0–1) of a full feeder. */
+export type FeederMix = { food: Food; k: number }[];
+const asMix = (fill: number | FeederMix): FeederMix => typeof fill === 'number' ? (fill > 0 ? [{ food: 'seeds', k: fill }] : []) : fill;
+const mixTotal = (m: FeederMix) => Math.max(0, Math.min(1, m.reduce((n, l) => n + l.k, 0)));
 const SUET: Mat = { base: '#E8D8AE', light: '#FFF4D2', dark: '#B89A66', tex: 'seed' };
 const WIRE: Mat = { base: '#3A3E48', light: '#6A7080', dark: '#1E2028', flat: true };
 const GRASS: (c: string) => Mat = (c) => ({ base: c, tex: 'leaf' });
 
-function feeder(d: FeederDef, fill: number): Spr {
-  const s = new Spr(FEEDER_W, FEEDER_H), p = d.pal, cx = 16, k = Math.max(0, Math.min(1, fill));
+function feeder(d: FeederDef, fill: number | FeederMix): Spr {
+  const mix = asMix(fill), top = mix.length ? mix[mix.length - 1].food : 'seeds';
+  const s = new Spr(FEEDER_W, FEEDER_H), p = d.pal, cx = 16, k = mixTotal(mix), FOOD = FOOD_MAT[top];
   const roof: Mat = { base: p.roof, light: p.roofHi, tex: 'wood' };
   const roofM: Mat = { base: p.roof, light: p.roofHi, cyl: true, tex: 'metal' };
   const body: Mat = { base: p.body, tex: 'wood' };
   const trim: Mat = { base: p.trim, light: p.roof };
   const glass: Mat = { base: '#BFE6EE', light: '#F2FFFF', dark: '#7FB8C8', tex: 'glass', alpha: 0.55, cyl: true };
   s.rect(cx, 0, 1, 3, WIRE);
-  const tray = () => { s.rect(3, FEEDER_TRAY, 27, 2, roof); s.rect(4, FEEDER_TRAY + 2, 25, 1, trim); s.rect(3, FEEDER_TRAY - 1, 2, 1, trim); s.rect(28, FEEDER_TRAY - 1, 2, 1, trim); if (k > 0) for (let x = 6; x < 27; x += 3) s.dot(x, FEEDER_TRAY - 1, '#D9AE4A'); };
-  const seedsIn = (x: number, y: number, w: number, h: number) => { const n = Math.round(h * k); if (n > 0) s.rect(x, y + h - n, w, n, SEED); };
+  const tray = () => { s.rect(3, FEEDER_TRAY, 27, 2, roof); s.rect(4, FEEDER_TRAY + 2, 25, 1, trim); s.rect(3, FEEDER_TRAY - 1, 2, 1, trim); s.rect(28, FEEDER_TRAY - 1, 2, 1, trim); if (k > 0) for (let x = 6; x < 27; x += 3) s.dot(x, FEEDER_TRAY - 1, FOOD_DOT[top][(x / 3) % 2 ? 1 : 0]); };
+  // food inside a window, layer by layer from the bottom; the top edge sits at the current level
+  // `lo`–`hi` is the slice of a full feeder this window shows (towers split it between tiers)
+  const fillRange = (x: number, y: number, w: number, h: number, lo: number, hi: number, mat: (f: Food) => Mat = (f) => FOOD_MAT[f]) => {
+    const span = hi - lo; let acc = 0;
+    for (const l of mix) {
+      const a = Math.max(0, Math.min(1, (acc - lo) / span)), b = Math.max(0, Math.min(1, (acc + l.k - lo) / span)); acc += l.k;
+      const n0 = Math.round(h * a), n1 = Math.round(h * b);
+      if (n1 > n0) s.rect(x, y + h - n1, w, n1 - n0, mat(l.food));
+    }
+    const shown = Math.max(0, Math.min(1, (k - lo) / span));
+    if (shown > 0 && Math.round(h * shown) === 0) s.rect(x + 1, y + h - 1, w - 2, 1, mat(top)); // the last crumbs never vanish early
+  };
+  const seedsIn = (x: number, y: number, w: number, h: number) => fillRange(x, y, w, h, 0, 1);
+  /** Which food sits at height `f` (0 bottom – 1 full). */
+  const foodAt = (f: number): Food => { let acc = 0; for (const l of mix) { acc += l.k; if (f < acc) return l.food; } return top; };
   switch (d.shape) {
     case 'tube':
       s.ellipse(cx, 4, 7, 2.5, roofM).rect(cx - 8, 5, 17, 2, roofM);
@@ -41,14 +65,14 @@ function feeder(d: FeederDef, fill: number): Spr {
     case 'platform':
       s.poly([[1, 9], [31, 9], [27, 2], [5, 2]], roof).rect(1, 9, 30, 2, trim);
       s.rect(4, 11, 2, 21, trim).rect(26, 11, 2, 21, trim);
-      if (k > 0) s.ellipse(cx, FEEDER_TRAY - 1, 3 + 8 * k, 1 + 3 * k, SEED);
+      if (k > 0) s.ellipse(cx, FEEDER_TRAY - 1, 3 + 8 * k, 1 + 3 * k, FOOD);
       break;
     case 'globe':
       s.ellipse(cx, 4, 5, 3, roofM).rect(cx - 2, 7, 5, 2, trim);
       s.ellipse(cx, 18, 11, 10, glass);
       for (let y = 8; y <= 28; y++) for (let x = cx - 11; x <= cx + 11; x++) {
         const dx = (x + 0.5 - cx) / 11, dy = (y + 0.5 - 18) / 10;
-        if (dx * dx + dy * dy <= 0.82 && y >= 28 - Math.round(19 * k)) s.px(x, y, SEED);
+        if (dx * dx + dy * dy <= 0.82 && y >= 28 - Math.round(19 * k)) s.px(x, y, FOOD_MAT[foodAt((28 - y + 0.5) / 19)]);
       }
       s.rect(cx - 3, 28, 7, 4, roofM);
       s.dot(cx - 6, 12, '#FFFFFF').dot(cx - 5, 11, '#FFFFFF').dot(cx - 7, 14, '#FFFFFF', 0.7);
@@ -63,7 +87,7 @@ function feeder(d: FeederDef, fill: number): Spr {
     case 'suet':
       s.rect(cx - 10, 3, 21, 3, roof).rect(cx - 9, 6, 19, 1, trim);
       s.rect(cx - 8, 8, 17, 21, { base: '#2A2A30', alpha: 0.3, flat: true });
-      { const n = Math.max(3, Math.round(20 * k)); s.rect(cx - 8, 28 - n + 1, 17, n, SUET); }
+      fillRange(cx - 8, 9, 17, 20, 0, 1, (f) => f === 'seeds' ? SUET : FOOD_MAT[f]); // a seed cake, or berries / mealworms packed into the cage
       for (let x = cx - 9; x <= cx + 9; x += 3) s.rect(x, 7, 1, 23, WIRE);
       for (let y = 7; y <= 29; y += 4) s.rect(cx - 9, y, 19, 1, WIRE);
       break;
@@ -84,7 +108,7 @@ function feeder(d: FeederDef, fill: number): Spr {
       for (let y = 20; y <= 24; y++) for (let x = cx + 13; x <= cx + 15; x++) if (Math.hypot(x + 0.5 - cx - 14, y + 0.5 - 22) < 1.8) s.clear(x, y);
       s.ellipse(cx + 0.5, 17, 11.5, 2.5, { base: p.body, light: '#FFFFFF' });                 // rim
       s.ellipse(cx + 0.5, 17, 9.5, 1.5, { base: '#5A4030', flat: true });                     // inside
-      if (k > 0) s.ellipse(cx + 0.5, 17, 9 * Math.max(0.5, k), 1.3, SEED);
+      if (k > 0) s.ellipse(cx + 0.5, 17, 9 * Math.max(0.5, k), 1.3, FOOD);
       for (let x = cx - 6; x < cx + 9; x += 5) s.dot(x, 25, p.roofHi);
       break;
     }
@@ -94,7 +118,7 @@ function feeder(d: FeederDef, fill: number): Spr {
       s.ellipse(cx, 21, 11, 10, { base: p.roof, light: p.roofHi, cyl: true });
       for (let x = cx - 8; x <= cx + 8; x += 4) s.dot(x, 15, p.body).dot(x + 2, 27, p.body);
       s.ellipse(cx + 1, 21, 4, 4, { base: '#1E1408', flat: true });
-      if (k > 0) s.ellipse(cx + 1, 22, 3, 2 + k, SEED);
+      if (k > 0) s.ellipse(cx + 1, 22, 3, 2 + k, FOOD);
       s.rect(cx - 1, 25, 5, 1, trim);
       break;
     case 'tower':
@@ -102,7 +126,7 @@ function feeder(d: FeederDef, fill: number): Spr {
         const y = 1 + t * 10, w = 7 + t * 2;
         s.poly([[cx - w, y + 3], [cx + w + 1, y + 3], [cx + w - 2, y], [cx - w + 3, y]], roofM);
         s.rect(cx - 4, y + 3, 9, 7, glass);
-        if (k > t / 3) s.rect(cx - 3, y + 5, 7, 5, SEED);
+        fillRange(cx - 3, y + 5, 7, 5, (2 - t) / 3, (3 - t) / 3); // the bottom tier fills first
       }
       break;
   }
@@ -264,14 +288,16 @@ function toCanvas(key: string, spr: Spr): HTMLCanvasElement {
   return c;
 }
 /** RGBA pixels, for tests and tools. */
-export const feederPixels = (d: FeederDef, fill: number) => feeder(d, fill).render();
+export const feederPixels = (d: FeederDef, fill: number | FeederMix) => feeder(d, fill).render();
 export const perchPixels = (d: PerchDef) => { const { s, spots } = perch(d); return { rgba: s.render(), spots }; };
 export const perchSpots = (d: PerchDef) => perch(d).spots;
 
-/** Draw a feeder hanging from (x, top); `fill` 0–1 is how much seed is left. */
-export function paintFeederDef(g: CanvasRenderingContext2D, x: number, top: number, trayY: number, fill: number, f: FeederDef) {
-  const lvl = Math.round(Math.max(0, Math.min(1, fill)) * 4) / 4;
-  const c = toCanvas(`${f.id}|${lvl}`, feeder(f, lvl));
+/** A short key for a feeder's contents (the level is snapped to 1/80 so the art is cached, yet drops by about a pixel at a time). */
+export const mixKey = (m: FeederMix) => m.map((l) => `${l.food[0]}${Math.round(l.k * 80)}`).join('');
+/** Draw a feeder hanging from (x, top); `fill` is a 0–1 seed level, or the food layers inside. */
+export function paintFeederDef(g: CanvasRenderingContext2D, x: number, top: number, trayY: number, fill: number | FeederMix, f: FeederDef) {
+  const mix = asMix(fill).map((l) => ({ food: l.food, k: Math.round(l.k * 80) / 80 })).filter((l) => l.k > 0);
+  const c = toCanvas(`${f.id}|${mixKey(mix)}`, feeder(f, mix));
   g.fillStyle = '#1E2028'; g.fillRect(Math.round(x), 0, 1, Math.max(0, top)); // the hanging wire
   g.drawImage(c, Math.round(x - 16), Math.round(trayY - FEEDER_TRAY));
 }

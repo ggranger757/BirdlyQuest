@@ -2,7 +2,8 @@ import { FoodIcon } from '../FoodIcon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNav } from '../nav';
 import { useGame, getState, counts, speciesOf, speciesCount, setBiome, setHome, ownsHome, buyHome, toggleHabitatBird, setState, claimChallenge, refreshChallenges, buyFood, buyLens, equipLens, collectAviary, petBird, partnerPet, birdName, nameBird, fillFeeder, tickFeeder } from '../../app/store';
-import { FOODS, Food, hpNow, mood, MOOD_LINE, FEEDER_CAP, AVIARY_MAX, Meal } from '../../core/pets';
+import { FOODS, Food, hpNow, mood, MOOD_LINE, FEEDER_CAP, AVIARY_MAX, Meal, layersOf, type FeederState } from '../../core/pets';
+import type { FeederMix } from '../../render/decor';
 import { getRegion, regionLabel } from '../../data/geo';
 import { allKnownSpecies } from '../../data/provider';
 import { gameMusic } from '../../app/audio';
@@ -63,18 +64,22 @@ export function HabitatTab() {
   const aviary = st.diorama.birds.map((id) => st.sightings.find((s) => s.id === id)).filter(Boolean) as typeof st.sightings;
   const box = st.sightings.filter((s) => !st.diorama.birds.includes(s.id));
   const fill = st.feeder.level / FEEDER_CAP;
+  const mixOf = (f: FeederState): FeederMix => layersOf(f).map((l) => ({ food: l.food, k: l.pts / FEEDER_CAP }));
+  const mix = mixOf(st.feeder), mixSig = mix.map((l) => `${l.food}${l.k.toFixed(4)}`).join();
 
   // birds visit the feeder: on open, every 20s, and right after you fill it
   const runFeeder = () => {
     const pp0 = partnerPet(getState());
     const before = new Map([...getState().sightings.map((x) => [x.id, hpNow(x)] as const), ...(pp0 ? [['partner', hpNow(pp0)] as const] : [])]);
+    const beforeMix = mixOf(getState().feeder);
     const m = tickFeeder();
     if (!m.length) return;
     setMeals(m);
+    dio.current?.setFeeder(mixOf(getState().feeder), beforeMix); // the feeder drops bite by bite as each bird pecks
     // up to three hungry birds eat side by side; the rest queue for the next free spot
     m.forEach((meal, i) => setTimeout(() => {
       const from = Math.round(before.get(meal.id) ?? 50), to = Math.min(100, from + meal.ate);
-      const go = (tries: number) => { if (!dio.current) return; if (!dio.current.visit(meal.id, { ms: 3200, hp: [from, to] })) { if (tries > 0) setTimeout(() => go(tries - 1), 1500); else dio.current.setHp(meal.id, to); } };
+      const go = (tries: number) => { if (!dio.current) return; if (!dio.current.visit(meal.id, { ms: 3200, hp: [from, to], eat: meal.ate / FEEDER_CAP })) { if (tries > 0) setTimeout(() => go(tries - 1), 1500); else { dio.current.setHp(meal.id, to); dio.current.settle(meal.ate / FEEDER_CAP); } } };
       go(6);
     }, Math.floor(i / 3) * 4200 + (i % 3) * 300));
     sfx.sparkle();
@@ -88,7 +93,7 @@ export function HabitatTab() {
   useEffect(() => { const w = boxRef.current?.clientWidth ?? 358; setDims({ w: Math.floor(w / 2), h: Math.floor(Math.min(window.innerHeight * 0.46, 480) / 2) }); }, []);
   useEffect(() => {
     if (!dims) return;
-    const d = new Diorama(ref.current!, st.diorama.biome, phase, { sceneId: st.diorama.home && (SCENES[st.diorama.home]?.level ?? 99) <= lv && ownsHome(st, st.diorama.home) ? st.diorama.home : undefined, hpBars: true, wander: true, reduced, viewW: dims.w, viewH: dims.h, feeder: fill, feederStyle: st.diorama.feeder, perch: st.diorama.perch });
+    const d = new Diorama(ref.current!, st.diorama.biome, phase, { sceneId: st.diorama.home && (SCENES[st.diorama.home]?.level ?? 99) <= lv && ownsHome(st, st.diorama.home) ? st.diorama.home : undefined, hpBars: true, wander: true, reduced, viewW: dims.w, viewH: dims.h, feeder: mix, feederStyle: st.diorama.feeder, perch: st.diorama.perch });
     dio.current = d;
     setSceneLabel(d.scene.label);
     const partner = st.partner ? allKnownSpecies().find((x) => x.id === st.partner!.speciesId) : null;
@@ -97,7 +102,7 @@ export function HabitatTab() {
     d.start();
     return () => { d.dispose(); dio.current = null; };
   }, [st.diorama.biome, st.diorama.home, st.diorama.feeder, st.diorama.perch, aviary.map((p) => p.id).join(), reduced, dims]);
-  useEffect(() => { dio.current?.setFeeder(fill); }, [fill]);
+  useEffect(() => { dio.current?.setFeeder(mix); }, [mixSig]);
 
   const hungry = aviary.filter((x) => hpNow(x) < 30).length;
   const bags = (Object.keys(FOODS) as Food[]).reduce((n, f) => n + st.items[f], 0);

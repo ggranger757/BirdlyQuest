@@ -3,7 +3,7 @@
 // a shadowed underside, rounded volume on cylinders, material texture (wood grain, stone speckle, moss, metal sheen,
 // glass glints) and soft halos for anything that glows. Pure RGBA output, so it runs in tests and tools too.
 
-export type Tex = 'plain' | 'wood' | 'stone' | 'metal' | 'glass' | 'moss' | 'leaf' | 'glow' | 'seed' | 'cloth' | 'water' | 'bark';
+export type Tex = 'plain' | 'wood' | 'stone' | 'metal' | 'glass' | 'moss' | 'leaf' | 'glow' | 'seed' | 'cloth' | 'water' | 'bark' | 'berry' | 'worm';
 export interface Mat { base: string; light?: string; dark?: string; line?: string; tex?: Tex; cyl?: boolean; alpha?: number; glow?: string; flat?: boolean }
 type RGB = [number, number, number];
 
@@ -105,6 +105,21 @@ export class Spr {
           case 'metal': if (l === 1 || l === 2) c = M.hi; break;
           case 'glass': if ((x + y) % 7 === 0 && t < 4) c = M.hi; break;
           case 'seed': c = hsh % 3 === 0 ? M.dark : hsh % 5 === 0 ? M.light : c; break;
+          case 'berry': { // round blueberries, 4px across, packed in offset rows: a shine top-left, a dusty crown, dark gaps
+            const row = Math.floor(y / 4), ox = (row % 2) * 2, col = Math.floor((x + ox) / 4);
+            const u = (x + ox) % 4, v = y % 4, cell = hash(col, row);
+            const corner = (u === 0 || u === 3) && (v === 0 || v === 3);
+            const body = cell % 5 === 0 ? mix(M.base, M.light, 0.25) : cell % 7 === 0 ? mix(M.base, M.deep, 0.35) : M.base;
+            c = corner ? M.deep : u === 3 || v === 3 ? M.dark : u === 1 && v === 1 ? M.light : u === 2 && v === 2 && cell % 3 === 0 ? M.deep : body;
+            break;
+          }
+          case 'worm': { // a tangle of mealworms: 2px-thick wriggling bodies, segment ticks, rounded tails, dark gaps between
+            const band = Math.floor(y / 3), wig = [0, 0, 1, 1, 1, 0][(x + band * 2) % 6];
+            const v = (y + wig) % 3, seg = Math.floor((x + band * 3) / 7), end = (x + band * 3) % 7 === 6;
+            c = v === 2 || (end && v === 1) ? M.dark : v === 0 ? (end ? M.base : M.light) : (x + band) % 2 === 0 ? mix(M.base, M.dark, 0.35) : M.base;
+            if (hash(seg, band) % 4 === 0 && v !== 2) c = mix(c, M.deep, 0.2);
+            break;
+          }
           case 'cloth': if ((x + y) % 4 === 0) c = mix(c, M.dark, 0.4); break;
           case 'water': c = (x + (y >> 1)) % 5 === 0 ? M.hi : c; break;
           case 'glow': c = t > 0 && b > 0 && l > 0 && r > 0 ? M.hi : M.light; break;

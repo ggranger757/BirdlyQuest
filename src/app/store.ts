@@ -18,7 +18,7 @@ import { sunTimes, dayPhase } from '../core/sun';
 import { deltaE2000 } from '../core/color';
 import { PAL_LAB } from '../core/color';
 import { P } from '../core/pixel/archetypes';
-import { FOODS, Food, hpNow, visitFeeder, rest, wake, Meal, AVIARY_MAX, FEEDER_CAP } from '../core/pets';
+import { FOODS, Food, hpNow, visitFeeder, rest, wake, Meal, AVIARY_MAX, FEEDER_CAP, layersOf, pourLayers, eatLayers } from '../core/pets';
 import { RIVALS, rewardFor, WILD, TICKETS, ticketsOf, battleIsFree } from '../core/trials';
 import { loadState, saveState, putPhoto, getPhoto, photoKeys, deletePhoto as dbDeletePhoto, forgetPhotoURL } from './db';
 
@@ -532,7 +532,7 @@ export function equipLens(id: LensId) { if (state.lenses.includes(id)) setState(
 export function fillFeeder(food: Food): number {
   if (state.items[food] <= 0 || state.feeder.level >= FEEDER_CAP) return 0;
   const add = Math.min(FOODS[food].points, FEEDER_CAP - state.feeder.level);
-  setState((s) => ({ ...s, items: { ...s.items, [food]: s.items[food] - 1 }, feeder: { level: s.feeder.level + add }, stats: { ...s.stats, fills: s.stats.fills + 1 } }));
+  setState((s) => ({ ...s, items: { ...s.items, [food]: s.items[food] - 1 }, feeder: { level: s.feeder.level + add, layers: pourLayers(layersOf(s.feeder), food, add) }, stats: { ...s.stats, fills: s.stats.fills + 1 } }));
   return after(add);
 }
 
@@ -546,7 +546,7 @@ export function tickFeeder(now = new Date()): Meal[] {
   if (!r.meals.length) return [];
   const by = new Map(r.birds.map((b) => [b.id, b]));
   const np = by.get('partner');
-  setState((s) => ({ ...s, feeder: { level: r.level }, sightings: s.sightings.map((x) => by.get(x.id) ?? x),
+  setState((s) => ({ ...s, feeder: { level: r.level, layers: eatLayers(layersOf(s.feeder), s.feeder.level - r.level) }, sightings: s.sightings.map((x) => by.get(x.id) ?? x),
     partner: s.partner && np ? { ...s.partner, pet: np.pet as { hp: number; at: string } } : s.partner }));
   return after(r.meals);
 }

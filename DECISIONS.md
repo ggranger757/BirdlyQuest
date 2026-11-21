@@ -267,3 +267,12 @@ One line per meaningful choice, with the reason.
     - Outro, per line: delighted, focused (the coins explanation), delighted.
   - Each change replays a small 3-step hop. Reduced motion turns the hop off.
   - **Verified:** browser QA in both themes, at 390×844 and 320×568. Her picture loads, her head is fully on screen, and the bottom edge is covered by the dialogue box on every step checked. The expression sequence matches the lines, with no page errors.
+- **v1.33: in the Aviary, the food visibly goes down as birds eat, and the feeder shows the food that's actually in it (owner request).**
+  - **Contents:** the save now records food layers (`feeder.layers`, bottom to top, adding up to `level`). Pouring a bag adds a layer on top; pouring the same food again deepens that layer. Birds eat from the top down, so the food you poured last is eaten first and is what you see go down. Older saves are treated as all seed (`layersOf`).
+  - **Art:** each food has its own pixel texture, drawn layer by layer in every feeder design:
+    - Seed Mix: the golden seed, unchanged.
+    - Berry Mash: round blueberries, 4px across, with a shine and a dusty crown.
+    - Mealworm Tub: a tangle of tan mealworms with segment lines.
+  - In tube, window, globe, lantern, hopper and cage feeders you see the stacked layers. In tray, teacup and gourd feeders you see the top food. The suet cage shows seed as a suet cake, or berries / mealworms packed in. Tower tiers fill from the bottom tier up. The tray crumbs take the top food's colour.
+  - **Level going down:** the level is snapped to 1/80 instead of quarters, so it drops about a pixel at a time. When a meal happens, the Aviary keeps showing the old contents, and each bird's share drains away smoothly while that bird pecks at the tray (`setFeeder(after, before)` and `visit(…, { eat })`). A bird that can't get a spot at the tray has its share taken off at once (`settle`).
+  - **No pretend snacks:** the ambient "snack time" visits are removed. A bird at the feeder is now always really eating, so food never stays level while a bird pecks. Idle birds still fly laps and change perches.

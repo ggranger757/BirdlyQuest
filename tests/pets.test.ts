@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hpNow, mood, MIN_HP, visitFeeder, rest, FOODS } from '../src/core/pets';
+import { hpNow, mood, MIN_HP, visitFeeder, rest, FOODS, pourLayers, eatLayers, layersOf } from '../src/core/pets';
 const at = '2026-05-01T08:00:00Z';
 const bird = (id: string, hp: number): any => ({ id, capturedAt: at, pet: { hp, at } });
 describe('pets and the feeder', () => {
@@ -27,5 +27,22 @@ describe('pets and the feeder', () => {
   it('bigger bags are better value', () => {
     const per = (f: keyof typeof FOODS) => FOODS[f].points / FOODS[f].price;
     expect(per('worms')).toBeGreaterThan(per('seeds'));
+  });
+});
+
+describe('feeder food layers (v1.33)', () => {
+  it('pours on top, merges the same food, and birds eat from the top down', () => {
+    let ls = pourLayers([], 'seeds', 25);
+    ls = pourLayers(ls, 'berries', 60);
+    ls = pourLayers(ls, 'berries', 20);
+    expect(ls).toEqual([{ food: 'seeds', pts: 25 }, { food: 'berries', pts: 80 }]);
+    const eaten = eatLayers(ls, 90);
+    expect(eaten).toEqual([{ food: 'seeds', pts: 15 }]);
+    expect(eatLayers(ls, 500)).toEqual([]);
+  });
+  it('old saves without layers are all seed, and layers always add up to the level', () => {
+    expect(layersOf({ level: 60 })).toEqual([{ food: 'seeds', pts: 60 }]);
+    expect(layersOf({ level: 50, layers: [{ food: 'worms', pts: 120 }] })).toEqual([{ food: 'worms', pts: 50 }]);
+    expect(layersOf({ level: 100, layers: [{ food: 'worms', pts: 40 }] })).toEqual([{ food: 'seeds', pts: 60 }, { food: 'worms', pts: 40 }]);
   });
 });
