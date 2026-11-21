@@ -18,7 +18,7 @@ import { deltaE2000 } from '../core/color';
 import { PAL_LAB } from '../core/color';
 import { P } from '../core/pixel/archetypes';
 import { FOODS, Food, hpNow, visitFeeder, rest, wake, Meal, AVIARY_MAX, FEEDER_CAP } from '../core/pets';
-import { RIVALS, rewardFor } from '../core/trials';
+import { RIVALS, rewardFor, WILD } from '../core/trials';
 import { loadState, saveState, putPhoto, getPhoto, photoKeys, deletePhoto as dbDeletePhoto, forgetPhotoURL } from './db';
 
 const VERSION = 1;
@@ -234,6 +234,10 @@ export async function fileCatch(input: CatchInput): Promise<CatchResult> {
     for (const b of earned) { badges[b.id] = at.toISOString(); bonus += TIER_FEATHERS[b.tier]; }
     next = { ...next, badges, feathers: next.feathers + bonus };
   }
+  // sometimes a wandering birder challenges you to show off a newly discovered bird (at most once a day)
+  if (sighting.firstRecord && counts(sighting) && next.sightings.filter(counts).length >= 2 && next.trials?.wildDay !== dayKey(at) && Math.random() < WILD.chance) {
+    next = { ...next, pendingChallenge: { sightingId: sighting.id, at: at.toISOString() } };
+  }
   state = next;
   logEvent('catch_success', { mode: input.mode, species: input.speciesId, verification: input.verification, fc: fc?.total });
   if (sighting.firstRecord && state.sightings.length === 1) logEvent('first_catch_seconds', state.firstCatchSeconds);
@@ -417,6 +421,7 @@ export function finishTrial(index: number, won: boolean, birds: string[] = []): 
   const rival = RIVALS[index];
   if (!rival) return { coins: 0, xp: 0, first: false, levelled: [] };
   if (!won) { logEvent('trial_loss', rival.id); return { coins: 0, xp: 0, first: false, levelled: [] }; }
+  setState((s) => ({ ...s, trials: { cleared: 0, wins: 0, ...s.trials } }));
   const today = dayKey(new Date());
   const r = rewardFor(state.trials, index, today);
   // birds that took part grow a level (only while the win still pays, so rematches can't be farmed)
@@ -427,12 +432,33 @@ export function finishTrial(index: number, won: boolean, birds: string[] = []): 
     return {
       ...s, xp: s.xp + r.xp, feathers: s.feathers + r.coins,
       sightings: levelled.length ? s.sightings.map((x) => (levelled.includes(x.id) ? { ...x, level: (x.level ?? 5) + 1 } : x)) : s.sightings,
-      trials: { cleared: Math.max(t.cleared, index + 1), wins: t.wins + 1, day: today, rematches: r.first ? used : used + 1 },
+      trials: { ...t, cleared: Math.max(t.cleared, index + 1), wins: t.wins + 1, day: today, rematches: r.first ? used : used + 1 },
     };
   });
   logEvent('trial_win', { rival: rival.id, ...r, levelled: levelled.length });
   return after({ ...r, levelled });
 }
+
+/** A wandering birder's challenge (after discovering a new bird): a small prize, and your birds grow a level. */
+export function finishWild(won: boolean, birds: string[] = []): { coins: number; xp: number; first: boolean; levelled: string[] } {
+  const today = dayKey(new Date());
+  const levelled = won ? birds.filter((id) => state.sightings.some((x) => x.id === id && (x.level ?? 5) < 50)) : [];
+  setState((s) => {
+    const t = s.trials ?? { cleared: 0, wins: 0 };
+    return {
+      ...s, xp: s.xp + (won ? WILD.xp : 0), feathers: s.feathers + (won ? WILD.coins : 0),
+      sightings: levelled.length ? s.sightings.map((x) => (levelled.includes(x.id) ? { ...x, level: (x.level ?? 5) + 1 } : x)) : s.sightings,
+      trials: { ...t, wins: t.wins + (won ? 1 : 0), wildDay: today },
+    };
+  });
+  logEvent(won ? 'wild_win' : 'wild_loss', levelled.length);
+  return after({ coins: won ? WILD.coins : 0, xp: won ? WILD.xp : 0, first: false, levelled });
+}
+/** Count a battle played, and mark the battle tutorial as seen. */
+export function noteBattle(tutorialDone: boolean) {
+  setState((s) => { const t = s.trials ?? { cleared: 0, wins: 0 }; return { ...s, trials: { ...t, battles: (t.battles ?? 0) + 1, tutorial: t.tutorial || tutorialDone } }; });
+}
+export function clearChallenge() { setState((s) => ({ ...s, pendingChallenge: null })); }
 
 /** Use one bag of pantry food during a Field Trial. */
 export function spendTrialItem(item: Food): boolean {

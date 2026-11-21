@@ -294,6 +294,33 @@ if (typeof document !== 'undefined') {
 // read-only audio status for the debug panel and automated checks
 if (typeof window !== 'undefined') (window as any).__audioState = () => ({ songPlaying: !!songEl && !songEl.paused, context: ctx?.state ?? 'none', theme: current });
 
+// ─── battle music: the owner's battle track (music/battle.mp3) if it's there, else the chiptune battle theme ───
+const BATTLE_URL = 'music/battle.mp3';
+let battleEl: HTMLAudioElement | null = null;
+let battlePrev: string | null = null;
+let battleOn = false;
+let battleFile: Promise<boolean> | null = null;
+const hasBattleFile = () => (battleFile ??= fetch(BATTLE_URL, { method: 'HEAD' }).then((r) => r.ok && (r.headers.get('content-type') ?? 'audio').includes('audio')).catch(() => false));
+/** Field Trials: start the battle music (with "Music" on in Settings) and restore the previous music afterwards. */
+export async function battleMusic(on: boolean) {
+  if (on === battleOn) return;
+  battleOn = on;
+  if (on) {
+    battlePrev = current;
+    if (!getState().settings.music) return;
+    if (await hasBattleFile()) {
+      if (!battleOn) return;
+      music(null);
+      battleEl = new Audio(BATTLE_URL); battleEl.loop = true; battleEl.volume = 0.55;
+      battleEl.play().catch(() => {});
+    } else music('encounter');
+  } else {
+    if (battleEl) { const el = battleEl; battleEl = null; el.pause(); }
+    music((battlePrev as keyof typeof T | null) ?? null);
+  }
+}
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!battleEl) return; if (document.visibilityState === 'hidden') battleEl.pause(); else if (battleOn) battleEl.play().catch(() => {}); });
+
 /** In-game screens call this: silent unless the player turned on "Music during play". */
 export function gameMusic(name: keyof typeof T) {
   music(getState().settings.gameMusic ? name : null);

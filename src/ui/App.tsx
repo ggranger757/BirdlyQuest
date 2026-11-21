@@ -37,7 +37,7 @@ function renderRoute(r: Route) {
     case 'year': return <YearScreen />;
     case 'lab': return <Lab />;
     case 'debug': return <Debug />;
-    case 'trials': return <Trials />;
+    case 'trials': return <Trials wild={r.wild} />;
   }
 }
 
@@ -54,6 +54,7 @@ import { QuickLog } from './screens/QuickLog';
 import { MerlinTip } from './MerlinTip';
 import { Shop } from './screens/Shop';
 import { Trials } from './screens/Trials';
+import { ChallengePrompt } from './ChallengePrompt';
 
 export function App() {
   const ready = useGame(() => isReady());
@@ -139,6 +140,7 @@ export function App() {
         {toast && <Toast text={toast} onDone={() => setToast(null)} />}
         {tourOn && stack.length === 0 && <Tutorial setTab={setTab} onDone={() => setTab('explore')} />}
         {!tourOn && stack.length === 0 && !toast && <MerlinTip id={tab} />}
+        {!tourOn && stack.length === 0 && <ChallengePrompt />}
       </div>
       <p className="desk-note"><b>BIRDLYQUEST</b> is built for phones. Open this page on your phone and add it to your home screen to play.</p>
     </NavCtx.Provider>

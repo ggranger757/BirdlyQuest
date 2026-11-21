@@ -85,7 +85,8 @@ export interface GameState {
   petDay: string | null;           // last day the aviary paid out Feather Coins
   stats: { fills: number; spent: number; quests: number };
   badgeQueue: string[];            // newly earned badges waiting for their pop-up
-  trials?: { cleared: number; wins: number; day?: string; rematches?: number }; // Field Trials ladder progress
+  trials?: { cleared: number; wins: number; day?: string; rematches?: number; tutorial?: boolean; battles?: number; wildDay?: string }; // Field Trials progress
+  pendingChallenge?: { sightingId: string; at: string } | null; // a wandering birder wants to see a newly discovered bird
 }
 
 export const UNKNOWN: Species = {
