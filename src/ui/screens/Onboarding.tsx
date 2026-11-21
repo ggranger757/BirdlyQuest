@@ -5,7 +5,7 @@ import { runBackdrop } from '../../render/diorama';
 import { Sprite, useReducedMotion } from '../components';
 import { Dialog, Types, BirdThumb, Capsule } from '../game';
 import { sfx, music } from '../../app/audio';
-import { Professor } from '../Characters';
+import { Professor, type WoodsMood } from '../Characters';
 import { RegionPicker } from './RegionPicker';
 import { getRegion, regionLabel } from '../../data/geo';
 import { regionEntries, ensureRegion, allKnownSpecies, onProviderChange, providerStatus } from '../../data/provider';
@@ -25,6 +25,17 @@ function SceneBackdrop({ dim = 0.15 }: { dim?: number }) {
   );
 }
 
+/** Professor Woods standing on the scene: no frame; the dialogue box in front of her hides where the picture ends. */
+function WoodsStage({ mood, big = true }: { mood: WoodsMood; big?: boolean }) {
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+  const h = Math.max(big ? 200 : 150, Math.min(big ? 336 : 192, Math.round(vh * (big ? 0.48 : 0.3))));
+  return (
+    <div className="woods-stage" style={{ marginBottom: -Math.round(h * 0.17) }} aria-hidden>
+      <div key={mood} className="woods-talk"><Professor height={h} mood={mood} /></div>
+    </div>
+  );
+}
+
 export function Boot({ onDone }: { onDone: () => void }) {
   const reduced = useReducedMotion();
   useEffect(() => { music('title'); }, []);
@@ -41,24 +52,21 @@ export function Boot({ onDone }: { onDone: () => void }) {
 
 
 export function Onboarding({ onFinish }: { onFinish: () => void }) {
+  const [mood, setMood] = useState<WoodsMood>('delighted');
   const [step, setStep] = useState<'intro' | 'name' | 'region' | 'partner' | 'outro'>('intro');
   const [name, setName] = useState(getState().trainerName);
   const region = useGame((s) => s.region);
   useEffect(() => { logEvent('onboarding_step', step); }, [step]);
+  // region step: she beams at the new name, then looks on curiously while the player picks a place
+  useEffect(() => { if (step !== 'region') return; setMood('delighted'); const t = setTimeout(() => setMood('curious'), 1600); return () => clearTimeout(t); }, [step]);
   useEffect(() => { music('title'); }, []);
-
-  const prof = (
-    <div className="merlin-stage">
-      <span className="woods-card"><Professor height={168} mood="delighted" /></span>
-          </div>
-  );
 
   if (step === 'intro') {
     return (
       <div className="screen onb" style={{ justifyContent: 'flex-end' }}>
         <SceneBackdrop />
-        {prof}
-        <Dialog speaker="Professor Woods" lines={[
+        <WoodsStage mood={mood} />
+        <Dialog speaker="Professor Woods" onLine={(i) => setMood((['delighted', 'curious', 'focused', 'delighted', 'curious'] as WoodsMood[])[i] ?? 'curious')} lines={[
           'Hello there! Welcome to the world of BIRDS! I’m Professor Woods. I’ve spent my whole life following birds through forests, marshes and city streets.',
           'Real wild birds live all around you — in parks, on rooftops, by the water.',
           'Snap a photo of one and it is discovered: it joins your BirdDex as a pixel companion, while the real bird flies on.',
@@ -73,7 +81,7 @@ export function Onboarding({ onFinish }: { onFinish: () => void }) {
     return (
       <div className="screen onb" style={{ justifyContent: 'flex-end' }}>
         <SceneBackdrop />
-        {prof}
+        <WoodsStage mood={name.trim() ? 'delighted' : 'curious'} />
         <div className="onb-card">
         <Dialog speaker="Professor Woods" lines={['What should I call you, explorer?']} />
         <label className="label mt16" htmlFor="tname" style={{ display: 'block', marginBottom: 6 }}>Trainer name</label>
@@ -89,7 +97,8 @@ export function Onboarding({ onFinish }: { onFinish: () => void }) {
     return (
       <div className="screen onb">
         <SceneBackdrop dim={0.7} />
-        <div className="row" style={{ alignItems: 'flex-end', gap: 10, marginTop: 8 }}><span className="woods-card sm"><Professor height={96} /></span><div className="grow"><Dialog speaker="Professor Woods" lines={[`${name.trim() || 'Birder'}! Where do you live? Every place has its own birds.`]} /></div></div>
+        <WoodsStage big={false} mood={mood} />
+        <Dialog speaker="Professor Woods" lines={[`${name.trim() || 'Birder'}! Where do you live? Every place has its own birds.`]} />
         <div className="mt16">
           <RegionPicker value={getState().onboarded ? region : undefined} onPick={(code) => { setRegion(code); setStep('partner'); }} />
         </div>
@@ -104,13 +113,12 @@ export function Onboarding({ onFinish }: { onFinish: () => void }) {
 }
 
 function Outro({ r, region, onFinish }: { r: ReturnType<typeof getRegion>; region: string; onFinish: () => void }) {
+  const [mood, setMood] = useState<WoodsMood>('delighted');
   return (
     <div className="screen onb" style={{ justifyContent: 'flex-end' }}>
       <SceneBackdrop />
-      <div className="merlin-stage">
-        <span className="woods-card"><Professor height={168} mood="delighted" /></span>
-              </div>
-      <Dialog speaker="Professor Woods" lines={[
+      <WoodsStage mood={mood} />
+      <Dialog speaker="Professor Woods" onLine={(i) => setMood((['delighted', 'focused', 'delighted'] as WoodsMood[])[i] ?? 'delighted')} lines={[
         `${r.flag ?? ''} ${regionLabel(region)}. Splendid birding country!`,
         'Every bird you discover earns you FEATHER COINS, the money of BirdlyQuest. Spend them in my shop on bird food and Snap Lenses.',
         'I will pop up with a tip the first time you open each screen. Off you go!',
@@ -123,6 +131,7 @@ function Outro({ r, region, onFinish }: { r: ReturnType<typeof getRegion>; regio
 }
 
 function PartnerPick({ region, onDone }: { region: string; onDone: () => void }) {
+  const [pick, setPick] = useState<Species | null>(null);
   const [, force] = useState(0);
   useEffect(() => { ensureRegion(region); return onProviderChange(() => force((x) => x + 1)); }, [region]);
   const status = providerStatus(region);
@@ -141,11 +150,11 @@ function PartnerPick({ region, onDone }: { region: string; onDone: () => void })
     for (const sp of allKnownSpecies().filter(ok)) { if (out.length >= 3) break; if (!out.some((x) => x.id === sp.id)) out.push(sp); }
     return out;
   }, [region, ready]);
-  const [pick, setPick] = useState<Species | null>(null);
   return (
     <div className="screen onb">
       <SceneBackdrop dim={0.7} />
-      <div className="row" style={{ alignItems: 'flex-end', gap: 10, marginTop: 8 }}><span className="woods-card sm"><Professor height={96} /></span><div className="grow"><Dialog speaker="Professor Woods" lines={['Every trainer needs a partner. These three are common where you live. Choose one!']} /></div></div>
+      <WoodsStage big={false} mood={pick ? 'delighted' : 'focused'} />
+      <Dialog speaker="Professor Woods" lines={[pick ? `${pick.common}! A splendid choice.` : 'Every trainer needs a partner. These three are common where you live. Choose one!']} />
       {!ready && <p className="small muted mt8">Looking up the birds of {regionLabel(region)}…</p>}
       {!ready && <div className="col mt16" style={{ gap: 12 }}>{[0, 1, 2].map((i) => <div key={i} className="panel skeleton" style={{ margin: 0, height: 84 }} />)}</div>}
       <div className="col mt16" style={{ gap: 12 }}>

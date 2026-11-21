@@ -256,3 +256,14 @@ One line per meaningful choice, with the reason.
     - Code identifiers (`MerlinSays`, `MerlinTip`, the `merlin` rival id) are unchanged so saves keep working.
 - **v1.31.1: in onboarding, Professor Woods stands in a container with no backdrop (owner request).** Her pictures are transparent cut-outs. On every onboarding step (intro, name, region, partner, outro) she now sits in a `.woods-card`: a container with the same cream panel and double black border as the dialogue box beneath it. The sky gradient is not used there. She's still shown whole at 3:4 and bottom-aligned inside the container's padding (browser-audited in both themes). Everywhere else she keeps the sky-blue frame.
 - **v1.31.2: the owner reversed v1.31.1. In onboarding Professor Woods is NOT in a container.** She stands freely on the scene as a transparent cut-out: no frame, no border, no backdrop, only a soft pixel drop shadow. She is centred above the dialogue box and still shown whole at 3:4 (browser-audited in both themes). Everywhere else she keeps the sky-blue frame.
+- **v1.32: onboarding Professor Woods is twice as large, her cut-off is hidden, and she changes expression as she talks (owner request).**
+  - **Size:** 336px tall on the intro, name and outro steps (was 168). The region and partner steps are 192px (was 96). Her height is capped to a share of the screen (48% / 30%) so she fits on small phones; at 320×568 she is 273px tall.
+  - **No visible leg cut:** the illustration ends at her knees. A shared `WoodsStage` overlaps the dialogue box onto the bottom 17% of her picture. The box paints in front, so the edge is never seen. On region and partner she now stands centred above the dialogue (the old side-by-side row is gone).
+  - **Expressions follow the dialogue:**
+    - Intro, per line: delighted, curious, focused, delighted, curious.
+    - Name: curious until a name is typed, then delighted.
+    - Region: delighted at the player's name, then curious after 1.6s.
+    - Partner: focused while choosing. Delighted once a bird is picked, and she says "<bird>! A splendid choice."
+    - Outro, per line: delighted, focused (the coins explanation), delighted.
+  - Each change replays a small 3-step hop. Reduced motion turns the hop off.
+  - **Verified:** browser QA in both themes, at 390×844 and 320×568. Her picture loads, her head is fully on screen, and the bottom edge is covered by the dialogue box on every step checked. The expression sequence matches the lines, with no page errors.
