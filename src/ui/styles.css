@@ -1310,3 +1310,15 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
   .shop-npc-box .dialog-text { font-size: 13px; line-height: 18px; }
   .shop-npc-box .dialog-name { font-size: 9px; letter-spacing: .04em; }
 }
+/* Merlin's portrait: the sprite is 96px wide, so the frame's inside is a little wider than that (no cropping) */
+.shop-npc-portrait { width: 106px !important; height: 108px !important; place-items: center !important; overflow: hidden; }
+.shop-npc-portrait > * { margin-bottom: 0 !important; transform: none; }
+@media (max-width: 380px) {
+  .shop-npc-portrait { width: 74px !important; height: 76px !important; }
+  .shop-npc-portrait > * { transform: scale(.66) !important; transform-origin: 50% 50% !important; }
+}
+@media (max-width: 380px) { .shop-npc-portrait > * { transform: none !important; zoom: .66; } }
+/* Aviary: every heading uses the section-title face and size (one consistent heading style) */
+.trials-entry-title, .shop-hub-title, .feeder-name { font-family: var(--px) !important; font-size: 12px !important; font-weight: 400 !important; letter-spacing: .08em !important; text-transform: uppercase; }
+:root.theme-field .trials-entry-title, :root.theme-field .shop-hub-title, :root.theme-field .feeder-name { font-family: var(--head) !important; font-size: 14px !important; font-weight: 600 !important; letter-spacing: -0.05em !important; }
+.shop-hub-title, .feeder-name { color: var(--stone); }

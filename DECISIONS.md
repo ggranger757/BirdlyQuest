@@ -229,3 +229,6 @@ One line per meaningful choice, with the reason.
     3. A Merlin's Shop panel with your coins and five shortcut tiles (Food, Feeders, Perches, Homes, Lenses). Each has a preview and an "x owned" count, and opens the shop straight on that tab (`nav.open({ name: 'shop', tab })`).
     4. "In your Aviary": the current feeder, perch and home, each with Change or Add one.
   - **Aviary header:** a "Shop" button with a bag icon sits next to the coin count, so the shop is one tap from the Aviary at all times.
+- **v1.30.1 (owner):**
+  - **Merlin's portrait** no longer crops his wings. The frame's inside is wider than his 96px sprite, and on ≤380px screens he's shrunk with `zoom` rather than `transform`, so he stays centred.
+  - **Aviary headings** all share the section-title style: Silkscreen 12px in Neon, Courier Prime 14px semibold in Field. That covers Field Trials, Bird Homes, Pantry, Merlin's Shop, In your Aviary and the feeder name.
