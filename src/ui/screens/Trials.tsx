@@ -1,11 +1,12 @@
-// Field Trials: friendly, bird-true contests. Pick a rival from the ladder, choose which of your
-// photographed birds enters each round (Song-off, Display, Sky race, Forage), then watch the show.
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+// Field Trials: turn-based, Pokémon-style bird contests. Pick a rival, choose a party of up to three
+// photographed birds, then battle turn by turn: Perform a move, use the Bag, switch Birds or Run.
+// Being outshone drains Spirit; at zero a bird flies off to rest. No fighting, no damage.
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useNav } from '../nav';
-import { useGame, counts, speciesOf, finishTrial } from '../../app/store';
+import { useGame, counts, speciesOf, finishTrial, spendTrialItem } from '../../app/store';
 import { regionEntries, speciesById } from '../../data/provider';
 import { playClip, preloadTrialClips, sfx, haptic } from '../../app/audio';
-import { TopBar, Sprite, Icon, useReducedMotion } from '../components';
+import { TopBar, Sprite, useReducedMotion } from '../components';
 import { FeatherChip } from '../kit';
 import { FeatherIcon } from '../FeatherIcon';
 import { Professor } from '../Characters';
@@ -13,13 +14,14 @@ import { runBackdrop } from '../../render/diorama';
 import { dayKey } from '../../core/xp';
 import type { Species } from '../../data/types';
 import {
-  CONTESTS, RIVALS, FX_CRIT, FX_RING, power, contestStat, statStars, playRound, matchWinner, bestLineup, rivalTeam, rewardFor,
-  type Contest, type Contender, type RoundResult,
+  CONTESTS, CONTEST_IDS, BEATS, BEAT_WHY, RIVALS, FX_CRIT, FX_RING, ITEMS, fighter, effectiveness, startBattle, takeTurn, sendIn, canSwitch,
+  rivalTeam, rewardFor, type Contest, type Contender, type Battle, type Ev, type Side, type Item, type Move,
 } from '../../core/trials';
 
 type Sheet = { src: string; frames: number; fw: number; fh: number };
+const sleep = (ms: number) => new Promise<void>((ok) => setTimeout(ok, ms));
 
-/** One animated sprite-sheet effect (projectile, burst). Pixel-crisp, scaled by an integer. */
+/** One animated sprite-sheet effect. Pixel-crisp, integer-scaled. */
 function Fx({ sheet, scale = 2, ms = 500, loop, className, style }: { sheet: Sheet; scale?: number; ms?: number; loop?: boolean; className?: string; style?: CSSProperties }) {
   const w = sheet.fw * scale, h = sheet.fh * scale;
   return (
@@ -29,8 +31,12 @@ function Fx({ sheet, scale = 2, ms = 500, loop, className, style }: { sheet: She
     }} />
   );
 }
+const TypeChip = ({ c, small }: { c: Contest; small?: boolean }) => (
+  <span className={`tchip ${small ? 'small' : ''}`} style={{ ['--c' as string]: CONTESTS[c].color }}>{CONTESTS[c].short}</span>
+);
+const counterOf = (c: Contest) => CONTEST_IDS.find((x) => BEATS[x] === c)!;
 
-/** The player's birds: best photo of each species they've caught, plus their partner bird. */
+/** The player's birds: best photo of each species, plus the partner bird. */
 function useTeam(): Contender[] {
   const sightings = useGame((s) => s.sightings);
   const partner = useGame((s) => s.partner);
@@ -46,128 +52,97 @@ function useTeam(): Contender[] {
       const sp = speciesById(partner.speciesId);
       if (sp) best.set(sp.id, { sp, level: 5, quality: 40, parts: partner.parts, sightingId: 'partner' });
     }
-    return [...best.values()];
+    return [...best.values()].sort((a, b) => b.level - a.level);
   }, [sightings, partner]);
 }
 
-const ContestChip = ({ c, small }: { c: Contest; small?: boolean }) => (
-  <span className={`tchip ${small ? 'small' : ''}`} style={{ ['--c' as string]: CONTESTS[c].color }}>{CONTESTS[c].short}</span>
-);
-const Stars = ({ n }: { n: number }) => <span className="tstars" aria-label={`${n} of 5`}>{'★★★★★'.slice(0, n)}<i>{'★★★★★'.slice(n)}</i></span>;
-
 export function Trials() {
   const nav = useNav();
-  const st = useGame((s) => s);
+  const tst = useGame((s) => s.trials);
+  const region = useGame((s) => s.region);
   const team = useTeam();
-  const pool = useMemo(() => regionEntries(st.region).map((e) => e.sp), [st.region]);
-  const [phase, setPhase] = useState<'ladder' | 'lineup' | 'show' | 'result'>('ladder');
+  const pool = useMemo(() => regionEntries(region).map((e) => e.sp), [region]);
+  const [phase, setPhase] = useState<'ladder' | 'party' | 'battle' | 'result'>('ladder');
   const [ri, setRi] = useState(0);
-  const [lineup, setLineup] = useState<(Contender | null)[]>([]);
-  const [slot, setSlot] = useState(0);
-  const [results, setResults] = useState<RoundResult[]>([]);
-  const [prize, setPrize] = useState<{ coins: number; xp: number; first: boolean } | null>(null);
-  const cleared = st.trials?.cleared ?? 0;
+  const [party, setParty] = useState<Contender[]>([]);
+  const [outcome, setOutcome] = useState<{ won: boolean; prize: ReturnType<typeof finishTrial> } | null>(null);
+  const [seed, setSeed] = useState(0);
   useEffect(() => { preloadTrialClips(); }, []);
 
   const rival = RIVALS[ri];
-  const rTeam = useMemo(() => rivalTeam(rival, pool.length ? pool : team.map((t) => t.sp), ri), [rival, pool, ri, team]);
+  const yourAvg = party.length ? party.reduce((n, c) => n + c.level, 0) / party.length : team.slice(0, 3).reduce((n, c) => n + c.level, 0) / Math.max(1, Math.min(3, team.length));
+  const rTeam = useMemo(() => rivalTeam(rival, pool.length ? pool : team.map((t) => t.sp), ri, yourAvg), [rival, pool, ri, yourAvg, team, seed]);
 
-  const pick = (i: number) => {
-    sfx.select(); setRi(i); setSlot(0);
-    const r = RIVALS[i];
-    const line = bestLineup(team, r.contests);
-    // fewer than three birds: the best one may enter more than one round
-    setLineup(line.map((b, k) => b ?? [...team].sort((x, y) => power(y, r.contests[k]) - power(x, r.contests[k]))[0] ?? null));
-    setPhase('lineup');
-  };
-  const back = () => {
-    if (phase === 'ladder') nav.back();
-    else { sfx.back(); setPhase('ladder'); }
-  };
+  const choose = (i: number) => { sfx.select(); setRi(i); setParty(team.slice(0, 3)); setPhase('party'); };
+  const back = () => { if (phase === 'ladder') nav.back(); else { sfx.back(); setPhase('ladder'); } };
 
   return (
     <div className={`overlay trials ${phase}`}>
-      <TopBar title={phase === 'ladder' ? 'Field Trials' : rival.name} onBack={back} right={<FeatherChip label={false} />} />
-      {phase === 'ladder' && <Ladder team={team} cleared={cleared} wins={st.trials?.wins ?? 0} pool={pool} onPick={pick} onCamera={() => nav.open({ name: 'viewfinder' })} />}
-      {phase === 'lineup' && (
-        <Lineup rival={ri} rTeam={rTeam} team={team} lineup={lineup} slot={slot} setSlot={setSlot}
-          assign={(b) => {
-            haptic(8); playClip('tPick', { vol: 0.6 });
-            setLineup((l) => {
-              const n = [...l];
-              const reuse = team.length < rival.contests.length;
-              const at = n.findIndex((x) => x?.sp.id === b.sp.id);
-              if (!reuse && at >= 0 && at !== slot) n[at] = n[slot]; // swap
-              n[slot] = b; return n;
-            });
-            setSlot((s) => Math.min(rival.contests.length - 1, s + 1));
-          }}
-          onStart={() => {
-            const rounds = rival.contests.map((c, k) => playRound(lineup[k]!, rTeam[k], c, Math.random));
-            setResults(rounds); setPhase('show');
-          }} />
-      )}
-      {phase === 'show' && (
-        <Show rival={ri} lineup={lineup as Contender[]} rTeam={rTeam} results={results}
-          onDone={() => {
-            const won = matchWinner(results) === 'you';
-            setPrize(finishTrial(ri, won));
+      {phase !== 'battle' && <TopBar title={phase === 'ladder' ? 'Field Trials' : phase === 'party' ? 'Choose your birds' : rival.name} onBack={back} right={<FeatherChip label={false} />} />}
+      {phase === 'ladder' && <Ladder team={team} cleared={tst?.cleared ?? 0} wins={tst?.wins ?? 0} pool={pool} onPick={choose} onCamera={() => nav.open({ name: 'viewfinder' })} />}
+      {phase === 'party' && <Party rival={ri} team={team} party={party} setParty={setParty} onGo={() => { playClip('tStart'); haptic(14); setSeed((s) => s + 1); setPhase('battle'); }} />}
+      {phase === 'battle' && (
+        <BattleView key={seed} rival={ri} party={party} rTeam={rTeam}
+          onEnd={(won, used) => {
+            const prize = finishTrial(ri, won, used);
+            setOutcome({ won, prize });
             if (won) playClip('levelUp', { duck: true }); else playClip('tLose', { duck: true });
             setPhase('result');
           }} />
       )}
-      {phase === 'result' && (
-        <Result rival={ri} lineup={lineup as Contender[]} rTeam={rTeam} results={results} prize={prize}
-          onRematch={() => pick(ri)} onLadder={() => setPhase('ladder')}
-          onNext={ri + 1 < RIVALS.length && matchWinner(results) === 'you' ? () => pick(ri + 1) : undefined} />
+      {phase === 'result' && outcome && (
+        <Result rival={ri} won={outcome.won} prize={outcome.prize} party={party}
+          onRematch={() => { setSeed((s) => s + 1); setPhase('party'); }} onLadder={() => setPhase('ladder')}
+          onNext={outcome.won && ri + 1 < RIVALS.length ? () => choose(ri + 1) : undefined} />
       )}
     </div>
   );
 }
 
-// ─── 1. the ladder ───
+// ─── ladder ───
 function Ladder({ team, cleared, wins, pool, onPick, onCamera }: { team: Contender[]; cleared: number; wins: number; pool: Species[]; onPick: (i: number) => void; onCamera: () => void }) {
-  const today = dayKey(new Date());
   const tst = useGame((s) => s.trials);
+  const today = dayKey(new Date());
+  const avg = team.slice(0, 3).reduce((n, c) => n + c.level, 0) / Math.max(1, Math.min(3, team.length));
   return (
     <div className="trials-body">
-      <div className="trials-hero">
-        <Fx sheet={FX_RING} scale={2} ms={900} loop className="trials-hero-ring" />
-        <div>
-          <h2 style={{ margin: 0 }}>Friendly contests</h2>
-          <p className="small" style={{ margin: '4px 0 0' }}>Birds compete at what real birds do best: singing, showing off, flying and finding food. Your photo quality and the bird's level give it an edge.</p>
+      <div className="tchart" aria-label="Type chart: Song beats Display, Display beats Sky, Sky beats Forage, Forage beats Song">
+        <span className="px small tchart-title">Who outshines who</span>
+        <div className="tchart-loop">
+          {CONTEST_IDS.map((c) => <span key={c} className="tchart-step"><TypeChip c={c} /><span className="tchart-arrow" aria-hidden>▶</span></span>)}
+          <TypeChip c="song" />
         </div>
+        <span className="small muted">Pick birds whose style beats the rival's. Better photos and higher levels make birds stronger.</span>
       </div>
-      <div className="row wrap tcontests" aria-label="The four contests">
-        {(Object.keys(CONTESTS) as Contest[]).map((c) => <span key={c} className="tcontest-key"><ContestChip c={c} /> <span className="small muted">{CONTESTS[c].blurb}</span></span>)}
-      </div>
-      {team.length === 0 ? (
+      {team.length === 0 && (
         <div className="panel" style={{ textAlign: 'center' }}>
-          <p>You need at least one photographed bird to enter.</p>
-          <button className="btn primary" onClick={onCamera}><Icon name="photo" size={18} /> Open camera</button>
+          <p>Photograph a bird to start competing.</p>
+          <button className="btn primary" onClick={onCamera}>Open camera</button>
         </div>
-      ) : (
-        <div className="section-title"><span>Rival ladder</span><span>{Math.min(cleared, RIVALS.length)}/{RIVALS.length} · {wins} win{wins === 1 ? '' : 's'}</span></div>
       )}
+      <div className="section-title"><span>Rival birders</span><span>{Math.min(cleared, RIVALS.length)}/{RIVALS.length} beaten · {wins} win{wins === 1 ? '' : 's'}</span></div>
       <div className="trials-ladder" role="list">
         {RIVALS.map((r, i) => {
           const locked = i > cleared, beaten = i < cleared;
-          const lead = rivalTeam(r, pool.length ? pool : team.map((t) => t.sp), i)[0];
+          const lead = rivalTeam(r, pool.length ? pool : team.map((t) => t.sp), i, avg);
           const rw = rewardFor(tst, i, today);
           return (
             <div key={r.id} role="listitem" className={`trival ${locked ? 'locked' : ''} ${beaten ? 'beaten' : ''} ${i === cleared ? 'next' : ''} ${r.merlin ? 'boss' : ''}`}>
               <div className="trival-portrait">
-                {r.merlin ? <Professor height={48} /> : lead ? <Sprite species={lead.sp} scale={2} mode={locked ? 'silhouette' : 'idle'} flip /> : null}
+                {r.merlin ? <Professor height={48} /> : lead[0] ? <Sprite species={lead[0].sp} scale={2} mode={locked ? 'silhouette' : 'idle'} flip /> : null}
               </div>
               <div className="trival-main">
-                <div className="row between"><b className="trival-name">{r.name}</b><span className="px small muted">Lv{r.level}</span></div>
+                <div className="row between"><b className="trival-name">{r.name}</b><span className="px small muted">Lv{lead[0]?.level ?? r.level}</span></div>
                 <div className="small muted">{r.title}</div>
-                <div className="row" style={{ gap: 4, marginTop: 4 }}>{r.contests.map((c, k) => <ContestChip key={k} c={c} small />)}</div>
+                <div className="row" style={{ gap: 4, marginTop: 4, alignItems: 'center' }}>
+                  {r.styles.map((c) => <TypeChip key={c} c={c} small />)}
+                  <span className="tballs" aria-label={`${r.size} bird${r.size > 1 ? 's' : ''}`}>{Array.from({ length: r.size }, (_, k) => <i key={k} />)}</span>
+                </div>
               </div>
               <div className="trival-side">
                 {beaten && <span className="trival-badge">✓ Beaten</span>}
                 {locked ? <span className="trival-lock" aria-label="Locked: beat the rival above first">🔒</span> : (
-                  <button className="btn small primary" disabled={team.length === 0} onClick={() => onPick(i)} aria-label={`Challenge ${r.name}`}>{beaten ? 'Rematch' : 'Challenge'}</button>
+                  <button className="btn small primary" disabled={team.length === 0} onClick={() => onPick(i)} aria-label={`Challenge ${r.name}`}>{beaten ? 'Rematch' : 'Battle'}</button>
                 )}
                 <span className="trival-prize small">{rw.coins ? <><FeatherIcon size={12} /> +{rw.coins}</> : <span className="muted">no prize today</span>}</span>
               </div>
@@ -175,205 +150,339 @@ function Ladder({ team, cleared, wins, pool, onPick, onCamera }: { team: Contend
           );
         })}
       </div>
-      <p className="small muted" style={{ textAlign: 'center' }}>First win pays the full prize. Rematches pay a small bonus, 3 times a day. Losing costs nothing.</p>
+      <p className="small muted" style={{ textAlign: 'center' }}>First win pays the full prize and levels up your birds. Rematches pay a small bonus 3 times a day. Losing costs nothing.</p>
     </div>
   );
 }
 
-// ─── 2. the lineup ───
-function Lineup({ rival, rTeam, team, lineup, slot, setSlot, assign, onStart }: {
-  rival: number; rTeam: Contender[]; team: Contender[]; lineup: (Contender | null)[]; slot: number; setSlot: (n: number) => void; assign: (b: Contender) => void; onStart: () => void;
-}) {
+// ─── party select ───
+function Party({ rival, team, party, setParty, onGo }: { rival: number; team: Contender[]; party: Contender[]; setParty: (p: Contender[]) => void; onGo: () => void }) {
   const r = RIVALS[rival];
-  const c = r.contests[slot];
-  const sorted = [...team].sort((a, b) => power(b, c) - power(a, c));
+  const toggle = (c: Contender) => {
+    haptic(6); playClip('tPick', { vol: 0.5 });
+    const at = party.findIndex((p) => p.sp.id === c.sp.id);
+    if (at >= 0) setParty(party.filter((_, i) => i !== at));
+    else if (party.length < 3) setParty([...party, c]);
+  };
   return (
     <div className="trials-body">
-      <div className="trival-say"><b>{r.name}:</b> “{r.line}”</div>
-      <div className="section-title"><span>Your lineup</span><span className="small muted" style={{ textTransform: 'none', fontFamily: 'var(--body)' }}>tap a round, then a bird</span></div>
-      <div className="tslots">
-        {r.contests.map((cc, k) => {
-          const mine = lineup[k], them = rTeam[k];
-          const a = mine ? power(mine, cc) : 0, b = power(them, cc);
-          const odds = !mine ? '' : a - b >= 8 ? 'Favoured' : b - a >= 8 ? 'Underdog' : 'Close call';
+      <div className="tvs-card">
+        <div className="trival-portrait">{r.merlin ? <Professor height={48} /> : <span className="px" style={{ fontSize: 22 }}>?</span>}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <b className="trival-name">{r.name}</b> <span className="small muted">brings {r.size} bird{r.size > 1 ? 's' : ''}</span>
+          <div className="small" style={{ marginTop: 4 }}>“{r.line}”</div>
+          <div className="ttip small">
+            {r.styles.map((s) => <span key={s}>Their <TypeChip c={s} small /> birds are outshone by <TypeChip c={counterOf(s)} small /></span>)}
+          </div>
+        </div>
+      </div>
+      <div className="section-title"><span>Your party</span><span>{party.length}/3</span></div>
+      <div className="tparty-slots">
+        {[0, 1, 2].map((k) => {
+          const c = party[k];
           return (
-            <button key={k} className={`tslot ${slot === k ? 'on' : ''}`} onClick={() => { sfx.select(); setSlot(k); }} aria-pressed={slot === k}
-              aria-label={`Round ${k + 1}, ${CONTESTS[cc].name}: ${mine ? mine.sp.common : 'no bird'} (${a}) versus ${them.sp.common} (${b}). ${odds}`}>
-              <span className="tslot-head"><span className="px small">R{k + 1}</span><ContestChip c={cc} /></span>
-              <span className="tslot-vs">
-                <span className="tslot-bird">{mine ? <Sprite species={mine.sp} parts={mine.parts} scale={2} mode="static" /> : <span className="tslot-empty">?</span>}<b className="num">{mine ? a : '–'}</b></span>
-                <span className="px small muted">vs</span>
-                <span className="tslot-bird them"><Sprite species={them.sp} scale={2} mode="static" flip /><b className="num">{b}</b></span>
-              </span>
-              <span className={`tslot-odds ${odds === 'Favoured' ? 'good' : odds === 'Underdog' ? 'bad' : ''}`}>{odds || 'Pick a bird'}</span>
-            </button>
+            <div key={k} className={`tparty-slot ${c ? 'full' : ''}`}>
+              <span className="px small">{k === 0 ? 'Lead' : `#${k + 1}`}</span>
+              {c ? <><Sprite species={c.sp} parts={c.parts} scale={2} mode="idle" /><span className="small tparty-name">{c.sp.common}</span></> : <span className="tparty-empty">+</span>}
+            </div>
           );
         })}
       </div>
-      <div className="section-title"><span>Pick for round {slot + 1}: {CONTESTS[c].name}</span></div>
       <div className="tpicker" role="list">
-        {sorted.map((b) => {
-          const v = power(b, c), inUse = lineup.findIndex((x) => x?.sp.id === b.sp.id);
+        {team.map((c) => {
+          const f = fighter(c), at = party.findIndex((p) => p.sp.id === c.sp.id);
+          const vs = r.styles.map((s) => effectiveness(f.style, s));
+          const good = vs.some((v) => v > 1), bad = vs.every((v) => v < 1);
           return (
-            <button key={b.sp.id} role="listitem" className={`tpick ${lineup[slot]?.sp.id === b.sp.id ? 'on' : ''}`} onClick={() => assign(b)}
-              aria-label={`${b.sp.common}, ${CONTESTS[c].short} power ${v}${inUse >= 0 ? `, in round ${inUse + 1}` : ''}`}>
-              <Sprite species={b.sp} parts={b.parts} scale={2} mode="static" />
-              <span className="tpick-name small">{b.sp.common}</span>
-              <Stars n={statStars(contestStat(b.sp, c))} />
-              <span className="tpick-pow num">{v}</span>
-              {inUse >= 0 && <span className="tpick-tag">R{inUse + 1}</span>}
+            <button key={c.sp.id} role="listitem" className={`tpick ${at >= 0 ? 'on' : ''}`} onClick={() => toggle(c)} aria-pressed={at >= 0}
+              aria-label={`${c.sp.common}, level ${f.c.level}, ${CONTESTS[f.style].name} style, ${f.maxSp} Spirit. Moves: ${f.moves.map((m) => m.name).join(', ')}`}>
+              {at >= 0 && <span className="tpick-tag">{at === 0 ? 'Lead' : at + 1}</span>}
+              {good && <span className="tpick-hint good">Strong pick</span>}
+              {bad && !good && <span className="tpick-hint bad">Risky</span>}
+              <Sprite species={c.sp} parts={c.parts} scale={2} mode="static" />
+              <span className="tpick-name small">{c.sp.common}</span>
+              <span className="row" style={{ gap: 4, alignItems: 'center' }}><TypeChip c={f.style} small /><span className="px small">Lv{f.c.level}</span></span>
+              <span className="tpick-moves">{f.moves.map((m) => m.name).join(' · ')}</span>
             </button>
           );
         })}
       </div>
       <div className="trials-cta">
-        <button className="btn primary big block" disabled={lineup.some((x) => !x)} onClick={() => { playClip('tStart'); haptic(12); onStart(); }}>Start the trial ▶</button>
+        <button className="btn primary big block" disabled={!party.length} onClick={onGo}>Battle! ▶</button>
       </div>
     </div>
   );
 }
 
-// ─── 3. the show ───
-type Beat = { round: number; banner?: boolean; proj?: 'you' | 'rival'; boom?: 'you' | 'rival'; score?: { you?: number; rival?: number }; verdict?: boolean; crit?: boolean };
+// ─── the battle ───
+type Anim = '' | 'enter' | 'lunge' | 'hit' | 'dodge' | 'rest' | 'up' | 'down' | 'heal';
+interface SideView { idx: number; sp: number; max: number; anim: Anim; hidden: boolean }
+type Panel = 'busy' | 'menu' | 'moves' | 'bag' | 'birds' | 'force';
 
-function Show({ rival, lineup, rTeam, results, onDone }: { rival: number; lineup: Contender[]; rTeam: Contender[]; results: RoundResult[]; onDone: () => void }) {
+function SpiritBar({ value, max, numbers }: { value: number; max: number; numbers?: boolean }) {
+  const pct = Math.max(0, Math.min(100, (value / Math.max(1, max)) * 100));
+  return (
+    <span className="tspirit">
+      <span className="tspirit-label px">Spirit</span>
+      <span className="tspirit-track" role="meter" aria-valuemin={0} aria-valuemax={max} aria-valuenow={value} aria-label="Spirit">
+        <i className={pct > 50 ? 'hi' : pct > 20 ? 'mid' : 'lo'} style={{ width: `${pct}%` }} />
+      </span>
+      {numbers && <span className="tspirit-num px">{value}/{max}</span>}
+    </span>
+  );
+}
+
+function BattleView({ rival, party, rTeam, onEnd }: { rival: number; party: Contender[]; rTeam: Contender[]; onEnd: (won: boolean, birds: string[]) => void }) {
   const r = RIVALS[rival];
   const reduced = useReducedMotion();
-  const [beat, setBeat] = useState<Beat>({ round: 0, banner: true });
+  const items = useGame((s) => s.items);
+  const [bat, setBat] = useState<Battle>(() => startBattle(party, rTeam, r.name));
+  const batRef = useRef(bat); batRef.current = bat;
+  const [you, setYou] = useState<SideView>(() => ({ idx: 0, sp: bat.you[0].sp, max: bat.you[0].maxSp, anim: '', hidden: true }));
+  const [foe, setFoe] = useState<SideView>(() => ({ idx: 0, sp: bat.foe[0].sp, max: bat.foe[0].maxSp, anim: '', hidden: true }));
+  const [panel, setPanel] = useState<Panel>('busy');
+  const [text, setText] = useState('');
+  const [full, setFull] = useState('');
+  const [intro, setIntro] = useState(true);
+  const [fx, setFx] = useState<{ key: number; side: Side; sheet: Sheet; scale: number } | null>(null);
+  const [proj, setProj] = useState<{ key: number; from: Side; sheet: Sheet } | null>(null);
   const [shake, setShake] = useState(false);
-  const skip = useRef(false);
+  const used = useRef(new Set<string>([party[0]?.sightingId ?? '']));
+  const fast = useRef(false);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const res = results[beat.round];
-  const c = CONTESTS[res.contest];
+  const k = useRef(0);
 
-  // backdrop follows the contest of the current round
-  useEffect(() => { const cv = canvas.current; if (!cv) return; return runBackdrop(cv, c.scene, { focus: 0.5, reduced }); }, [c.scene, reduced]);
+  useEffect(() => { const cv = canvas.current; if (!cv) return; return runBackdrop(cv, r.scene, { focus: 0.5, reduced }); }, [r.scene, reduced]);
 
+  /** Typewriter text box; tapping it finishes the line and skips the pause. */
+  const say = useCallback(async (line: string, hold = 700) => {
+    fast.current = false; setFull(line);
+    if (reduced) setText(line);
+    else for (let i = 1; i <= line.length; i++) { if (fast.current) break; setText(line.slice(0, i)); await sleep(18); }
+    setText(line);
+    const until = performance.now() + hold;
+    while (performance.now() < until && !fast.current) await sleep(30);
+  }, [reduced]);
+
+  const setSide = (s: Side, f: (v: SideView) => SideView) => (s === 'you' ? setYou(f) : setFoe(f));
+  const anim = async (s: Side, a: Anim, ms: number) => { setSide(s, (v) => ({ ...v, anim: a })); await sleep(reduced ? Math.min(ms, 200) : ms); setSide(s, (v) => ({ ...v, anim: '' })); };
+  const burst = (s: Side, sheet: Sheet, scale = 3) => { if (!reduced) setFx({ key: ++k.current, side: s, sheet, scale }); };
+
+  const play = useCallback(async (ev: Ev[], before: Battle) => {
+    for (const e of ev) {
+      switch (e.t) {
+        case 'msg': await say(e.text); break;
+        case 'use': {
+          playClip(CONTESTS[e.move.style].clip, { vol: 0.8 });
+          const lunge = anim(e.side, 'lunge', 380);
+          if (e.move.power && !reduced) { setProj({ key: ++k.current, from: e.side, sheet: CONTESTS[e.move.style].proj }); await sleep(560); setProj(null); }
+          else if (!e.move.power) burst(e.side, FX_RING, 2);
+          await lunge; break;
+        }
+        case 'hit': {
+          burst(e.side, e.crit ? FX_CRIT : CONTESTS[e.style].boom, e.crit ? 4 : 3);
+          playClip(e.crit ? 'tCritical' : 'tHit', { vol: e.eff > 1 ? 1 : 0.7 });
+          if (e.crit || e.eff > 1) { haptic(e.crit ? [20, 40, 30] : 18); if (!reduced) { setShake(true); setTimeout(() => setShake(false), 380); } }
+          await anim(e.side, 'hit', 480); break;
+        }
+        case 'miss': await anim(e.side, 'dodge', 360); break;
+        case 'spirit': setSide(e.side, (v) => ({ ...v, sp: e.value, max: e.max })); await sleep(reduced ? 150 : 620); break;
+        case 'stat': playClip('tPick', { vol: 0.5 }); await anim(e.side, e.up ? 'up' : 'down', 560); break;
+        case 'heal': burst(e.side, { src: 'fx/trials/star_boom.png', frames: 7, fw: 32, fh: 32 }, 3); await anim(e.side, 'heal', 520); break;
+        case 'rest': playClip('tTie', { vol: 0.7 }); await anim(e.side, 'rest', 760); setSide(e.side, (v) => ({ ...v, hidden: true })); break;
+        case 'send': {
+          const f = e.side === 'you' ? before.you[e.index] : before.foe[e.index];
+          if (e.side === 'you') used.current.add(party[e.index]?.sightingId ?? '');
+          setSide(e.side, () => ({ idx: e.index, sp: f.sp, max: f.maxSp, anim: 'enter', hidden: false }));
+          playClip('tPick', { vol: 0.6 }); await sleep(reduced ? 120 : 520); setSide(e.side, (v) => ({ ...v, anim: '' }));
+          break;
+        }
+        case 'end': break;
+      }
+    }
+  }, [say, reduced, party]);
+
+  const afterTurn = useCallback(async (b: Battle) => {
+    setBat(b);
+    if (b.over) {
+      await say(b.over === 'you' ? `You won against ${r.name}!` : `${r.name}'s birds stole the show.`, 600);
+      await say(`${r.name}: “${b.over === 'you' ? r.win : r.lose}”`, 1100);
+      onEnd(b.over === 'you', [...used.current].filter((id) => id && id !== 'partner'));
+      return;
+    }
+    if (b.you[b.yi].out) { setFull('Choose your next bird.'); setText('Choose your next bird.'); setPanel('force'); return; }
+    const line = `What will ${b.you[b.yi].c.sp.common} do?`; setFull(line); setText(line); setPanel('menu');
+  }, [r, onEnd, say]);
+
+  // intro: VS splash, then the send-outs
   useEffect(() => {
     let live = true;
-    const wait = (ms: number) => new Promise<void>((ok) => setTimeout(ok, skip.current ? 0 : reduced ? Math.min(ms, 450) : ms));
     (async () => {
-      for (let k = 0; k < results.length && live; k++) {
-        const rr = results[k], def = CONTESTS[rr.contest];
-        setBeat({ round: k, banner: true }); if (!skip.current) playClip('tStart', { vol: 0.5 });
-        await wait(1150); if (!live) return;
-        // your bird performs
-        setBeat({ round: k, proj: 'you' }); if (!skip.current) playClip(def.clip, { vol: 0.8 });
-        await wait(650); if (!live) return;
-        setBeat({ round: k, boom: 'rival', score: { you: rr.you } }); if (!skip.current) playClip('tHit', { vol: 0.6 });
-        await wait(700); if (!live) return;
-        // the rival answers
-        setBeat({ round: k, proj: 'rival', score: { you: rr.you } }); if (!skip.current) playClip(def.clip, { vol: 0.7 });
-        await wait(650); if (!live) return;
-        setBeat({ round: k, boom: 'you', score: { you: rr.you, rival: rr.rival } }); if (!skip.current) playClip('tHit', { vol: 0.6 });
-        await wait(750); if (!live) return;
-        // verdict
-        setBeat({ round: k, verdict: true, crit: rr.critical, score: { you: rr.you, rival: rr.rival } });
-        if (!skip.current) {
-          if (rr.critical) { playClip('tCritical'); if (!reduced) { setShake(true); setTimeout(() => setShake(false), 420); } haptic([20, 40, 30]); }
-          else playClip(rr.winner === 'you' ? 'tRoundWin' : 'tTie', { vol: 0.8 });
-        }
-        await wait(1500);
-      }
-      if (live) onDone();
+      await sleep(reduced ? 300 : 1500); if (!live) return;
+      setIntro(false);
+      await say(`${r.name} wants a friendly contest!`, 600);
+      setFoe((v) => ({ ...v, hidden: false, anim: 'enter' })); playClip('tPick', { vol: 0.6 });
+      await say(`${r.name} sent out ${rTeam[0].sp.common}!`, 500); setFoe((v) => ({ ...v, anim: '' }));
+      setYou((v) => ({ ...v, hidden: false, anim: 'enter' })); playClip('tPick', { vol: 0.6 });
+      await say(`Go, ${party[0].sp.common}!`, 400); setYou((v) => ({ ...v, anim: '' }));
+      if (live) afterTurn(batRef.current);
     })();
     return () => { live = false; };
   }, []);
 
-  const you = lineup[beat.round], them = rTeam[beat.round];
-  const done = results.slice(0, beat.verdict ? beat.round + 1 : beat.round);
-  const winner = beat.verdict ? res.winner : null;
+  const act = async (a: Parameters<typeof takeTurn>[1]) => {
+    setPanel('busy');
+    const before = batRef.current;
+    const { b, ev } = takeTurn(before, a, Math.random);
+    await play(ev, before);
+    await afterTurn(b);
+  };
+  const force = async (to: number) => {
+    setPanel('busy');
+    const before = batRef.current;
+    const { b, ev } = sendIn(before, to);
+    await play(ev, before);
+    await afterTurn(b);
+  };
+
+  const me = bat.you[you.idx], them = bat.foe[foe.idx];
+  const curMe = bat.you[bat.yi];
+
   return (
-    <div className={`tstage ${shake ? 'shake' : ''}`} style={{ ['--c' as string]: c.color }}>
-      <canvas ref={canvas} className="tstage-bg pix" aria-hidden />
-      <div className="tstage-hud">
-        <span className="tstage-name">You</span>
-        <span className="tstage-dots" aria-label={`Round ${beat.round + 1} of ${results.length}`}>
-          {results.map((x, i) => <i key={i} className={i < done.length ? (x.winner === 'you' ? 'w' : x.winner === 'rival' ? 'l' : 't') : i === beat.round ? 'now' : ''} />)}
-        </span>
-        <span className="tstage-name">{r.name}</span>
-      </div>
-      <button className="btn small ghost tstage-skip" onClick={() => { skip.current = true; }}>Skip ▸▸</button>
+    <div className={`tbattle ${shake ? 'shake' : ''}`}>
+      <div className="tscene">
+        <canvas ref={canvas} className="tstage-bg pix" aria-hidden />
+        <span className="tplat foe" aria-hidden /><span className="tplat you" aria-hidden />
 
-      {beat.banner && (
-        <div className="tbanner" role="status">
-          <span className="px small">Round {beat.round + 1}</span>
-          <b className="tbanner-name">{c.name}</b>
-          <span className="small">{c.blurb}</span>
+        <div className={`tinfo foe ${foe.hidden ? 'gone' : ''}`}>
+          <div className="tinfo-row"><b className="tinfo-name">{them.c.sp.common}</b><span className="px">Lv{them.c.level}</span></div>
+          <div className="tinfo-row"><TypeChip c={them.style} small /><span className="tballs">{bat.foe.map((f, i) => <i key={i} className={f.out ? 'out' : ''} />)}</span></div>
+          <SpiritBar value={foe.sp} max={foe.max} />
         </div>
-      )}
-
-      <div className={`tbird you ${beat.proj === 'you' ? 'perform' : ''} ${winner === 'you' ? 'win' : winner === 'rival' ? 'lose' : ''}`}>
-        {beat.score?.you != null && <span className="tscore">{beat.score.you}</span>}
-        <Sprite species={you.sp} parts={you.parts} scale={4} mode={beat.proj === 'you' ? 'fly' : 'idle'} />
-        <span className="tbird-name small">{you.sp.common}</span>
-        {beat.boom === 'you' && !reduced && <Fx sheet={c.boom} scale={3} ms={520} className="tboom" />}
-        {beat.verdict && winner === 'you' && <Fx sheet={FX_RING} scale={3} ms={600} className="tboom" />}
-        {beat.verdict && beat.crit && winner === 'rival' && !reduced && <Fx sheet={FX_CRIT} scale={4} ms={700} className="tboom" />}
-      </div>
-      <div className={`tbird rival ${beat.proj === 'rival' ? 'perform' : ''} ${winner === 'rival' ? 'win' : winner === 'you' ? 'lose' : ''}`}>
-        {beat.score?.rival != null && <span className="tscore">{beat.score.rival}</span>}
-        <Sprite species={them.sp} scale={4} mode={beat.proj === 'rival' ? 'fly' : 'idle'} flip />
-        <span className="tbird-name small">{them.sp.common}</span>
-        {beat.boom === 'rival' && !reduced && <Fx sheet={c.boom} scale={3} ms={520} className="tboom" />}
-        {beat.verdict && winner === 'rival' && <Fx sheet={FX_RING} scale={3} ms={600} className="tboom" />}
-        {beat.verdict && beat.crit && winner === 'you' && !reduced && <Fx sheet={FX_CRIT} scale={4} ms={700} className="tboom" />}
-      </div>
-
-      {beat.proj && !reduced && (
-        <span key={`${beat.round}-${beat.proj}`} className={`tproj from-${beat.proj}`}>
-          <Fx sheet={c.proj} scale={3} ms={360} loop style={beat.proj === 'rival' ? { transform: 'scaleX(-1)' } : undefined} />
-        </span>
-      )}
-
-      {beat.verdict && (
-        <div className={`tverdict ${winner}`} role="status">
-          {beat.crit && <span className="tcrit px">Critical!</span>}
-          <b>{winner === 'you' ? `${you.sp.common} wins the ${c.name}!` : winner === 'rival' ? `${them.sp.common} takes the ${c.name}` : 'A dead heat!'}</b>
+        <div className={`tmon foe ${foe.anim} ${foe.hidden ? 'gone' : ''}`}>
+          <Sprite species={them.c.sp} scale={3} mode={foe.anim === 'lunge' ? 'fly' : 'idle'} flip />
+          {fx?.side === 'foe' && <Fx key={fx.key} sheet={fx.sheet} scale={fx.scale} ms={520} className="tboom" />}
         </div>
-      )}
+
+        <div className={`tmon you ${you.anim} ${you.hidden ? 'gone' : ''}`}>
+          <Sprite species={me.c.sp} parts={me.c.parts} scale={5} mode={you.anim === 'lunge' ? 'fly' : 'idle'} />
+          {fx?.side === 'you' && <Fx key={fx.key} sheet={fx.sheet} scale={fx.scale} ms={520} className="tboom" />}
+        </div>
+        <div className={`tinfo you ${you.hidden ? 'gone' : ''}`}>
+          <div className="tinfo-row"><b className="tinfo-name">{me.c.sp.common}</b><span className="px">Lv{me.c.level}</span></div>
+          <div className="tinfo-row"><TypeChip c={me.style} small /><span className="tballs">{bat.you.map((f, i) => <i key={i} className={f.out ? 'out' : ''} />)}</span></div>
+          <SpiritBar value={you.sp} max={you.max} numbers />
+        </div>
+
+        {proj && <span key={proj.key} className={`tproj2 from-${proj.from}`}><Fx sheet={proj.sheet} scale={3} ms={300} loop style={proj.from === 'foe' ? { transform: 'scaleX(-1)' } : undefined} /></span>}
+
+        {intro && (
+          <div className="tvs" aria-hidden>
+            <div className="tvs-top"><span className="tvs-name px">{r.name}</span><span className="small">{r.title}</span></div>
+            <div className="tvs-mid px">VS</div>
+            <div className="tvs-bot"><span className="tvs-name px">You</span><span className="small">{party.length} bird{party.length > 1 ? 's' : ''}</span></div>
+          </div>
+        )}
+      </div>
+
+      <div className="tpanel">
+        <button className="tbox" onClick={() => { fast.current = true; }} aria-live="polite" aria-label={full}>
+          <span>{text}</span>{panel === 'busy' && text === full && <span className="tbox-more" aria-hidden>▼</span>}
+        </button>
+
+        {panel === 'menu' && (
+          <div className="tmenu">
+            <button className="tcmd perform" onClick={() => { sfx.select(); setPanel('moves'); }}>Perform</button>
+            <button className="tcmd bag" onClick={() => { sfx.select(); setPanel('bag'); }}>Bag</button>
+            <button className="tcmd birds" onClick={() => { sfx.select(); setPanel('birds'); }}>Birds</button>
+            <button className="tcmd run" onClick={() => { sfx.back(); act({ kind: 'run' }); }}>Run</button>
+          </div>
+        )}
+
+        {panel === 'moves' && (
+          <div className="tmoves">
+            {curMe.moves.map((m: Move) => {
+              const left = curMe.pp[m.id] ?? 0, eff = m.power ? effectiveness(m.style, them.style) : 1;
+              return (
+                <button key={m.id} className="tmove" style={{ ['--c' as string]: CONTESTS[m.style].color }} disabled={left <= 0}
+                  onClick={() => { sfx.select(); act({ kind: 'move', id: m.id }); }}
+                  aria-label={`${m.name}, ${CONTESTS[m.style].name} style, ${m.power ? `power ${m.power}` : 'status move'}, ${left} of ${m.pp} uses left. ${m.desc}${eff > 1 ? ' Super impressive against this bird.' : eff < 1 ? ' Not very impressive against this bird.' : ''}`}>
+                  <span className="tmove-name">{m.name}</span>
+                  <span className="tmove-meta"><TypeChip c={m.style} small /><span className="px">{left}/{m.pp}</span></span>
+                  {eff > 1 && <span className="tmove-eff good">Super!</span>}
+                  {eff < 1 && <span className="tmove-eff bad">Weak</span>}
+                  {!m.power && <span className="tmove-eff">Status</span>}
+                </button>
+              );
+            })}
+            <button className="tcmd-back" onClick={() => { sfx.back(); setPanel('menu'); }}>◀ Back</button>
+          </div>
+        )}
+
+        {panel === 'bag' && (
+          <div className="tlist">
+            {(Object.keys(ITEMS) as Item[]).map((it) => (
+              <button key={it} className="trow2" disabled={(items[it] ?? 0) < 1}
+                onClick={() => { if (spendTrialItem(it)) { sfx.select(); act({ kind: 'item', item: it }); } }}>
+                <b>{ITEMS[it].name}</b><span className="small muted">{ITEMS[it].desc}</span><span className="px">×{items[it] ?? 0}</span>
+              </button>
+            ))}
+            {(['seeds', 'berries', 'worms'] as Item[]).every((it) => (items[it] ?? 0) < 1) && <p className="small muted" style={{ margin: 0 }}>Your pantry is empty. Buy food in Merlin's Shop.</p>}
+            <button className="tcmd-back" onClick={() => { sfx.back(); setPanel('menu'); }}>◀ Back</button>
+          </div>
+        )}
+
+        {(panel === 'birds' || panel === 'force') && (
+          <div className="tlist">
+            {bat.you.map((f, i) => (
+              <button key={i} className={`trow2 bird ${i === bat.yi ? 'cur' : ''}`} disabled={f.out || i === bat.yi}
+                onClick={() => { sfx.select(); if (panel === 'force') force(i); else act({ kind: 'switch', to: i }); }}>
+                <Sprite species={f.c.sp} parts={f.c.parts} scale={1} mode="static" />
+                <b>{f.c.sp.common}</b><TypeChip c={f.style} small />
+                <span className="trow2-bar"><SpiritBar value={f.sp} max={f.maxSp} numbers /></span>
+                {f.out && <span className="small muted">Resting</span>}
+              </button>
+            ))}
+            {panel === 'birds' && <button className="tcmd-back" onClick={() => { sfx.back(); setPanel('menu'); }}>◀ Back</button>}
+            {panel === 'birds' && !canSwitch(bat) && <p className="small muted" style={{ margin: 0 }}>No other birds ready.</p>}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-// ─── 4. the result ───
-function Result({ rival, lineup, rTeam, results, prize, onRematch, onLadder, onNext }: {
-  rival: number; lineup: Contender[]; rTeam: Contender[]; results: RoundResult[]; prize: { coins: number; xp: number; first: boolean } | null;
-  onRematch: () => void; onLadder: () => void; onNext?: () => void;
+// ─── result ───
+function Result({ rival, won, prize, party, onRematch, onLadder, onNext }: {
+  rival: number; won: boolean; prize: ReturnType<typeof finishTrial>; party: Contender[]; onRematch: () => void; onLadder: () => void; onNext?: () => void;
 }) {
   const r = RIVALS[rival];
-  const won = matchWinner(results) === 'you';
-  const w = results.filter((x) => x.winner === 'you').length, l = results.filter((x) => x.winner === 'rival').length;
   return (
     <div className="trials-body tresult">
       <div className={`tresult-hero ${won ? 'won' : 'lost'}`}>
         {won && <Fx sheet={FX_RING} scale={4} ms={900} loop className="tresult-ring" />}
         <h1>{won ? 'Victory!' : 'So close!'}</h1>
-        <p className="px">{w} – {l}{w === l ? ' · total points decide' : ''}</p>
-        <p className="small" style={{ margin: 0 }}>{won ? (r.merlin ? 'You beat Professor Merlin himself. Your birds are the real deal.' : `${r.name} tips their hat to your birds.`) : `${r.name}'s birds edged it this time. Try a different lineup, or level up your birds with better photos.`}</p>
+        <p className="small" style={{ margin: 0 }}>{r.name}: “{won ? r.win : r.lose}”</p>
       </div>
-      {won && prize && (
+      {won && (
         <div className="tprize">
-          {prize.coins > 0 ? <span><FeatherIcon size={18} /> +{prize.coins} Feather Coins</span> : <span className="muted">No prize left today</span>}
+          {prize.coins > 0 ? <span><FeatherIcon size={18} /> +{prize.coins} Feather Coins</span> : <span>No prize left today</span>}
           {prize.xp > 0 && <span className="px">+{prize.xp} XP</span>}
           {prize.first && <span className="tprize-tag">First win!</span>}
         </div>
       )}
-      <div className="section-title"><span>Rounds</span></div>
-      <div className="tsummary">
-        {results.map((x, k) => (
-          <div key={k} className={`trow ${x.winner}`}>
-            <ContestChip c={x.contest} small />
-            <span className="trow-bird"><Sprite species={lineup[k].sp} parts={lineup[k].parts} scale={1} mode="static" /> <span className="small">{lineup[k].sp.common}</span></span>
-            <b className="num">{x.you}</b><span className="muted small">–</span><b className="num">{x.rival}</b>
-            <span className="trow-bird them"><span className="small">{rTeam[k].sp.common}</span> <Sprite species={rTeam[k].sp} scale={1} mode="static" flip /></span>
-          </div>
-        ))}
-      </div>
+      {won && prize.levelled.length > 0 && (
+        <div className="tlevels">
+          {party.filter((c) => c.sightingId && prize.levelled.includes(c.sightingId)).map((c) => (
+            <div key={c.sp.id} className="tlevel"><Sprite species={c.sp} parts={c.parts} scale={2} mode="idle" /><span><b>{c.sp.common}</b> grew to <span className="px">Lv{c.level + 1}</span>!</span></div>
+          ))}
+        </div>
+      )}
+      {!won && <p className="small">Tip: their {r.styles.map((s) => CONTESTS[s].name).join(' and ')} birds are outshone by {r.styles.map((s) => CONTESTS[counterOf(s)].name).join(' and ')} birds. {BEAT_WHY[counterOf(r.styles[0])]}</p>}
       <div className="trials-cta col">
         {onNext && <button className="btn primary big block" onClick={onNext}>Next rival: {RIVALS[rival + 1].name} ▶</button>}
         <button className={`btn block ${onNext ? '' : 'primary big'}`} onClick={onRematch}>{won ? 'Rematch' : 'Try again'}</button>
-        <button className="btn ghost block" onClick={onLadder}>Back to the ladder</button>
+        <button className="btn ghost block" onClick={onLadder}>Back to the rivals</button>
       </div>
     </div>
   );

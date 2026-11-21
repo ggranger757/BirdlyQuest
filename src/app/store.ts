@@ -413,22 +413,33 @@ export function claimChapter(id: string, reward: number): boolean {
 }
 
 /** Finish a Field Trial. A win pays the rival's prize the first time, then a small capped rematch bonus. */
-export function finishTrial(index: number, won: boolean): { coins: number; xp: number; first: boolean } {
+export function finishTrial(index: number, won: boolean, birds: string[] = []): { coins: number; xp: number; first: boolean; levelled: string[] } {
   const rival = RIVALS[index];
-  if (!rival) return { coins: 0, xp: 0, first: false };
-  if (!won) { logEvent('trial_loss', rival.id); return { coins: 0, xp: 0, first: false }; }
+  if (!rival) return { coins: 0, xp: 0, first: false, levelled: [] };
+  if (!won) { logEvent('trial_loss', rival.id); return { coins: 0, xp: 0, first: false, levelled: [] }; }
   const today = dayKey(new Date());
   const r = rewardFor(state.trials, index, today);
+  // birds that took part grow a level (only while the win still pays, so rematches can't be farmed)
+  const levelled = r.coins > 0 ? birds.filter((id) => state.sightings.some((x) => x.id === id && (x.level ?? 5) < 50)) : [];
   setState((s) => {
     const t = s.trials ?? { cleared: 0, wins: 0 };
     const used = t.day === today ? t.rematches ?? 0 : 0;
     return {
       ...s, xp: s.xp + r.xp, feathers: s.feathers + r.coins,
+      sightings: levelled.length ? s.sightings.map((x) => (levelled.includes(x.id) ? { ...x, level: (x.level ?? 5) + 1 } : x)) : s.sightings,
       trials: { cleared: Math.max(t.cleared, index + 1), wins: t.wins + 1, day: today, rematches: r.first ? used : used + 1 },
     };
   });
-  logEvent('trial_win', { rival: rival.id, ...r });
-  return after(r);
+  logEvent('trial_win', { rival: rival.id, ...r, levelled: levelled.length });
+  return after({ ...r, levelled });
+}
+
+/** Use one bag of pantry food during a Field Trial. */
+export function spendTrialItem(item: Food): boolean {
+  if ((state.items[item] ?? 0) < 1) return false;
+  setState((s) => ({ ...s, items: { ...s.items, [item]: s.items[item] - 1 } }));
+  logEvent('trial_item', item);
+  return true;
 }
 
 /** Buy a Snap Lens with Feather Coins and put it on. */
