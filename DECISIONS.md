@@ -198,3 +198,26 @@ One line per meaningful choice, with the reason.
     - It shows a progress bar and can be skipped.
     - It runs automatically once (`tourSeen` version 2): for new players after onboarding, and once for existing players.
   - **Explore park pop-up:** the Directions button is a centred flex button, and the close ✕ has 8px of breathing room and a box.
+- **v1.29: high-quality pixel art for feeders and perches (owner: "need to be high quality pixel art… sitting items don't have to all be twigs").**
+  - **Pixel kit** (`src/render/pixelkit.ts`): shapes are drawn in materials, then shaded the way a pixel artist would:
+    - selective outlines in a darker tone of each material (heavier bottom-right)
+    - lit top-left rims and shadowed undersides, with warm hue-shifted highlights and cool shadows
+    - dithered volume, rounded shading on cylinders, and contact shadows where materials meet
+    - textures: wood grain, bark, stone speckle, moss and leaves, metal sheen, glass glints, seed, water
+    - soft dithered halos around glowing materials
+  - Output is pure RGBA, so the art is tested and previewed outside the browser (`tools/decor`).
+  - **Feeders:** all 10 designs are redrawn at 32×40. The teacup is now a proper cup with a handle ring, saucer and painted band. Seed fill is cached in 5 levels, and the tray stays at the same height and width, so feeding works unchanged.
+  - **Perches:** they're no longer just twigs. Ten structures at 48×52, each in five colourways:
+    - Picket Fence
+    - Statue Head (sleeping face; the Obsidian one has glowing eyes, the Bronze one has verdigris)
+    - Ruin Stones (fluted broken column and a fallen block)
+    - Glow Sticks (crystal rods)
+    - Toadstool (the Glowcap one glows)
+    - Lamp Post (glowing lamp and a sign arm)
+    - Tree Stump (Oak, Birch, Mossy, Hollow, Autumn)
+    - Bird Bath (Stone, Terracotta, Marble, Copper, Mosaic)
+    - Rune Stone (glowing runes)
+    - Blossom Tree (Cherry, Plum, Magnolia, Wisteria, Maple)
+  - Landing spots snap onto the art (tested), so birds stand on fence tips, statue curls, crystal tips, cap tops and basin rims.
+  - **Migration:** v1.28 perches (twig/oak/blossom/pine/driftwood/bamboo/swing/ladder/pillar/arch) map to the new structure in the same slot and colourway position, so owned and equipped perches carry over.
+  - **Shop:** feeders and perches are shown as a grid of cards with 2× crisp previews on a little scene: 3 columns on phones, 2 on 320px.

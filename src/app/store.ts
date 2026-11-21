@@ -1,6 +1,6 @@
 // Game state: one local store, persisted to IndexedDB on every change.
 import { SCENES, FREE_HOMES, homePrice } from '../render/diorama';
-import { DECOR, DEFAULT_FEEDER } from '../core/decor';
+import { DECOR, DEFAULT_FEEDER, migratePerchId } from '../core/decor';
 import { LENSES, RETIRED_LENSES, boostedPower, type LensId } from '../core/lenses';
 import { useSyncExternalStore } from 'react';
 import type { GameState, Sighting, Verification, ChallengeSlot } from '../core/model';
@@ -73,6 +73,9 @@ function adopt(saved: GameState | undefined) {
   // v1.28: Bird Homes are bought now. Whatever home a player already uses stays theirs; High Street was retired.
   if (!state.ownedHomes) state = { ...state, ownedHomes: state.diorama.home && state.diorama.home !== 'c2' ? [state.diorama.home] : [] };
   if (state.diorama.home === 'c2' || (state.diorama.home && !SCENES[state.diorama.home])) state = { ...state, diorama: { ...state.diorama, home: undefined } };
+  // v1.29: the twig-and-branch perches became fences, statues, ruins, glow sticks… (same slot and colourway)
+  if (state.ownedDecor.some((id) => migratePerchId(id) !== id) || (state.diorama.perch && migratePerchId(state.diorama.perch) !== state.diorama.perch))
+    state = { ...state, ownedDecor: state.ownedDecor.map(migratePerchId), diorama: { ...state.diorama, perch: state.diorama.perch && migratePerchId(state.diorama.perch) } };
   const retired = state.lenses.filter((id) => RETIRED_LENSES[id] != null);
   if (retired.length) {
     const refund = retired.reduce((n, id) => n + RETIRED_LENSES[id], 0);

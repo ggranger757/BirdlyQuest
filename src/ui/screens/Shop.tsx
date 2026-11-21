@@ -21,7 +21,7 @@ const TABS: { id: Tab; label: string; hello: string }[] = [
   { id: 'lenses', label: 'Lenses', hello: 'Snap Lenses! Each one adds Snap Power to your photos, and they look rather dashing.' },
   { id: 'homes', label: 'Homes', hello: 'New Bird Homes open up as you level up. Buy one and your Aviary moves in.' },
   { id: 'feeders', label: 'Feeders', hello: 'Fifty feeders, from humble tubes to grand towers. Your birds eat from the one you hang.' },
-  { id: 'perches', label: 'Perches', hello: 'Branches, swings, ladders and arches. Birds will land on whichever perch you set out.' },
+  { id: 'perches', label: 'Perches', hello: 'Fences, statues, ancient ruins, glowing crystals… Birds will land on whichever perch you set out.' },
 ];
 const THANKS = ['A fine choice. Your birds will sing for it.', 'Splendid! The birds thank you.', 'Into the bag it goes!', 'Excellent taste, my friend.'];
 
@@ -67,15 +67,15 @@ export function Shop() {
       <FeatherIcon size={14} /> {price}
     </button>
   );
-  const decorRow = (d: DecorDef) => {
+  const decorCard = (d: DecorDef) => {
     const owned = ownsDecor(st, d.id), inUse = st.diorama[d.kind] === d.id || (d.kind === 'feeder' && !st.diorama.feeder && owned && d.price === 0), locked = !owned && lv < d.level;
     return (
-      <div key={d.id} className={`srow ${locked ? 'locked' : ''} ${inUse ? 'on' : ''}`}>
-        <Thumb paint={(c) => paintDecorThumb(c, d)} />
-        <span className="grow"><span className="name">{d.name}</span>{inUse && <span className="small" style={{ color: 'var(--accent)' }}> · in use</span>}<br /><span className="small muted">{d.desc}</span></span>
+      <div key={d.id} className={`dcard ${locked ? 'locked' : ''} ${inUse ? 'on' : ''}`}>
+        <Thumb w={112} h={112} paint={(c) => paintDecorThumb(c, d)} />
+        <span className="dcard-name">{d.colourway}</span>
         {owned ? (
-          <button className="btn small" disabled={inUse} onClick={() => { sfx.select(); equipDecor(d.kind, d.id); setLine(`The ${d.name} is up in your Aviary. Lovely!`); }}>{inUse ? 'Using' : 'Use'}</button>
-        ) : locked ? <span className="btn small lens-locked">🔒 Lv {d.level}</span>
+          <button className="btn small block" disabled={inUse} onClick={() => { sfx.select(); equipDecor(d.kind, d.id); setLine(`The ${d.name} is up in your Aviary. Lovely!`); }}>{inUse ? 'In use' : 'Use'}</button>
+        ) : locked ? <span className="btn small block lens-locked">🔒 Lv {d.level}</span>
           : priceBtn(d.price, d.name, () => { if (buyDecor(d.id)) { thank(`The ${d.name}! I’ve put it up in your Aviary.`); nav.toast(`Bought ${d.name}`); } else broke(); })}
       </div>
     );
@@ -83,11 +83,12 @@ export function Shop() {
   const decorList = (list: DecorDef[]) => {
     // grouped by design, cheapest first
     const groups = new Map<string, DecorDef[]>();
-    for (const d of list) { const k = d.name.split(' ').slice(1).join(' '); groups.set(k, [...(groups.get(k) ?? []), d]); }
+    for (const d of list) { const k = d.design; groups.set(k, [...(groups.get(k) ?? []), d]); }
     return [...groups.entries()].map(([g, items]) => (
       <div key={g} className="shop-group">
         <div className="section-title"><span>{g}</span><span className="small muted">{lv < items[0].level ? `🔒 Lv ${items[0].level}` : `${items.filter((d) => ownsDecor(st, d.id)).length}/${items.length} owned`}</span></div>
-        {items.map(decorRow)}
+        <p className="small muted shop-desc">{items[0].desc}</p>
+        <div className="dgrid">{items.map(decorCard)}</div>
       </div>
     ));
   };

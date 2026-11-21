@@ -1256,3 +1256,14 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
   background: radial-gradient(circle at 50% 38%, #FFF3CF 0 22%, #F2C14E 48%, #B07A2A 78%, #6E4A1A); box-shadow: 3px 3px 0 #000, inset 0 0 0 2px #FFE7A0; }
 .shop-npc-portrait > * { margin-bottom: -6px; }
 @media (max-width: 360px) { .shop-npc-portrait { width: 80px; height: 92px; } }
+/* decor shop: cards with big crisp previews */
+.shop-desc { margin: -4px 0 8px; }
+.dgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; margin-bottom: 14px; }
+.dcard { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px; background: var(--well); border: 2px solid #000; box-shadow: 2px 2px 0 #000; }
+.dcard .shop-thumb { width: 100%; height: auto; aspect-ratio: 1; max-width: 112px; }
+.dcard-name { font-family: var(--lbl); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; text-align: center; line-height: 1.2; min-height: 2.4em; display: grid; place-items: center; }
+.dcard .btn { min-width: 0; width: 100%; }
+.dcard.on { border-color: var(--accent); box-shadow: 2px 2px 0 #000, 0 0 0 2px var(--accent); }
+.dcard.locked { opacity: .55; }
+:root.theme-field .dcard-name { font-size: 11px; font-weight: 600; }
+@media (max-width: 360px) { :root.theme-field .shop-tab, .shop-tab { font-size: 9px; letter-spacing: 0; font-weight: 600; padding: 0 1px; } }
