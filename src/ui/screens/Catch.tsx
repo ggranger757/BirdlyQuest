@@ -8,7 +8,7 @@ import { fileCatch, CatchResult, useGame, getState, logEvent, nameBird } from '.
 import { getRegion } from '../../data/geo';
 import { regionEntries, allKnownSpecies, taxonSummary } from '../../data/provider';
 import type { Species } from '../../data/types';
-import { likelyNow } from '../../core/rarity';
+import { likelyNow, RARITY_META } from '../../core/rarity';
 import { renderFrames } from '../../core/pixel/sprite';
 import { RGB, CLEAR, IDX } from '../../core/palette';
 import { rgbToLab, snapToPalette } from '../../core/color';
@@ -16,7 +16,7 @@ import { Sprite, useReducedMotion, useRefPhoto, SKY_PLATE } from '../components'
 import { Dialog, Menu, Types, BirdThumb, Capsule, Wipe, dexNo, BadgeIcon, LensFx } from '../game';
 import { lensOf, boostedPower } from '../../core/lenses';
 import { sfx, haptic, gameMusic, playClip } from '../../app/audio';
-import { RANK_LINES, snapGrade } from '../../core/xp';
+import { RANK_LINES, snapGrade, COIN_MULT } from '../../core/xp';
 import type { Verification } from '../../core/model';
 import { paintSceneThumb } from '../../render/diorama';
 import { sunTimes, dayPhase } from '../../core/sun';
@@ -188,6 +188,7 @@ function CaughtText({ result, onContinue }: { result: CatchResult; onContinue: (
     ...(result.firstEver ? ['★ YOUR FIRST BIRD! First-bird bonus: double XP and Feather Coins!'] : []),
     ...(result.missionDone ? ['★ MISSION COMPLETE! You found the bird you set out for: +25 XP and +25 Feather Coins!'] : []),
     ...(s.firstRecord ? ['★ NEW ENTRY! You have never found this bird before.'] : s.newPlumage ? ['A new plumage! This one looks different from your others.'] : [`You have found this species ${s.timesSeen} times.`]),
+    ...(s.rarity !== 'common' ? [`★ ${RARITY_META[s.rarity].label.toUpperCase()} BIRD! Rarer birds pay more: ×${RARITY_META[s.rarity].mult} XP and ×${COIN_MULT[s.rarity]} Feather Coins.`] : []),
     `${sp.common} is Lv ${s.level ?? 5}. You gained ${s.xp} XP and ${s.feathers} Feather Coins — spend them on food for your feeder.`,
     ...(getState().diorama.birds.includes(s.id) ? [getState().sightings.length === 1 ? 'Your new bird lives in the Aviary now. Keep the feeder filled and it will stay healthy!' : `${sp.common} moved into your Aviary.`] : [`Your Aviary is full, so ${sp.common} is resting in the Bird Box.`]),
     ...(s.sprite.variant !== 'normal' ? [`Incredible — a rare ${s.sprite.variant} bird!`] : []),
@@ -259,9 +260,10 @@ function BattleField({ job, habitat, region, stage, result, analysis, snapPower,
     const mosaic = (n: number) => { small.width = n; small.height = n; const sg = small.getContext('2d')!; sg.drawImage(img, (cx - side / 2) * img.naturalWidth, (cy - side / 2) * img.naturalHeight, side * img.naturalWidth, side * img.naturalHeight, 0, 0, n, n); return sg.getImageData(0, 0, n, n); };
     const order = seededOrder(1024, parseInt(s.sprite.hash.slice(0, 6), 16));
     let snapped: number[] | null = null; let raf = 0; let start = 0; let tick = 0;
-    const paintIdx = (arr: ArrayLike<number>) => {
+    // the mosaic is in palette colours; revealed pixels come from the sprite's own colour table
+    const paintIdx = (arr: ArrayLike<number>, from: Set<number>) => {
       const id = g.createImageData(32, 32);
-      for (let i = 0; i < 1024; i++) { if (arr[i] === CLEAR) continue; const col = RGB[arr[i]]; id.data.set([col[0], col[1], col[2], 255], i * 4); }
+      for (let i = 0; i < 1024; i++) { if (arr[i] === CLEAR) continue; const col = from.has(i) ? frames[0].pal[arr[i]] : RGB[arr[i]]; id.data.set([col[0], col[1], col[2], 255], i * 4); }
       g.clearRect(0, 0, 32, 32); g.putImageData(id, 0, 0);
     };
     const step = (t: number) => {
@@ -271,9 +273,9 @@ function BattleField({ job, habitat, region, stage, result, analysis, snapPower,
       if (e < 420) { const n = e < 140 ? 128 : e < 280 ? 64 : 32; const d = mosaic(n); const tmp = document.createElement('canvas'); tmp.width = n; tmp.height = n; tmp.getContext('2d')!.putImageData(d, 0, 0); g.clearRect(0, 0, 32, 32); g.drawImage(tmp, 0, 0, 32, 32); }
       else {
         if (!snapped) { const d = mosaic(32); snapped = []; for (let i = 0; i < 1024; i++) snapped.push(snapToPalette(rgbToLab(d.data[i * 4], d.data[i * 4 + 1], d.data[i * 4 + 2]), [IDX.eye])); }
-        const k = Math.min(1, (e - 420) / 900); const arr = snapped.slice(); const upto = Math.floor(k * 1024);
-        for (let j = 0; j < upto; j++) { const i = order[j]; arr[i] = frames[0][i]; }
-        paintIdx(arr);
+        const k = Math.min(1, (e - 420) / 900); const arr = snapped.slice(); const upto = Math.floor(k * 1024); const from = new Set<number>();
+        for (let j = 0; j < upto; j++) { const i = order[j]; arr[i] = frames[0][i]; from.add(i); }
+        paintIdx(arr, from);
         if (t - tick > 55) { sfx.pixel(); tick = t; }
       }
       raf = requestAnimationFrame(step);

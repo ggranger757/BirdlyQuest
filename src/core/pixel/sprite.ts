@@ -1,11 +1,12 @@
-// Sprite assembly: anatomy from the species, colour from the photo, pattern from the trait.
-import { P, PART_COUNT, buildFrame, shapeFor, FrameName, FRAMES, Marks, Shape } from './archetypes';
-import { S, Buf } from './raster';
-import { IDX, CLEAR, ColorName } from '../palette';
-import { Lab, PAL_LAB, snapToPalette, darker, lighter, deltaE2000, mixLab } from '../color';
+// Sprite assembly: shape from the owner's sprite sheet (see birds.ts), colour from the species and the photo.
+import { P, PART_COUNT, shapeFor, Shape } from './archetypes';
+import { IDX, CLEAR, RGB, ColorName } from '../palette';
+import { birdFrames, type Frame } from './birds';
+export type { Frame } from './birds';
+import { Lab, PAL_LAB, snapToPalette, darker, deltaE2000, mixLab } from '../color';
 import type { Species } from '../../data/types';
 
-export const PIPELINE_VERSION = 3;
+export const PIPELINE_VERSION = 4; // v4: sprites from the owner's 32-bit sheet
 
 export type Variant = 'normal' | 'leucistic' | 'melanistic' | 'albino';
 export type Pose = 'perched' | 'flight';
@@ -38,14 +39,6 @@ const HOST: Partial<Record<number, number>> = {
 const PART_WEIGHT: Partial<Record<number, number>> = {
   [P.HEAD]: 1.4, [P.CROWN]: 1.4, [P.BODY]: 1.2, [P.WING]: 1.2, [P.BELLY]: 1.0, [P.TAIL]: 0.8, [P.BIB]: 1.0,
 };
-
-function marksFor(sp: Species): Marks {
-  const l = sp.look;
-  return {
-    crown: !!l.crown, nape: !!l.nape, cheek: sp.archetype === 'owl' ? true : !!l.cheek,
-    crest: l.crest?.[0], bib: l.bib?.[0], mask: l.mask?.[0], wingbar: l.wingbar?.[0],
-  };
-}
 
 export function speciesShape(sp: Species): Shape {
   return shapeFor(sp.archetype, sp.shape ?? {});
@@ -155,158 +148,24 @@ export function rollVariant(hash: string): Variant {
   return 'normal';
 }
 
-// ─── frame rendering ───
-
-function iridescentAlt(idx: number, k: number): number {
-  const [L, a, b] = PAL_LAB[idx];
-  const lab: Lab = k ? [Math.min(70, L + 10), a + 22, b - 28] : [Math.min(70, L + 8), a - 22, b + 6];
-  return snapToPalette(lab, [IDX.eye, idx]);
-}
-
-function patternHit(pattern: Species['pattern'], part: number, x: number, y: number, ox: number, oy: number): number {
-  // returns 0 none, 1 dark, 2 light/alt
-  const u = x - ox + 64, v = y - oy + 64;
-  switch (pattern) {
-    case 'streaked':
-      if (part === P.BELLY) return u % 2 === 0 && v % 3 !== 0 ? 1 : 0;
-      if (part === P.BODY || part === P.WING) return u % 3 === 0 && v % 2 === 0 ? 1 : 0;
-      return 0;
-    case 'barred':
-      if (part === P.BELLY || part === P.TAIL) return v % 2 === 0 ? 1 : 0;
-      if (part === P.WING) return v % 3 === 0 ? 1 : 0;
-      return 0;
-    case 'spotted':
-      if (part === P.WING || part === P.BODY || part === P.BELLY) return (u + (v % 4 === 0 ? 2 : 0)) % 4 === 0 && v % 2 === 0 ? 2 : 0;
-      return 0;
-    case 'mottled': {
-      if (part !== P.WING && part !== P.BODY && part !== P.BELLY && part !== P.HEAD) return 0;
-      const h = ((u * 73856093) ^ (v * 19349663)) >>> 0;
-      return h % 5 === 0 ? 1 : h % 7 === 0 ? 2 : 0;
-    }
-    case 'iridescent':
-      if (part === P.WING || part === P.BODY) return (u + v) % 5 === 0 && v % 2 === 0 ? 2 : 0;
-      if (part === P.HEAD) return (u + v) % 6 === 0 ? 1 : 0;
-      return 0;
-  }
-  return 0;
-}
-
 export interface RenderOpts { silhouette?: boolean }
 
-const cache = new Map<string, Uint8Array[]>();
+const cache = new Map<string, Frame[]>();
 
-/** Render all FRAMES for a species + part palette. Deterministic. */
-export function renderFrames(sp: Species, parts: number[], opts: RenderOpts = {}): Uint8Array[] {
+/** Render all FRAMES for a species + part palette (v1.27: built from the owner's sprite sheet). Deterministic. */
+export function renderFrames(sp: Species, parts0: number[] | undefined, opts: RenderOpts = {}): Frame[] {
+  const parts = parts0?.length ? parts0 : defaultParts(sp); // older or partial records fall back to field-guide colours
   const key = `${sp.id}|${parts.join(',')}|${opts.silhouette ? 1 : 0}`;
   const hit = cache.get(key);
   if (hit) return hit;
-  const shape = speciesShape(sp);
-  const marks = marksFor(sp);
-  const raw = FRAMES.map((f) => renderOne(sp, shape, marks, parts, f, !!opts.silhouette));
-  const merged = opts.silhouette ? raw : limitColors(raw, 12);
+  let frames = birdFrames(sp, parts, defaultParts(sp));
+  if (opts.silhouette) {
+    const [r, g, b] = RGB[IDX.slate];
+    frames = frames.map((f) => { const o = f.map((v) => (v === CLEAR ? CLEAR : 0)) as Frame; o.pal = [[r, g, b]]; return o; });
+  }
   if (cache.size > 400) cache.clear();
-  cache.set(key, merged);
-  return merged;
-}
-
-function renderOne(sp: Species, shape: Shape, marks: Marks, parts: number[], f: FrameName, sil: boolean): Uint8Array {
-  const pm: Buf = buildFrame(shape, marks, f);
-  const out = new Uint8Array(S * S).fill(CLEAR);
-  const flying = f.startsWith('fly');
-  const ox = flying ? 14 : shape.bx, oy = flying ? 17 : shape.by;
-
-  if (sil) {
-    for (let i = 0; i < S * S; i++) if (pm[i]) out[i] = IDX.slate;
-    outline(out, pm, () => IDX.plum);
-    return out;
-  }
-
-  for (let y = 0; y < S; y++) {
-    for (let x = 0; x < S; x++) {
-      const part = pm[y * S + x];
-      if (!part) continue;
-      let c = parts[part];
-      const hit = patternHit(sp.pattern, part, x, y, ox, oy);
-      if (hit) {
-        if (sp.pattern === 'iridescent') c = iridescentAlt(c, hit === 2 ? 1 : 0);
-        else if (hit === 2 || sp.look.patternLight) c = lighter(c, 22);
-        else c = darker(c, 16);
-      }
-      out[y * S + x] = c;
-    }
-  }
-  // shading: lit from above
-  const lit = new Set<number>([P.HEAD, P.CROWN, P.BODY, P.WING]);
-  const shaded = new Set<number>([P.BELLY, P.BODY, P.TAIL, P.WING]);
-  const copy = out.slice();
-  for (let y = 0; y < S; y++) {
-    for (let x = 0; x < S; x++) {
-      const part = pm[y * S + x];
-      if (!part) continue;
-      const above = y > 0 ? pm[(y - 1) * S + x] : 0;
-      const below = y < S - 1 ? pm[(y + 1) * S + x] : 0;
-      if (lit.has(part) && above === P.NONE && copy[y * S + x] === parts[part]) out[y * S + x] = lighter(parts[part], 10);
-      else if (shaded.has(part) && (below === P.NONE || below === P.LEG) && copy[y * S + x] === parts[part]) out[y * S + x] = darker(parts[part], 12);
-    }
-  }
-  // eye ring
-  const ring = sp.look.eyeRing ? IDX[sp.look.eyeRing] : -1;
-  if (ring >= 0 && shape.front === false) {
-    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-      if (pm[y * S + x] !== P.EYE) continue;
-      for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
-        const nx = x + dx, ny = y + dy;
-        const np = pm[ny * S + nx];
-        if (np === P.HEAD || np === P.CROWN || np === P.MASK || np === P.CHEEK) out[ny * S + nx] = ring;
-      }
-    }
-  }
-  outline(out, pm, (nIdx, dir) => darker(nIdx, dir < 0 ? 18 : 30));
-  return out;
-}
-
-/** Selective 1px outline in a darkened local hue. Thin parts (beak, legs) stay un-outlined. */
-function outline(out: Uint8Array, pm: Buf, colorFor: (neighbour: number, dir: number) => number) {
-  const add: [number, number][] = [];
-  for (let y = 0; y < S; y++) {
-    for (let x = 0; x < S; x++) {
-      if (pm[y * S + x]) continue;
-      const counts = new Map<number, number>();
-      let dir = 0;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        const nx = x + dx, ny = y + dy;
-        if (nx < 0 || ny < 0 || nx >= S || ny >= S) continue;
-        const np = pm[ny * S + nx];
-        if (!np || np === P.LEG || np === P.BEAK) continue;
-        const c = out[ny * S + nx];
-        counts.set(c, (counts.get(c) ?? 0) + 1);
-        dir += dy; // neighbour below → we are above the bird (lit side)
-      }
-      if (!counts.size) continue;
-      let best = 0, bc = -1;
-      for (const [c, n] of counts) if (n > bc) { bc = n; best = c; }
-      add.push([y * S + x, colorFor(best, dir > 0 ? -1 : 1)]);
-    }
-  }
-  for (const [i, c] of add) out[i] = c;
-}
-
-/** PIX-7: cap distinct colours. Merge rarest into nearest, using one map for all frames. */
-function limitColors(frames: Uint8Array[], max: number): Uint8Array[] {
-  const counts = new Map<number, number>();
-  for (const f of frames) for (const c of f) if (c !== CLEAR) counts.set(c, (counts.get(c) ?? 0) + 1);
-  if (counts.size <= max) return frames;
-  const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0]);
-  const keep = sorted.slice(0, max).map((e) => e[0]);
-  if (!keep.includes(IDX.eye) && counts.has(IDX.eye)) keep[keep.length - 1] = IDX.eye;
-  const map = new Map<number, number>();
-  for (const [c] of sorted) {
-    if (keep.includes(c)) continue;
-    let best = keep[0], bd = Infinity;
-    for (const k of keep) { if (k === IDX.eye) continue; const d = deltaE2000(PAL_LAB[c], PAL_LAB[k]); if (d < bd) { bd = d; best = k; } }
-    map.set(c, best);
-  }
-  return frames.map((f) => f.map((c) => (map.has(c) ? map.get(c)! : c)));
+  cache.set(key, frames);
+  return frames;
 }
 
 export function fnv1a(bytes: ArrayLike<number>): string {
@@ -336,10 +195,9 @@ export function assembleSprite(sp: Species, photo: PhotoPalette | null, hash: st
 }
 
 export function passesGate(f: Uint8Array): boolean {
-  const distinct = new Set<number>();
   let opaque = 0;
-  for (const c of f) if (c !== CLEAR) { distinct.add(c); opaque++; }
-  return distinct.size <= 12 && opaque > 60;
+  for (const c of f) if (c !== CLEAR) opaque++;
+  return opaque > 60;
 }
 
 export function silhouette(sp: Species): Uint8Array {

@@ -1,7 +1,8 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useRef, useState, ReactNode, useSyncExternalStore } from 'react';
 import type { Species } from '../data/types';
-import { renderFrames, defaultParts, silhouette } from '../core/pixel/sprite';
+import { renderFrames, defaultParts, silhouette, type Frame } from '../core/pixel/sprite';
+import { FLY_FRAMES, FLY_MS } from '../core/pixel/birds';
 import { RGB, CLEAR } from '../core/palette';
 import { RARITY_META, Rarity } from '../core/rarity';
 import type { Verification } from '../core/model';
@@ -37,10 +38,11 @@ export function frameImage(f: Uint8Array, eyeOverride?: number): ImageData {
   const hit = imgCache.get(f);
   if (hit && eyeOverride === undefined) return hit;
   const img = new ImageData(32, 32);
+  const pal = (f as Frame).pal ?? RGB;
   for (let i = 0; i < 1024; i++) {
     const v = f[i];
     if (v === CLEAR) continue;
-    const c = RGB[v];
+    const c = pal[v];
     img.data[i * 4] = c[0]; img.data[i * 4 + 1] = c[1]; img.data[i * 4 + 2] = c[2]; img.data[i * 4 + 3] = 255;
   }
   if (eyeOverride === undefined) imgCache.set(f, img);
@@ -63,10 +65,11 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Uint8Array, x: numbe
 
 export type SpriteMode = 'idle' | 'fly' | 'static' | 'silhouette';
 
-/** Animated sprite: idle breathing 4f@6fps, blink every 4–7s, tail flick / peck now and then; flight 6f@12fps. */
-export function Sprite({ species, parts, mode = 'idle', scale = 4, bg, label, flip, className }: {
-  species: Species; parts?: number[]; mode?: SpriteMode; scale?: number; bg?: string; label?: string; flip?: boolean; className?: string;
+/** Animated sprite: idle head-bob, blink every 4–7s, tail flick / peck now and then; flight is an 8-frame wingbeat (`flapMs` per frame). */
+export function Sprite({ species, parts, mode = 'idle', scale = 4, bg, label, flip, className, flapMs = FLY_MS }: {
+  species: Species; parts?: number[]; mode?: SpriteMode; scale?: number; bg?: string; label?: string; flip?: boolean; className?: string; flapMs?: number;
 }) {
+  const flapRef = useRef(flapMs); flapRef.current = flapMs;
   const ref = useRef<HTMLCanvasElement>(null);
   const reduced = useReducedMotion();
   useEffect(() => {
@@ -80,14 +83,14 @@ export function Sprite({ species, parts, mode = 'idle', scale = 4, bg, label, fl
       if (bg) { const s = scratch!.getContext('2d')!; s.clearRect(0, 0, 32, 32); s.putImageData(img, 0, 0); ctx.drawImage(scratch!, 0, 0); }
       else ctx.putImageData(img, 0, 0);
     };
-    if (mode === 'static' || mode === 'silhouette' || reduced) { paint(mode === 'fly' ? 8 : 0); return; }
+    if (mode === 'static' || mode === 'silhouette' || reduced) { paint(mode === 'fly' ? 10 : 0); return; }
     // per-instance randomness only affects timing, never pixels
     let nextBlink = performance.now() + 4000 + Math.random() * 3000;
     let nextAction = performance.now() + 6000 + Math.random() * 6000;
     let actionUntil = 0, action = 5, last = -1;
     const stop = onTick((t) => {
       let i: number;
-      if (mode === 'fly') i = 8 + (Math.floor(t / 83) % 6);
+      if (mode === 'fly') { const ms = flapRef.current; i = 8 + (Math.floor(t / ms) % FLY_FRAMES); }
       else {
         if (t > nextBlink) { if (t > nextBlink + 170) nextBlink = t + 4000 + Math.random() * 3000; }
         if (t > nextAction && !actionUntil) { actionUntil = t + 340; action = Math.random() < 0.5 ? 5 : 6; }

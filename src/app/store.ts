@@ -10,7 +10,7 @@ import { getRegion, loadGeo, defaultRegionCode } from '../data/geo';
 import { assembleSprite, PhotoPalette, PIPELINE_VERSION } from '../core/pixel/sprite';
 import type { Analysis } from '../core/pixel/extract';
 import { lns, rarityOf, Rarity } from '../core/rarity';
-import { catchXp, applyStreak, dayKey, rankFor, CatchMode, trainerLevel } from '../core/xp';
+import { catchCoins, catchXp, applyStreak, dayKey, rankFor, CatchMode, trainerLevel } from '../core/xp';
 import { BADGES, newlyEarned, TIER_FEATHERS, Badge } from '../core/badges';
 import { pickDaily, pickWeekly, pickSeasonal, weekKey, challengeProgress, CHALLENGE_BY_ID } from '../core/challenges';
 import { sunTimes, dayPhase } from '../core/sun';
@@ -196,8 +196,8 @@ export async function fileCatch(input: CatchInput): Promise<CatchResult> {
     newSpecies: firstRecord && input.verification !== 'vagrant', regionFirst, fieldcraft: fc?.total ?? 0,
     rarity, streakDays: streak.days, mode: input.mode,
   });
-  // Feather Coins are the in-game currency: every real catch pays, new species pay most
-  const feathers0 = seen ? 4 : (firstRecord ? 20 : 12) + (newPlumage ? 20 : 0);
+  // Feather Coins are the in-game currency: every real catch pays, new species pay most, rarer birds pay more
+  const feathers0 = catchCoins({ seen, firstRecord, newPlumage, rarity });
   // first-bird bonus: the very first discovery pays double, so day one ends with a win
   // missions: find the bird you set out for in time for a bonus
   const missionDone = !seen && !!state.mission && state.mission.speciesId === input.speciesId && at.getTime() < Date.parse(state.mission.until);

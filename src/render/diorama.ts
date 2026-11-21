@@ -4,6 +4,7 @@ import type { Habitat, Species } from '../data/types';
 import type { DayPhase } from '../core/sun';
 import { HEX, IDX } from '../core/palette';
 import { renderFrames } from '../core/pixel/sprite';
+import { FLY_FRAMES, FLY_MS } from '../core/pixel/birds';
 import { drawFrame, onTick } from '../ui/components';
 
 const C = (n: keyof typeof IDX) => HEX[IDX[n]];
@@ -441,8 +442,8 @@ export class Diorama {
   }
 
   frameFor(b: Bird, t: number): number {
-    if (b.state !== 'perched' || b.returnAt) return 8 + (Math.floor(t / 83) % 6);
-    if (b.pokeAt && t - b.pokeAt < 420) return 8 + (Math.floor((t - b.pokeAt) / 70) % 6);
+    if (b.state !== 'perched' || b.returnAt) return 8 + (Math.floor((t + b.seed * 37) / FLY_MS) % FLY_FRAMES);
+    if (b.pokeAt && t - b.pokeAt < 420) return 8 + (Math.floor((t - b.pokeAt) / FLY_MS) % FLY_FRAMES);
     if (b.eatUntil && t < b.eatUntil) return Math.floor(t / 180) % 2 ? 6 : 0; // pecking at the feeder
     if (this.opts.reduced) return 0;
     if (t > b.blinkAt) { if (t > b.blinkAt + 170) b.blinkAt = t + 4000 + ((b.seed * 7919 + t) % 3000); else return 4; }

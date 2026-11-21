@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { catchXp, applyStreak } from '../src/core/xp';
+import { catchXp, applyStreak, catchCoins } from '../src/core/xp';
 import { rarityOf } from '../src/core/rarity';
 import { SPECIES, SPECIES_BY_ID } from '../src/data/species';
 import { REGIONS } from '../src/data/regions';
@@ -71,5 +71,18 @@ describe('pixel pipeline (PIX-7, PIX-8, ART-5)', () => {
     const sil = (id: string) => fnv1a(renderFrames(SPECIES_BY_ID[id], assembleSprite(SPECIES_BY_ID[id], a.palette, a.hash).parts)[0].map((c) => (c === CLEAR ? 0 : 1)));
     expect(sil('amerob')).not.toBe(sil('rocpig'));
     expect(sil('mallar')).not.toBe(sil('grbher'));
+  });
+});
+
+describe('rarer birds pay more', () => {
+  it('Feather Coins and XP rise with rarity', () => {
+    const c = (rarity: 'common' | 'uncommon' | 'rare' | 'mega' | 'legendary') => catchCoins({ seen: false, firstRecord: true, newPlumage: false, rarity });
+    expect(c('common')).toBe(20);
+    expect(c('uncommon')).toBeGreaterThan(c('common'));
+    expect(c('rare')).toBeGreaterThan(c('uncommon'));
+    expect(c('mega')).toBeGreaterThan(c('rare'));
+    expect(c('legendary')).toBe(120);
+    const x = (rarity: 'common' | 'legendary') => catchXp({ newSpecies: true, regionFirst: false, fieldcraft: 50, rarity, streakDays: 0, mode: 'field' });
+    expect(x('legendary')).toBeGreaterThan(x('common') * 5);
   });
 });

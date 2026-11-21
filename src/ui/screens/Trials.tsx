@@ -407,8 +407,9 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
           playClip(e.kind === 'super' || e.kind === 'big' ? 'tCritical' : def.clip, { vol: 0.8 });
           if (e.side === 'foe' && e.kind === 'big') setCharging(false);
           if (e.kind === 'super') { setFlash(true); setTimeout(() => setFlash(false), 260); }
-          const l = anim(e.side, 'lunge', 300);
-          if (!reduced) { setProj({ key: ++k.current, from: e.side, sheet: def.proj, big: e.kind === 'super' || e.kind === 'big' }); await sleep(380); setProj(null); }
+          // wind-up, dash (the projectile leaves at the peak of the dash), then glide back
+          const l = anim(e.side, 'lunge', 560);
+          if (!reduced) { await sleep(200); setProj({ key: ++k.current, from: e.side, sheet: def.proj, big: e.kind === 'super' || e.kind === 'big' }); await sleep(340); setProj(null); }
           await l; break;
         }
         case 'recall': playClip('tPick', { vol: 0.5 }); await anim(e.side, 'rest', 420); setSide(e.side, (v) => ({ ...v, hidden: true })); break;
@@ -418,7 +419,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
           if (e.eff) setTimeout(() => pop(e.side, e.eff > 0 ? 'Strong!' : 'Weak…', e.eff > 0 ? 'crit' : 'miss'), 180);
           playClip(e.blocked ? 'tTie' : 'tHit', { vol: 0.75 });
           if (e.crit || e.big) { haptic([20, 30, 20]); if (!reduced) { setShake(true); setTimeout(() => setShake(false), 340); } } else haptic(10);
-          await anim(e.side, 'hit', 300); break;
+          await anim(e.side, 'hit', 440); break;
         }
         case 'miss': pop(e.side, 'Miss', 'miss'); await sleep(260); break;
         case 'hp': setSide(e.side, (v) => ({ ...v, hp: e.value, max: e.max })); await sleep(reduced ? 80 : 300); break;
@@ -427,7 +428,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
         case 'guard': playClip('tPick', { vol: 0.6 }); burst(e.side, FX_RING, 2); pop(e.side, 'Guard', 'info'); await anim(e.side, 'guard', 320); break;
         case 'charge': setCharging(true); playClip('tStart', { vol: 0.7 }); await anim('foe', 'charge', 520); break;
         case 'gauge': setGauge(e.value); break;
-        case 'rest': playClip('tTie', { vol: 0.7 }); if (e.side === 'foe') setCharging(false); await anim(e.side, 'rest', 620); setSide(e.side, (v) => ({ ...v, hidden: true })); break;
+        case 'rest': playClip('tTie', { vol: 0.7 }); if (e.side === 'foe') setCharging(false); await anim(e.side, 'rest', 760); setSide(e.side, (v) => ({ ...v, hidden: true })); break;
         case 'send': {
           const f = e.side === 'you' ? before.you[e.index] : before.foe[e.index];
           if (e.side === 'you') used.current.add(party[e.index]?.sightingId ?? '');
@@ -538,7 +539,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
           <span className="tplat" aria-hidden />
           <div className={`tbird ${foe.anim} ${charging ? 'charging' : ''}`}>
             {charging && <span className="twarn" aria-hidden>!</span>}
-            <Sprite species={them.c.sp} scale={3} mode={foe.anim === 'lunge' ? 'fly' : 'idle'} flip />
+            <span className="tbody"><Sprite species={them.c.sp} scale={3} mode="fly" flapMs={foe.anim === 'lunge' ? 38 : 92} flip /></span>
             {fx?.side === 'foe' && <Fx key={fx.key} sheet={fx.sheet} scale={fx.scale} ms={480} className="tboom" />}
             {pops.filter((p) => p.side === 'foe').map((p) => <span key={p.id} className={`tpop ${p.kind}`}>{p.text}</span>)}
           </div>
@@ -546,7 +547,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
         <div className={`tspot you ${you.hidden ? 'gone' : ''}`}>
           <span className="tplat" aria-hidden />
           <div className={`tbird ${you.anim}`}>
-            <Sprite species={me.c.sp} parts={me.c.parts} scale={5} mode={you.anim === 'lunge' ? 'fly' : 'idle'} />
+            <span className="tbody"><Sprite species={me.c.sp} parts={me.c.parts} scale={5} mode="fly" flapMs={you.anim === 'lunge' ? 38 : 92} /></span>
             {fx?.side === 'you' && <Fx key={fx.key} sheet={fx.sheet} scale={fx.scale} ms={480} className="tboom" />}
             {pops.filter((p) => p.side === 'you').map((p) => <span key={p.id} className={`tpop ${p.kind}`}>{p.text}</span>)}
           </div>

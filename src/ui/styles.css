@@ -1155,3 +1155,55 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 @media (max-height: 700px) { .tcmd-b { min-height: 48px; } }
 @media (max-width: 360px) { .tcmd-b { font-size: 13px; } .tfight-top { font-size: 9px; } }
 @media (max-width: 360px) { .tgrid .tact-ic { display: none; } .tgrid .tact { padding: 6px 8px; } }
+
+/* ── Field Trials v1.27: fluid motion. Birds hover and flap above their platforms; every move is eased, never stepped. ── */
+.tbird .tbody { display: block; animation: tbfloat 2.4s ease-in-out infinite; will-change: transform; }
+.tspot.foe .tbird .tbody { animation-duration: 2.1s; animation-delay: -1s; }
+@keyframes tbfloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.tbird { will-change: transform; }
+.tbird.enter { animation: tbswoopF 620ms cubic-bezier(.16, .9, .3, 1.12) both; }
+.tspot.you .tbird.enter { animation-name: tbswoopY; }
+@keyframes tbswoopF { from { transform: translate(calc(-50% + 160px), -90px) scale(.55); opacity: 0; } 55% { opacity: 1; } }
+@keyframes tbswoopY { from { transform: translate(calc(-50% - 200px), -60px) scale(.6); opacity: 0; } 55% { opacity: 1; } }
+/* attack: wind-up (pull back + squash) → dash with after-images → hold → glide home */
+.tbird.lunge { animation: tbatkY 560ms cubic-bezier(.45, 0, .2, 1) both; }
+.tspot.foe .tbird.lunge { animation-name: tbatkF; }
+@keyframes tbatkY {
+  0% { transform: translateX(-50%); }
+  26% { transform: translate(calc(-50% - 16px), 6px) scale(1.08, .9); }
+  46% { transform: translate(calc(-50% + 58px), -26px) scale(.92, 1.08); }
+  60% { transform: translate(calc(-50% + 52px), -22px) scale(1); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes tbatkF {
+  0% { transform: translateX(-50%); }
+  26% { transform: translate(calc(-50% + 14px), -6px) scale(1.08, .9); }
+  46% { transform: translate(calc(-50% - 52px), 22px) scale(.92, 1.08); }
+  60% { transform: translate(calc(-50% - 46px), 18px) scale(1); }
+  100% { transform: translateX(-50%); }
+}
+.tbird.lunge canvas { animation: tbtrailY 560ms linear both; }
+.tspot.foe .tbird.lunge canvas { animation-name: tbtrailF; }
+@keyframes tbtrailY { 0%, 30%, 70%, 100% { filter: drop-shadow(3px 4px 0 rgba(0,0,0,.4)); } 44% { filter: drop-shadow(-18px 8px 0 rgba(255,255,255,.32)) drop-shadow(-36px 16px 0 rgba(255,255,255,.16)) drop-shadow(-54px 24px 0 rgba(255,255,255,.07)); } }
+@keyframes tbtrailF { 0%, 30%, 70%, 100% { filter: drop-shadow(3px 4px 0 rgba(0,0,0,.4)); } 44% { filter: drop-shadow(16px -8px 0 rgba(255,255,255,.32)) drop-shadow(32px -16px 0 rgba(255,255,255,.16)) drop-shadow(48px -24px 0 rgba(255,255,255,.07)); } }
+/* hit: white flash, knock-back, wobble and settle */
+.tbird.hit { animation: tbknockY 440ms cubic-bezier(.2, .8, .3, 1) both; }
+.tspot.foe .tbird.hit { animation-name: tbknockF; }
+@keyframes tbknockY { 0% { transform: translateX(-50%); } 18% { transform: translate(calc(-50% - 14px), 4px) rotate(-6deg); } 40% { transform: translate(calc(-50% + 5px), 0) rotate(3deg); } 62% { transform: translate(calc(-50% - 3px), 0) rotate(-1.5deg); } 100% { transform: translateX(-50%); } }
+@keyframes tbknockF { 0% { transform: translateX(-50%); } 18% { transform: translate(calc(-50% + 14px), -4px) rotate(6deg); } 40% { transform: translate(calc(-50% - 5px), 0) rotate(-3deg); } 62% { transform: translate(calc(-50% + 3px), 0) rotate(1.5deg); } 100% { transform: translateX(-50%); } }
+.tbird.hit canvas { animation: tbflash 440ms linear both; }
+@keyframes tbflash { 0%, 10% { filter: brightness(6) saturate(0); } 22% { filter: none; } 32% { filter: brightness(3) saturate(0); } 44%, 100% { filter: drop-shadow(3px 4px 0 rgba(0,0,0,.4)); } }
+/* resting: a little tumble, then it flies off */
+.tbird.rest { animation: tbaway 760ms cubic-bezier(.5, 0, .9, .4) forwards; }
+@keyframes tbaway { 0% { transform: translateX(-50%); } 22% { transform: translate(-50%, 10px) rotate(-10deg); } 100% { transform: translate(40%, -220px) rotate(18deg) scale(.45); opacity: 0; } }
+.tbird.guard canvas { animation: tbguard 320ms ease-out both; }
+@keyframes tbguard { from { filter: drop-shadow(0 0 0 #fff) drop-shadow(0 0 14px var(--river)); } to { filter: drop-shadow(0 0 0 #fff) drop-shadow(0 0 6px var(--river)); } }
+.tbird.charging canvas { animation: tbcharge2 .7s ease-in-out infinite; }
+@keyframes tbcharge2 { 0%, 100% { filter: drop-shadow(0 0 4px #E05A3A); transform: scale(1); } 50% { filter: drop-shadow(0 0 14px #FF7A4A); transform: scale(1.07); } }
+.tb.shake .tb-stage { animation: tbshake2 360ms cubic-bezier(.3, .7, .4, 1); }
+@keyframes tbshake2 { 10% { transform: translate(-7px, 3px); } 25% { transform: translate(6px, -4px); } 42% { transform: translate(-4px, 2px); } 60% { transform: translate(2px, -1px); } 80% { transform: translate(-1px, 0); } }
+/* projectiles fly on an arc with ease, and spin a little */
+.tproj3 { animation: tbarc2 340ms cubic-bezier(.35, 0, .65, 1) forwards; }
+@keyframes tbarc2 { 0% { left: var(--x0); top: var(--y0); transform: scale(.6) rotate(-12deg); } 50% { top: calc((var(--y0) + var(--y1)) / 2 - 9%); transform: scale(1.1) rotate(0deg); } 100% { left: var(--x1); top: var(--y1); transform: scale(1) rotate(10deg); } }
+.tpop { animation-timing-function: cubic-bezier(.2, .9, .3, 1) !important; }
+@media (prefers-reduced-motion: reduce) { .tbird .tbody { animation: none; } }

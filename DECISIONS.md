@@ -144,3 +144,25 @@ One line per meaningful choice, with the reason.
   - **Status chips** under HP: PWR▲, PWR▼, FOCUS, SHIELD, DAZED.
   - **Intro:** "Rival Wren wants to battle!" with the full 2:3 portrait (no square crop).
   - **Ticket copy:** the ticket count is now a chip that shows or hides a one-line explanation (remembered). It replaces the longer paragraphs on the ladder, party screen and in How it works. The catch-screen line is shortened to "+1 TRIAL TICKET (n/5)".
+- **Bird sprites rebuilt from the owner's 32-bit sprite sheet (v1.27, owner request: "all birds replaced by these birds… fluid flying animation and attack").**
+  - **Source:** the sheet's 34 sprites (32×32) are in `tools/birds/sheet.png`. `tools/birds/export.py` turns them into `src/core/pixel/birdart.ts`, and the export is reproducible.
+  - **Outlines:** the sheet uses 5 outlines (songbird, duck, goose, gull, hovering hummingbird). Each is labelled into body parts. Shading is the median per-pixel lightness offset across all sprites in the group, so recoloured birds keep the artist's lighting.
+  - **New shapes:** I drew bases for raptor, owl, heron and guineafowl in the same style. Variants cover the rest: heavy-billed crows/jays, doves, thin-billed warblers, long-billed starlings and mynas, decurved sunbirds and hoopoe, long-tailed wagtails and tits, chisel-billed woodpeckers, parrots, kookaburra, loon, plovers, ibises and short-billed egrets. That makes 25 forms. Live iNaturalist species are mapped by family, then archetype.
+  - **Species on the sheet** (Robin, Cardinal, Goldfinch, Oriole, Waxwing, Junco, House Sparrow, Red-winged Blackbird, Tufted Titmouse, Mallard, Canada Goose, Ring-billed Gull, Ruby-throated Hummingbird):
+    - They render the owner's pixels exactly (tested).
+    - Photo tint and colour morphs shift those originals in Lab.
+  - **Every other species** is recoloured from its field-guide colours, with markings (cap, crest, mask, bib, cheek, nape, wing bars, eye ring) and patterns placed in marking zones on each base.
+  - **Animation:**
+    - All frames are generated from the base: head-bob idle, blink, tail flick, peck, hop.
+    - A new **8-frame eased wingbeat** comes from a wing generator anchored at each shape's shoulder. The near and far wings have leading-edge highlights, darker primaries and separated feather tips, and the colours are sampled from the bird's own folded wing.
+    - The flight cycle went from 6 to 8 frames at about 62ms.
+  - **Rendering change:** frames now carry their own colour table (`Frame.pal`) instead of the 32-colour palette. `frameImage`, the Aviary, the share card and the catch reveal were updated. `PIPELINE_VERSION` is now 4.
+  - **Battle motion:**
+    - Birds hover-flap above their platforms. Wingbeats speed up during attacks.
+    - Attacks wind up, dash with after-images and glide back on eased curves.
+    - Hits flash white, knock back and settle. Fainting is a tumble then a fly-off. Entrances swoop in.
+    - Projectiles arc, and screen shake decays. There are no stepped animations left in battle movement.
+- **Rarer birds pay more (v1.27, owner request).**
+  - XP already scaled ×1/×1.5/×2.5/×5/×10 by rarity.
+  - Feather Coins now scale too, ×1/×1.5/×2.5/×4/×6. This is a gentler curve so lens prices stay meaningful: a first Legendary record pays 120 coins.
+  - The catch screen calls out the bonus: "★ RARE BIRD! Rarer birds pay more: ×2.5 XP and ×2.5 Feather Coins."

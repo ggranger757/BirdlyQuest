@@ -15,6 +15,13 @@ export function catchXp(i: XpInput): number {
   return Math.round(base * RARITY_META[i.rarity].mult * streak * modeMult);
 }
 
+/** Feather Coins scale with rarity too (a gentler curve than XP, to keep the shop economy sane). */
+export const COIN_MULT: Record<Rarity, number> = { common: 1, uncommon: 1.5, rare: 2.5, mega: 4, legendary: 6 };
+export function catchCoins(i: { seen: boolean; firstRecord: boolean; newPlumage: boolean; rarity: Rarity }): number {
+  const base = i.seen ? 4 : (i.firstRecord ? 20 : 12) + (i.newPlumage ? 20 : 0);
+  return Math.round(base * COIN_MULT[i.rarity]);
+}
+
 export const RANKS = [
   { name: 'Fledgling', xp: 0 }, { name: 'Greenhorn', xp: 250 }, { name: 'Field Hand', xp: 750 },
   { name: 'Birder', xp: 1800 }, { name: 'Twitcher', xp: 4000 }, { name: 'Lister', xp: 8000 },

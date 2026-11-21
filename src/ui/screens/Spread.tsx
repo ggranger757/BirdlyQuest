@@ -104,7 +104,7 @@ export async function renderShareCard(s: ReturnType<typeof Object>, sp: any, nam
     const sh = sky.naturalHeight, sw = sh, sx = Math.round((sky.naturalWidth - sw) * 0.62);
     g.imageSmoothingEnabled = false; g.drawImage(sky, sx, 0, sw, sh, ox - 8, oy - 8, pw, pw);
   } else { g.fillStyle = HEX[s.sprite.bg]; g.fillRect(ox - 8, oy - 8, pw, pw); }
-  for (let i = 0; i < 1024; i++) { if (f[i] === CLEAR) continue; const [r, gg, b] = RGB[f[i]]; g.fillStyle = `rgb(${r},${gg},${b})`; g.fillRect(ox + (i % 32) * px, oy + ((i / 32) | 0) * px, px, px); }
+  for (let i = 0; i < 1024; i++) { if (f[i] === CLEAR) continue; const [r, gg, b] = f.pal[f[i]]; g.fillStyle = `rgb(${r},${gg},${b})`; g.fillRect(ox + (i % 32) * px, oy + ((i / 32) | 0) * px, px, px); }
   g.fillStyle = '#14121F'; g.font = '34px Silkscreen'; g.textAlign = 'center';
   wrap(g, name.toUpperCase(), W * 0.75 - 30, 690, 420, 42);
   g.font = 'italic 28px Inter'; g.fillStyle = '#4a4660'; if (sp.sci) g.fillText(sp.sci, W * 0.75 - 30, 790);

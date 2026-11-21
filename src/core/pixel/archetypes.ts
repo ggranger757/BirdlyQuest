@@ -54,11 +54,11 @@ export function shapeFor(arch: Archetype, over: Partial<Shape> = {}): Shape {
 
 export type FrameName =
   | 'idle0' | 'idle1' | 'idle2' | 'idle3' | 'blink' | 'flick' | 'peck' | 'hop'
-  | 'fly0' | 'fly1' | 'fly2' | 'fly3' | 'fly4' | 'fly5';
+  | 'fly0' | 'fly1' | 'fly2' | 'fly3' | 'fly4' | 'fly5' | 'fly6' | 'fly7';
 
 export const FRAMES: FrameName[] = [
   'idle0', 'idle1', 'idle2', 'idle3', 'blink', 'flick', 'peck', 'hop',
-  'fly0', 'fly1', 'fly2', 'fly3', 'fly4', 'fly5',
+  'fly0', 'fly1', 'fly2', 'fly3', 'fly4', 'fly5', 'fly6', 'fly7',
 ];
 
 interface Anim {
