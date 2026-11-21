@@ -95,3 +95,12 @@ One line per meaningful choice, with the reason.
   - **HP panels:** a `minmax(0, 1fr) auto minmax(0, 1fr)` grid so both always fit. Under 360px wide they get tighter padding and smaller names, and the "HP" suffix is hidden. Under 700px and 600px tall, the birds scale down and the tray compacts.
   - **Verified:** at 320×568, 360×640, 390×844 and 430×932, in both themes, both HP panels sit on screen, the tray is fully visible and nothing overflows.
   - **Battle music:** the owner's 7 tracks are in `public/music/battle/`: Pip default-1, Wren battle-6, Captain Gale battle-4, Mara default-3, Old Hawkins battle-8, Professor Merlin elven, and wandering birders rotate through battle-2/8/6 and default-1. They play when Music is on in Settings, the previous music resumes afterwards, and the chiptune battle theme is the fallback.
+- **Rival trainer portraits and RPG-style move names (v1.24, user request).**
+  - **Portraits:** the owner's 60 trainer portraits are in `public/trainers/` (trimmed to a common frame, 128×192, quantised; 756KB total instead of 6MB). Cast: Pip t010, Wren t046, Captain Gale t004, Mara t057, Old Hawkins t053. Professor Merlin keeps his own sprite as the mascot. Wandering birders get one of the other 55, picked by the challenge's id.
+  - **Where they appear:** the rival ladder (greyed when locked), the party screen, the battle intro card, the result quote, and the challenge pop-up (portrait vs your new bird).
+  - **Rival speech:** whenever the rival speaks in battle (opening line, sending out their next bird, conceding or gloating), the dialogue box shows their name tag and portrait with the line in quotes. Narration stays plain.
+  - **Move names:**
+    - Quick: Echo Chirp, Glimmer Wing, Gale Wing, Quick Peck.
+    - Super: Symphony Burst, Prismatic Dance, Tempest Dive, Harvest Frenzy.
+    - Rival Big Moves are named per style (Thunder Chorus, Radiant Plume, Cyclone Dive, Feast Storm) and announced as "…is powering up Cyclone Dive! Guard!".
+    - Signature skills (each still tied to its real-life fact): Daybreak Aria, Mirror Mimic, Prism Flash, Falcon Stoop, Crow's Gambit, Hidden Cache, Thunder Drum, Phantom Glide, Hyper Hover, Homing Comet, Aero Ace, Zen Stalk, Aqua Shield, Plunder Dive, Flock Rally.

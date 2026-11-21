@@ -12,7 +12,7 @@ export type Contest = 'song' | 'display' | 'sky' | 'forage';
 export const CONTEST_IDS: Contest[] = ['song', 'display', 'sky', 'forage'];
 
 export type Sheet = { src: string; frames: number; fw: number; fh: number };
-export interface ContestDef { id: Contest; name: string; quick: string; super: string; proj: Sheet; boom: Sheet; clip: 'tSong' | 'tDisplay' | 'tSky' | 'tForage'; color: string }
+export interface ContestDef { id: Contest; name: string; quick: string; super: string; big: string; proj: Sheet; boom: Sheet; clip: 'tSong' | 'tDisplay' | 'tSky' | 'tForage'; color: string }
 const P = {
   wave: { src: 'fx/trials/spell_wave_gold_proj.png', frames: 6, fw: 16, fh: 26 }, goldBoom: { src: 'fx/trials/spell_gold_boom.png', frames: 8, fw: 40, fh: 40 },
   orb: { src: 'fx/trials/spell_orb_gold_proj.png', frames: 6, fw: 24, fh: 14 }, star: { src: 'fx/trials/star_boom.png', frames: 7, fw: 32, fh: 32 },
@@ -20,10 +20,10 @@ const P = {
   leaf: { src: 'fx/trials/leaf_proj.png', frames: 2, fw: 16, fh: 16 }, leafBoom: { src: 'fx/trials/leaf_boom.png', frames: 7, fw: 48, fh: 48 },
 } satisfies Record<string, Sheet>;
 export const CONTESTS: Record<Contest, ContestDef> = {
-  song: { id: 'song', name: 'Song', quick: 'Chirp', super: 'Full Aria', proj: P.wave, boom: P.goldBoom, clip: 'tSong', color: 'var(--sun)' },
-  display: { id: 'display', name: 'Display', quick: 'Show Off', super: 'Courtship Dance', proj: P.orb, boom: P.star, clip: 'tDisplay', color: 'var(--robin)' },
-  sky: { id: 'sky', name: 'Sky', quick: 'Swoop', super: 'Sky Dive', proj: P.wind, boom: P.windBoom, clip: 'tSky', color: 'var(--river)' },
-  forage: { id: 'forage', name: 'Forage', quick: 'Peck', super: 'Feeding Frenzy', proj: P.leaf, boom: P.leafBoom, clip: 'tForage', color: 'var(--moss)' },
+  song: { id: 'song', name: 'Song', quick: 'Echo Chirp', super: 'Symphony Burst', big: 'Thunder Chorus', proj: P.wave, boom: P.goldBoom, clip: 'tSong', color: 'var(--sun)' },
+  display: { id: 'display', name: 'Display', quick: 'Glimmer Wing', super: 'Prismatic Dance', big: 'Radiant Plume', proj: P.orb, boom: P.star, clip: 'tDisplay', color: 'var(--robin)' },
+  sky: { id: 'sky', name: 'Sky', quick: 'Gale Wing', super: 'Tempest Dive', big: 'Cyclone Dive', proj: P.wind, boom: P.windBoom, clip: 'tSky', color: 'var(--river)' },
+  forage: { id: 'forage', name: 'Forage', quick: 'Quick Peck', super: 'Harvest Frenzy', big: 'Feast Storm', proj: P.leaf, boom: P.leafBoom, clip: 'tForage', color: 'var(--moss)' },
 };
 export const FX_CRIT: Sheet = { src: 'fx/trials/fx_blast.png', frames: 8, fw: 48, fh: 48 };
 export const FX_RING: Sheet = { src: 'fx/trials/sa_nova.png', frames: 6, fw: 52, fh: 48 };
@@ -75,21 +75,21 @@ export type SkillKind = 'weaken' | 'double' | 'dazzle' | 'crit' | 'gauge' | 'hea
 export interface Skill { id: string; name: string; tag: string; fact: string; kind: SkillKind; power: number; hits: number; style: Contest }
 const S = (id: string, name: string, style: Contest, kind: SkillKind, power: number, hits: number, tag: string, fact: string): Skill => ({ id, name, style, kind, power, hits, tag, fact });
 export const SKILLS: Record<string, Skill> = Object.fromEntries([
-  S('song', 'Dawn Chorus', 'song', 'weaken', 1.6, 1, 'Big hit · lowers its power', 'Songbirds sing hardest at dawn to claim their territory.'),
-  S('mimic', 'Mimicry', 'song', 'double', 0.95, 2, 'Hits twice', 'Mockingbirds, starlings and jays copy the calls of other birds.'),
-  S('display', 'Plumage Flash', 'display', 'dazzle', 1.5, 1, 'Hit · dazzles: it may miss', 'Brightly coloured birds flash their feathers to impress.'),
-  S('raptor', 'Stoop Dive', 'sky', 'crit', 2.1, 1, 'Huge hit · often critical', 'A diving peregrine falcon tops 300 km/h, the fastest animal on Earth.'),
-  S('corvid', 'Clever Trick', 'forage', 'gauge', 1.5, 1, 'Hit · fills your Super', 'Crows and jays solve puzzles and even use tools.'),
-  S('cache', 'Seed Cache', 'forage', 'heal', 1.35, 1, 'Hit · heals 20% HP', 'Chickadees hide thousands of seeds and remember where each one is.'),
-  S('drum', 'Drum Roll', 'forage', 'triple', 0.65, 3, 'Hits 3 times', 'Woodpeckers drum on wood up to 20 times a second.'),
-  S('owl', 'Silent Flight', 'sky', 'pierce', 1.8, 1, 'Hit · goes through Guard', "An owl's soft feathers make its flight almost silent."),
-  S('hover', 'Hover Blitz', 'sky', 'triple', 0.7, 3, 'Hits 3 times', 'Hummingbirds beat their wings up to 80 times a second.'),
-  S('dove', 'Homing Rush', 'sky', 'sure', 1.75, 1, 'Hit · never misses', 'Pigeons can find their way home from hundreds of kilometres away.'),
-  S('aerial', 'Aerial Ace', 'sky', 'big', 2.0, 1, 'Huge hit', 'Swallows and swifts catch insects in mid-air at full speed.'),
-  S('wader', 'Patient Stalk', 'forage', 'focus', 0, 0, 'Next move does ×2.2', 'Herons stand perfectly still, then lunge in a flash.'),
-  S('duck', 'Waterproof', 'display', 'shelter', 0, 0, 'Heals 25% · blocks next hit', "Water rolls right off a duck's oily feathers."),
-  S('gull', 'Snatch & Grab', 'forage', 'drain', 1.45, 1, 'Hit · heals half of it', 'Gulls are famous for snatching food on the fly.'),
-  S('flock', 'Flock Call', 'song', 'heal', 1.4, 1, 'Hit · heals 20% HP', 'Sparrows live in chatty flocks that watch out for each other.'),
+  S('song', 'Daybreak Aria', 'song', 'weaken', 1.6, 1, 'Big hit · lowers its power', 'Songbirds sing hardest at dawn to claim their territory.'),
+  S('mimic', 'Mirror Mimic', 'song', 'double', 0.95, 2, 'Hits twice', 'Mockingbirds, starlings and jays copy the calls of other birds.'),
+  S('display', 'Prism Flash', 'display', 'dazzle', 1.5, 1, 'Hit · dazzles: it may miss', 'Brightly coloured birds flash their feathers to impress.'),
+  S('raptor', 'Falcon Stoop', 'sky', 'crit', 2.1, 1, 'Huge hit · often critical', 'A diving peregrine falcon tops 300 km/h, the fastest animal on Earth.'),
+  S('corvid', "Crow's Gambit", 'forage', 'gauge', 1.5, 1, 'Hit · fills your Super', 'Crows and jays solve puzzles and even use tools.'),
+  S('cache', 'Hidden Cache', 'forage', 'heal', 1.35, 1, 'Hit · heals 20% HP', 'Chickadees hide thousands of seeds and remember where each one is.'),
+  S('drum', 'Thunder Drum', 'forage', 'triple', 0.65, 3, 'Hits 3 times', 'Woodpeckers drum on wood up to 20 times a second.'),
+  S('owl', 'Phantom Glide', 'sky', 'pierce', 1.8, 1, 'Hit · goes through Guard', "An owl's soft feathers make its flight almost silent."),
+  S('hover', 'Hyper Hover', 'sky', 'triple', 0.7, 3, 'Hits 3 times', 'Hummingbirds beat their wings up to 80 times a second.'),
+  S('dove', 'Homing Comet', 'sky', 'sure', 1.75, 1, 'Hit · never misses', 'Pigeons can find their way home from hundreds of kilometres away.'),
+  S('aerial', 'Aero Ace', 'sky', 'big', 2.0, 1, 'Huge hit', 'Swallows and swifts catch insects in mid-air at full speed.'),
+  S('wader', 'Zen Stalk', 'forage', 'focus', 0, 0, 'Next move does ×2.2', 'Herons stand perfectly still, then lunge in a flash.'),
+  S('duck', 'Aqua Shield', 'display', 'shelter', 0, 0, 'Heals 25% · blocks next hit', "Water rolls right off a duck's oily feathers."),
+  S('gull', 'Plunder Dive', 'forage', 'drain', 1.45, 1, 'Hit · heals half of it', 'Gulls are famous for snatching food on the fly.'),
+  S('flock', 'Flock Rally', 'song', 'heal', 1.4, 1, 'Hit · heals 20% HP', 'Sparrows live in chatty flocks that watch out for each other.'),
 ].map((s) => [s.id, s]));
 
 const SKILL_BY_FAMILY: Record<string, string> = {
@@ -226,7 +226,7 @@ function useSkill(b: Battle, side: Side, rng: () => number, ev: Ev[]) {
   const foe = active(b, other(side));
   switch (s.kind) {
     case 'focus': f.focus = true; ev.push({ t: 'buff', side, text: 'Focused!', good: true }, { t: 'log', text: `${nameOf(b, side)} waits perfectly still. Its next move will be huge!` }); return;
-    case 'shelter': heal(b, side, f.max * 0.25, ev); f.shelter = true; ev.push({ t: 'buff', side, text: 'Waterproof!', good: true }); return;
+    case 'shelter': heal(b, side, f.max * 0.25, ev); f.shelter = true; ev.push({ t: 'buff', side, text: 'Aqua Shield!', good: true }); return;
   }
   let total = 0;
   for (let i = 0; i < s.hits && !foe.out; i++) total += strike(b, side, s.power, s.style, rng, ev, { pierce: s.kind === 'pierce', sure: s.kind === 'sure', critChance: s.kind === 'crit' ? T.critRaptor : undefined });
@@ -246,12 +246,12 @@ function foeTurn(b: Battle, rng: () => number, ev: Ev[], forceCharge = false) {
   b.foeGuard = false;
   if (b.foeCharging) {
     b.foeCharging = false;
-    const name = 'Big Move';
-    ev.push({ t: 'move', side: 'foe', kind: 'big', name, style: f.style }, { t: 'log', text: `${nameOf(b, 'foe')} unleashes its Big Move!` });
+    const name = CONTESTS[f.style].big;
+    ev.push({ t: 'move', side: 'foe', kind: 'big', name, style: f.style }, { t: 'log', text: `${nameOf(b, 'foe')} unleashes ${name}!` });
     strike(b, 'foe', T.bigMove, f.style, rng, ev, { big: true });
   } else if (forceCharge || (b.turn % T.bigEvery === T.bigEvery - 1 && b.turn > 1)) {
     b.foeCharging = true;
-    ev.push({ t: 'charge', side: 'foe' }, { t: 'log', text: `${nameOf(b, 'foe')} is gathering itself for a Big Move! Guard!` });
+    ev.push({ t: 'charge', side: 'foe' }, { t: 'log', text: `${nameOf(b, 'foe')} is powering up ${CONTESTS[f.style].big}! Guard!` });
   } else if (f.cd === 0 && rng() < 0.45) {
     useSkill(b, 'foe', rng, ev);
   } else if (f.hp < f.max * 0.3 && rng() < 0.25) {
@@ -326,17 +326,21 @@ export function takeTurn(b0: Battle, mine: Action, rng: () => number, opts: { fo
 export interface RivalDef {
   id: string; name: string; title: string; line: string; win: string; lose: string;
   styles: Contest[]; size: number; level: number; quality: number; scene: string;
-  coins: number; xp: number; time: number; music: string; merlin?: boolean;
+  coins: number; xp: number; time: number; music: string; face?: string; merlin?: boolean;
 }
 export const RIVALS: RivalDef[] = [
-  { id: 'pip', name: 'Pip', title: 'Backyard rookie', line: "My birds sing all morning. Bet yours can't keep up!", win: 'Whoa! Your birds are good!', lose: 'Ha! Told you my birds were the best!', styles: ['song'], size: 1, level: 3, quality: 30, scene: 'valley', coins: 25, xp: 40, time: 12, music: 'music/battle/default-1.mp3' },
-  { id: 'wren', name: 'Wren', title: 'Dawn chorus fan', line: 'A good song beats bright feathers. Prove me wrong.', win: 'Fine, fine. That was a lovely performance.', lose: 'Listen to that chorus! Come back when you can match it.', styles: ['song', 'forage'], size: 2, level: 5, quality: 40, scene: 'pine', coins: 35, xp: 60, time: 10, music: 'music/battle/battle-6.mp3' },
-  { id: 'gale', name: 'Captain Gale', title: 'Shoreline racer', line: 'Out on the coast, it’s all about the wind.', win: 'You sailed right past me!', lose: 'The wind was on my side today.', styles: ['sky', 'forage'], size: 2, level: 8, quality: 48, scene: 'n3', coins: 45, xp: 80, time: 9, music: 'music/battle/battle-4.mp3' },
-  { id: 'mara', name: 'Mara', title: 'Plumage collector', line: 'Colour is everything. Show me your brightest!', win: 'Stunning. Absolutely stunning.', lose: 'Not quite bright enough, darling.', styles: ['display', 'song'], size: 3, level: 11, quality: 55, scene: 'n1', coins: 60, xp: 110, time: 8, music: 'music/battle/default-3.mp3' },
-  { id: 'hawkins', name: 'Old Hawkins', title: 'Ridge watcher', line: 'Forty years on this ridge. My birds know every trick.', win: 'Well I never. You’ve got a real eye.', lose: 'Patience, young birder. Come back stronger.', styles: ['sky', 'display', 'forage'], size: 3, level: 14, quality: 62, scene: 'dusk', coins: 80, xp: 150, time: 8, music: 'music/battle/battle-8.mp3' },
+  { id: 'pip', name: 'Pip', title: 'Backyard rookie', line: "My birds sing all morning. Bet yours can't keep up!", win: 'Whoa! Your birds are good!', lose: 'Ha! Told you my birds were the best!', styles: ['song'], size: 1, level: 3, quality: 30, scene: 'valley', coins: 25, xp: 40, time: 12, music: 'music/battle/default-1.mp3', face: 'trainers/t010.png' },
+  { id: 'wren', name: 'Wren', title: 'Dawn chorus fan', line: 'A good song beats bright feathers. Prove me wrong.', win: 'Fine, fine. That was a lovely performance.', lose: 'Listen to that chorus! Come back when you can match it.', styles: ['song', 'forage'], size: 2, level: 5, quality: 40, scene: 'pine', coins: 35, xp: 60, time: 10, music: 'music/battle/battle-6.mp3', face: 'trainers/t046.png' },
+  { id: 'gale', name: 'Captain Gale', title: 'Shoreline racer', line: 'Out on the coast, it’s all about the wind.', win: 'You sailed right past me!', lose: 'The wind was on my side today.', styles: ['sky', 'forage'], size: 2, level: 8, quality: 48, scene: 'n3', coins: 45, xp: 80, time: 9, music: 'music/battle/battle-4.mp3', face: 'trainers/t004.png' },
+  { id: 'mara', name: 'Mara', title: 'Plumage collector', line: 'Colour is everything. Show me your brightest!', win: 'Stunning. Absolutely stunning.', lose: 'Not quite bright enough, darling.', styles: ['display', 'song'], size: 3, level: 11, quality: 55, scene: 'n1', coins: 60, xp: 110, time: 8, music: 'music/battle/default-3.mp3', face: 'trainers/t057.png' },
+  { id: 'hawkins', name: 'Old Hawkins', title: 'Ridge watcher', line: 'Forty years on this ridge. My birds know every trick.', win: 'Well I never. You’ve got a real eye.', lose: 'Patience, young birder. Come back stronger.', styles: ['sky', 'display', 'forage'], size: 3, level: 14, quality: 62, scene: 'dusk', coins: 80, xp: 150, time: 8, music: 'music/battle/battle-8.mp3', face: 'trainers/t053.png' },
   { id: 'merlin', name: 'Professor Merlin', title: 'Grand finale', line: 'So, you’ve come this far. Show me what your birds can do!', win: 'Magnificent! You are a true birder.', lose: 'Not yet, my friend. Not yet.', styles: ['song', 'display', 'sky'], size: 3, level: 18, quality: 70, scene: 'nfb', coins: 120, xp: 250, time: 7, music: 'music/battle/elven.mp3', merlin: true },
 ];
-/** Wandering birders who challenge you after you discover a new bird. */
+/** Wandering birders who challenge you after you discover a new bird; each gets a portrait from the trainer set. */
+const RIVAL_FACES = new Set(['010', '046', '004', '057', '053']);
+const WANDERER_FACES = Array.from({ length: 60 }, (_, i) => String(i + 1).padStart(3, '0')).filter((n) => !RIVAL_FACES.has(n));
+export const hashStr = (s: string) => [...s].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7);
+export const wandererFace = (key: string) => `trainers/t${WANDERER_FACES[hashStr(key + 'face') % WANDERER_FACES.length]}.png`;
 export const WANDERERS = ['Birder Sky', 'Fern', 'Rook', 'Juniper', 'Marsh', 'Willow', 'Robin Lee', 'Sparrow Sam'];
 export const WILD = { coins: 15, xp: 30, time: 10, chance: 0.4, scenes: ['valley', 'pine', 'n1', 'nfb', 'n3'], music: ['music/battle/battle-2.mp3', 'music/battle/battle-8.mp3', 'music/battle/battle-6.mp3', 'music/battle/default-1.mp3'] };
 

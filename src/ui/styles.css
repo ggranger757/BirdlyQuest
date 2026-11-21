@@ -1062,3 +1062,21 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 @media (max-height: 700px) { .tspot.you { scale: .8; } .tspot.foe { scale: .85; } }
 @media (max-height: 600px) { .tspot.you { scale: .68; bottom: 56px; } .tspot.foe { scale: .75; } }
 .thud.tut-focus { position: absolute; }
+/* rival trainer portraits (v1.24) */
+.tface { flex: none; display: grid; place-items: center; overflow: hidden; background: var(--well); border: 2px solid #000; box-shadow: 2px 2px 0 #000; }
+.tface img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; image-rendering: auto; display: block; }
+.trival-portrait.tface { padding: 0; }
+.trival-portrait.locked img { filter: grayscale(1) brightness(.55); }
+.tlog.speech { display: flex; align-items: center; gap: 10px; padding: 14px 10px 8px; }
+.tlog.speech .dialog-name { top: -12px; max-width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tlog.speech .dialog-text { min-width: 0; font-style: italic; }
+.tlog-face { box-shadow: none; }
+.tintro-face { box-shadow: 4px 4px 0 #000; animation: tbzoom .45s steps(5) both; }
+.tresult-quote { position: relative; display: flex; align-items: center; gap: 10px; justify-content: center; text-align: left; margin-top: 6px; }
+.tresult-quote p { margin: 0; min-width: 0; }
+.tchallenge-vs { display: flex; align-items: center; gap: 10px; }
+.tchallenge-face { width: 88px; height: 88px; object-fit: cover; object-position: 50% 12%; border: 2px solid #000; box-shadow: 3px 3px 0 #000; background: var(--well); }
+.tchallenge-x { font-family: var(--px); font-size: 14px; color: var(--accent); text-shadow: 2px 2px 0 #000; }
+:root.theme-field .tchallenge-x { color: var(--brick); text-shadow: none; }
+.tchallenge-vs .tchallenge-bird { width: 88px; height: 88px; }
+@media (max-width: 360px) { .tlog-face { width: 36px !important; height: 36px !important; } .tchallenge-face, .tchallenge-vs .tchallenge-bird { width: 72px; height: 72px; } }

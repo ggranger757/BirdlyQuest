@@ -15,7 +15,7 @@ import { runBackdrop } from '../../render/diorama';
 import { dayKey } from '../../core/xp';
 import type { Species } from '../../data/types';
 import {
-  CONTESTS, RIVALS, WANDERERS, WILD, FX_CRIT, FX_RING, SNACKS, T, fighter, startBattle, takeTurn, ambush, active, rivalTeam, wildTeam, rewardFor,
+  CONTESTS, RIVALS, WANDERERS, WILD, wandererFace, FX_CRIT, FX_RING, SNACKS, T, fighter, startBattle, takeTurn, ambush, active, rivalTeam, wildTeam, rewardFor,
   type Contender, type Battle, type Ev, type Side, type Item, type Action, type Sheet,
 } from '../../core/trials';
 
@@ -32,6 +32,15 @@ function Fx({ sheet, scale = 2, ms = 500, loop, frame, className, style }: { she
       backgroundPosition: still ? `-${frame * w}px 0` : undefined,
       ['--sheet-w' as string]: `-${sheet.frames * w}px`, animation: still ? 'none' : `tfx ${ms}ms steps(${sheet.frames}) ${loop ? 'infinite' : '1 forwards'}`, ...style,
     }} />
+  );
+}
+
+/** A rival trainer's portrait (Professor Merlin uses his own sprite). */
+export function Face({ face, merlin, name, size = 56, className }: { face?: string; merlin?: boolean; name: string; size?: number; className?: string }) {
+  return (
+    <span className={`tface ${className ?? ''}`} style={{ width: size, height: size }}>
+      {merlin ? <Professor height={Math.max(48, size - 8)} /> : face ? <img src={face} alt={name} width={size} height={size} draggable={false} /> : null}
+    </span>
   );
 }
 
@@ -55,7 +64,7 @@ function useTeam(): Contender[] {
   }, [sightings, partner]);
 }
 
-interface Setup { foeName: string; title: string; scene: string; foe: Contender[]; time: number; merlin?: boolean; line: string; music: string }
+interface Setup { foeName: string; title: string; scene: string; foe: Contender[]; time: number; merlin?: boolean; line: string; music: string; face?: string }
 type Prize = { coins: number; xp: number; first: boolean; levelled: string[] };
 
 export function Trials({ wild }: { wild?: string }) {
@@ -83,10 +92,10 @@ export function Trials({ wild }: { wild?: string }) {
       const name = hashName(wild), lead = party[0];
       let s = [...wild].reduce((n, ch) => n + ch.charCodeAt(0), 0) + seed;
       const r = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
-      return { foeName: name, title: 'Wandering birder', scene: WILD.scenes[Math.floor(r() * WILD.scenes.length)], foe: wildTeam(pool.length ? pool : team.map((t) => t.sp), lead?.level ?? 5, r, lead?.sp.id), time: WILD.time, music: WILD.music[Math.floor(r() * WILD.music.length)], line: `I spotted your new ${lead?.sp.common ?? 'bird'}! Let's see what it can do!` };
+      return { foeName: name, title: 'Wandering birder', scene: WILD.scenes[Math.floor(r() * WILD.scenes.length)], foe: wildTeam(pool.length ? pool : team.map((t) => t.sp), lead?.level ?? 5, r, lead?.sp.id), time: WILD.time, face: wandererFace(wild), music: WILD.music[Math.floor(r() * WILD.music.length)], line: `I spotted your new ${lead?.sp.common ?? 'bird'}! Let's see what it can do!` };
     }
     const r = RIVALS[ri];
-    return { foeName: r.name, title: r.title, scene: r.scene, foe: rivalTeam(r, pool.length ? pool : team.map((t) => t.sp), ri, avg(party.length ? party : team.slice(0, 3))), time: r.time, merlin: r.merlin, line: r.line, music: r.music };
+    return { foeName: r.name, title: r.title, scene: r.scene, foe: rivalTeam(r, pool.length ? pool : team.map((t) => t.sp), ri, avg(party.length ? party : team.slice(0, 3))), time: r.time, merlin: r.merlin, line: r.line, music: r.music, face: r.face };
   }, [wild, ri, pool, party, team, seed]);
 
   const choose = (i: number) => { sfx.select(); setRi(i); setParty(team.slice(0, 3)); setPhase('party'); };
@@ -143,9 +152,7 @@ function Ladder({ team, pool, cleared, wins, onPick, onCamera }: { team: Contend
           const rw = rewardFor(tst, i, today);
           return (
             <div key={r.id} role="listitem" className={`trival ${locked ? 'locked' : ''} ${beaten ? 'beaten' : ''} ${i === cleared ? 'next' : ''} ${r.merlin ? 'boss' : ''}`}>
-              <div className="trival-portrait">
-                {r.merlin ? <Professor height={48} /> : lead[0] ? <Sprite species={lead[0].sp} scale={2} mode={locked ? 'silhouette' : 'idle'} flip /> : null}
-              </div>
+              <Face face={r.face} merlin={r.merlin} name={r.name} size={60} className={`trival-portrait ${locked ? 'locked' : ''}`} />
               <div className="trival-main">
                 <b className="trival-name">{r.name}</b>
                 <span className="trival-meta">{r.title} · Lv{lead[0]?.level ?? r.level}</span>
@@ -177,7 +184,7 @@ function Party({ setup, size, team, party, setParty, onGo }: { setup: Setup; siz
   return (
     <div className="trials-body">
       <div className="tvs-card panel">
-        <div className="trival-portrait">{setup.merlin ? <Professor height={48} /> : <Sprite species={setup.foe[0].sp} scale={2} mode="silhouette" flip />}</div>
+        <Face face={setup.face} merlin={setup.merlin} name={setup.foeName} size={72} className="trival-portrait" />
         <div style={{ flex: 1, minWidth: 0 }}>
           <b className="trival-name">{setup.foeName}</b>
           <span className="trival-meta">brings {size} bird{size > 1 ? 's' : ''}</span>
@@ -263,7 +270,10 @@ function BattleView({ setup, party, onEnd }: { setup: Setup; party: Contender[];
   const [foe, setFoe] = useState<SideView>(() => ({ idx: 0, hp: bat.foe[0].hp, max: bat.foe[0].max, anim: '', hidden: true }));
   const [gauge, setGauge] = useState(0);
   const [panel, setPanel] = useState<Panel>('busy');
-  const [msg, setMsg] = useState('');
+  const [msg, setMsgText] = useState('');
+  const [speaker, setSpeaker] = useState(false);
+  const setMsg = (t: string) => { setMsgText(t); setSpeaker(false); };
+  const say = (t: string) => { setMsgText(t); setSpeaker(true); };
   const [intro, setIntro] = useState(true);
   const [charging, setCharging] = useState(false);
   const [fx, setFx] = useState<{ key: number; side: Side; sheet: Sheet; scale: number } | null>(null);
@@ -292,7 +302,7 @@ function BattleView({ setup, party, onEnd }: { setup: Setup; party: Contender[];
   const play = useCallback(async (ev: Ev[], before: Battle) => {
     for (const e of ev) {
       switch (e.t) {
-        case 'log': setMsg(e.text); break;
+        case 'log': if (/ sends out /.test(e.text)) { const nm = e.text.split(' sends out ')[1]?.replace(/!$/, ''); say(`Go, ${nm}! Show them what you've got!`); } else setMsg(e.text); break;
         case 'move': {
           const def = CONTESTS[e.style];
           playClip(e.kind === 'super' || e.kind === 'big' ? 'tCritical' : def.clip, { vol: 0.8 });
@@ -332,9 +342,10 @@ function BattleView({ setup, party, onEnd }: { setup: Setup; party: Contender[];
   const ready = useCallback(async (b: Battle) => {
     setBat(b);
     if (b.over) {
-      setMsg(b.over === 'you' ? `You won against ${setup.foeName}!` : `${setup.foeName}'s birds won this time.`);
+      const r = RIVALS.find((x) => x.name === setup.foeName);
+      say(b.over === 'you' ? r?.win ?? 'Wow, your birds are amazing!' : r?.lose ?? 'My birds take this one! Good battle!');
       noteBattle(firstBattle);
-      await sleep(1100);
+      await sleep(1800);
       onEnd(b.over === 'you', [...used.current].filter((id) => id && id !== 'partner'));
       return;
     }
@@ -348,9 +359,11 @@ function BattleView({ setup, party, onEnd }: { setup: Setup; party: Contender[];
     (async () => {
       await sleep(reduced ? 300 : 1300); if (!live) return;
       setIntro(false);
-      setMsg(`${setup.foeName} wants a friendly contest!`);
+      say(setup.line);
+      await sleep(reduced ? 300 : 1400); if (!live) return;
+      say(`Go, ${setup.foe[0].sp.common}!`);
       setFoe((v) => ({ ...v, hidden: false, anim: 'enter' })); playClip('tPick', { vol: 0.6 });
-      await sleep(500); setFoe((v) => ({ ...v, anim: '' }));
+      await sleep(600); setFoe((v) => ({ ...v, anim: '' }));
       setYou((v) => ({ ...v, hidden: false, anim: 'enter' })); playClip('tPick', { vol: 0.6 });
       setMsg(`Go, ${party[0].sp.common}!`);
       await sleep(500); setYou((v) => ({ ...v, anim: '' }));
@@ -451,11 +464,16 @@ function BattleView({ setup, party, onEnd }: { setup: Setup; party: Contender[];
         {proj && <span key={proj.key} className={`tproj3 from-${proj.from}`}><Fx sheet={proj.sheet} scale={proj.big ? 4 : 3} ms={260} loop style={proj.from === 'foe' ? { transform: 'scaleX(-1)' } : undefined} /></span>}
 
         {charging && <div className="tbanner-warn" role="status">Big Move incoming · Guard!</div>}
-        <div className="tlog dialog" role="status" aria-live="polite"><p className="dialog-text">{msg}</p></div>
+        <div className={`tlog dialog ${speaker ? 'speech' : ''}`} role="status" aria-live="polite">
+          {speaker && <span className="dialog-name">{setup.foeName}</span>}
+          {speaker && <Face face={setup.face} merlin={setup.merlin} name={setup.foeName} size={44} className="tlog-face" />}
+          <p className="dialog-text">{speaker ? `“${msg}”` : msg}</p>
+        </div>
 
         {intro && (
           <div className="tintro" aria-hidden>
             <span className="tintro-k">Battle mode</span>
+            <Face face={setup.face} merlin={setup.merlin} name={setup.foeName} size={112} className="tintro-face" />
             <b className="tintro-t">{setup.foeName}</b>
             <span className="tintro-s">{setup.title}</span>
           </div>
@@ -521,7 +539,7 @@ function Result({ setup, won, prize, party, wild, onRematch, onLadder, onNext }:
         {won && <Fx sheet={FX_RING} scale={4} ms={900} loop className="tresult-ring" />}
         <span className="thero-kicker">{wild ? 'Challenge' : 'Field Trial'}</span>
         <h1>{won ? 'Victory!' : 'So close!'}</h1>
-        <p className="small" style={{ margin: 0 }}>{setup.foeName}: “{won ? r?.win ?? 'Your birds are amazing!' : r?.lose ?? 'Good try! Train up and come back.'}”</p>
+        <div className="tresult-quote"><Face face={setup.face} merlin={setup.merlin} name={setup.foeName} size={48} /><p className="small"><b>{setup.foeName}:</b> “{won ? r?.win ?? 'Your birds are amazing!' : r?.lose ?? 'Good try! Train up and come back.'}”</p></div>
       </div>
       {won && (
         <div className="tprize">

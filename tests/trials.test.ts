@@ -19,12 +19,12 @@ describe('field trials: birds are true to life', () => {
   it('each bird gets the style and signature skill it is known for', () => {
     expect(birdStyle(sp('norcar'))).toBe('display');
     expect(birdStyle(sp('amerob'))).toBe('song');
-    expect(skillFor(sp('rethaw')).name).toBe('Stoop Dive');
-    expect(skillFor(sp('amecro')).name).toBe('Clever Trick');
-    expect(skillFor(sp('bkcchi')).name).toBe('Seed Cache');
-    expect(skillFor(sp('mallar')).name).toBe('Waterproof');
-    expect(skillFor(sp('norcar')).name).toBe('Plumage Flash');
-    expect(skillFor(sp('rocpig')).name).toBe('Homing Rush');
+    expect(skillFor(sp('rethaw')).name).toBe('Falcon Stoop');
+    expect(skillFor(sp('amecro')).name).toBe("Crow's Gambit");
+    expect(skillFor(sp('bkcchi')).name).toBe('Hidden Cache');
+    expect(skillFor(sp('mallar')).name).toBe('Aqua Shield');
+    expect(skillFor(sp('norcar')).name).toBe('Prism Flash');
+    expect(skillFor(sp('rocpig')).name).toBe('Homing Comet');
   });
   it('every species has a skill with a real-life fact, and short button labels', () => {
     for (const s of Object.values(SPECIES_BY_ID)) { const k = skillFor(s); expect(k, s.id).toBeTruthy(); expect(k.fact.length, s.id).toBeGreaterThan(20); }

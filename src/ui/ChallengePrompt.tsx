@@ -3,7 +3,7 @@ import { useGame, clearChallenge, speciesOf } from '../app/store';
 import { useNav } from './nav';
 import { Sprite } from './components';
 import { sfx, playClip } from '../app/audio';
-import { WANDERERS } from '../core/trials';
+import { WANDERERS, wandererFace } from '../core/trials';
 
 export function ChallengePrompt() {
   const nav = useNav();
@@ -17,7 +17,11 @@ export function ChallengePrompt() {
     <div className="tchallenge" role="dialog" aria-modal="true" aria-label="Battle challenge">
       <div className="tchallenge-card panel">
         <span className="thero-kicker">Challenge!</span>
-        <div className="tchallenge-bird"><Sprite species={sp} parts={sighting.sprite?.parts} scale={3} mode="idle" /></div>
+        <div className="tchallenge-vs">
+          <img className="tchallenge-face" src={wandererFace(sighting.id)} alt={who} width={88} height={88} draggable={false} />
+          <span className="tchallenge-x" aria-hidden>VS</span>
+          <div className="tchallenge-bird"><Sprite species={sp} parts={sighting.sprite?.parts} scale={2} mode="idle" /></div>
+        </div>
         <b className="tchallenge-title">{who} wants a Field Trial</b>
         <p>They spotted your new <b>{sp.common}</b> and want to see its talents in a quick battle.</p>
         <div className="tchallenge-row">
