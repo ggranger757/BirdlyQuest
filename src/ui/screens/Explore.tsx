@@ -144,8 +144,8 @@ function BirdMap({ regionCode, onOpen, onData, refreshKey, onSpots, focusRef }: 
             const icon = Lf.divIcon({ className: '', html: `<span class="spot-pin" aria-hidden="true"></span>`, iconSize: [30, 34], iconAnchor: [15, 32] });
             const dist = from ? ` · ${km(from, [s.lat, s.lng]).toFixed(1)} km` : '';
             const mk = Lf.marker([s.lat, s.lng], { icon, title: s.name, zIndexOffset: -100 }).addTo(sg).bindPopup(
-              `<div><b>${esc(s.name)}</b><br>${s.species} bird species recorded${dist}<br><span style="color:#4a5560">Often seen: ${esc(s.top.join(', '))}</span></div>
-               <a href="https://www.google.com/maps/dir/?api=1&destination=${s.lat.toFixed(5)},${s.lng.toFixed(5)}&travelmode=walking" target="_blank" rel="noopener" style="display:block;margin-top:8px;text-align:center;min-height:40px;line-height:36px;background:#C6FF1A;color:#0A0C0F;border:2px solid #000;font:12px Silkscreen,monospace;text-transform:uppercase;text-decoration:none">Directions</a>`);
+              `<div class="spot-info"><b>${esc(s.name)}</b><br>${s.species} bird species recorded${dist}<br><span style="color:#4a5560">Often seen: ${esc(s.top.join(', '))}</span></div>
+               <a href="https://www.google.com/maps/dir/?api=1&destination=${s.lat.toFixed(5)},${s.lng.toFixed(5)}&travelmode=walking" target="_blank" rel="noopener" class="spot-dir">Directions</a>`);
             spotMarkers.current.set(s.id, mk);
           }
           onSpots?.(spots);

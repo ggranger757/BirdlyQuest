@@ -67,14 +67,14 @@ const DEFS: Def[] = [
   ['sunflare', 'Sunflare Lens', 'rare', 12, 160, 'ember', 'orbit', '#FFD02E', 'Golden flares orbit your bird.', hue(25, 'brightness(1.15)')],
   // epic
   ['arcane', 'Arcane Lens', 'epic', 15, 180, 'arcane', 'ring3', '#B98AFF', 'Violet crescents: Merlin’s own favourite.'],
-  ['nebula', 'Nebula Lens', 'epic', 16, 200, 'phantom', 'single', '#7C8CFF', 'A swirl of star-stuff that fades to sparkles.', hue(-100)],
-  ['aurora', 'Aurora Lens', 'epic', 16, 210, 'ripple', 'ring6', '#5FE3B8', 'Six shimmering rings, like the northern lights.', hue(140, 'saturate(1.4)')],
+  ['nebula', 'Nebula Lens', 'epic', 16, 200, 'phantom', 'single', '#4B5BFF', 'A swirl of star-stuff that fades to sparkles.', hue(-100)],
+  ['aurora', 'Aurora Lens', 'epic', 16, 210, 'ripple', 'ring6', '#2FD6A0', 'Six shimmering rings, like the northern lights.', hue(140, 'saturate(1.4)')],
   ['inferno', 'Inferno Lens', 'epic', 17, 220, 'ember', 'ring6', '#E8402B', 'A blazing crown of red fire.', hue(-20, 'saturate(1.6)')],
-  ['glacier', 'Glacier Lens', 'epic', 17, 230, 'arcane', 'ring6', '#BFEFFF', 'Six crystal crescents, cold as a glacier.', hue(-90, 'brightness(1.4)')],
-  ['wisp', 'Wisp Lens', 'epic', 18, 240, 'phantom', 'double', '#9CFFD6', 'Two friendly spirit wisps visit your bird.', hue(-170)],
-  ['starfall', 'Starfall Lens', 'epic', 18, 245, 'bubble', 'rain', '#FFE36B', 'Shooting stars rain down around your bird.', hue(230, 'saturate(1.8) brightness(1.2)')],
+  ['glacier', 'Glacier Lens', 'epic', 17, 230, 'arcane', 'ring6', '#6FD3FF', 'Six crystal crescents, cold as a glacier.', hue(-90, 'brightness(1.4)')],
+  ['wisp', 'Wisp Lens', 'epic', 18, 240, 'phantom', 'double', '#B6FF5A', 'Two friendly spirit wisps visit your bird.', hue(-170)],
+  ['starfall', 'Starfall Lens', 'epic', 18, 245, 'bubble', 'rain', '#FFC31F', 'Shooting stars rain down around your bird.', hue(230, 'saturate(1.8) brightness(1.2)')],
   ['moonlight', 'Moonlight Lens', 'epic', 19, 250, 'ripple', 'double', '#E9ECF5', 'Silver rings of moonlight.', 'grayscale(1) brightness(1.6)'],
-  ['phantom', 'Phantom Lens', 'epic', 20, 260, 'phantom', 'single', '#FF6BD6', 'A spooky spirit swirl that fades to sparkles.'],
+  ['phantom', 'Phantom Lens', 'epic', 20, 260, 'phantom', 'single', '#FF5FC8', 'A spooky spirit swirl that fades to sparkles.'],
 ];
 
 export const LENSES: Record<LensId, Lens> = Object.fromEntries(DEFS.map(([id, name, tier, power, price, sheet, pattern, color, desc, filter]) =>

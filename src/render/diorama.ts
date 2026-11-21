@@ -6,6 +6,8 @@ import { HEX, IDX } from '../core/palette';
 import { renderFrames } from '../core/pixel/sprite';
 import { FLY_FRAMES, FLY_MS } from '../core/pixel/birds';
 import { drawFrame, onTick } from '../ui/components';
+import { feederOf, perchOf } from '../core/decor';
+import { paintFeederDef, paintPerchDef } from './decor';
 
 const C = (n: keyof typeof IDX) => HEX[IDX[n]];
 
@@ -25,7 +27,6 @@ export const SCENES: Record<string, SceneDef> = {
   chapel: { id: 'chapel', label: "Ivy chapel", level: 17, layers: 1, w: 281, h: 245, ground: 230, props: ['branchL', 'post'] },
   valley: { id: 'valley', label: "Valley pond", level: 1, layers: 6, w: 768, h: 300, ground: 286, water: [246, 264, 350, 620], props: ['branchL', 'post'] },
   pine: { id: 'pine', label: "Pine forest", level: 1, layers: 14, w: 640, h: 300, ground: 260, props: ['branchL', 'branchR'] },
-  c2: { id: 'c2', label: "High street", level: 1, layers: 6, w: 480, h: 270, ground: 224, props: ['branchL', 'wire', 'feeder'] },
   n3: { id: 'n3', label: "Palm shore", level: 1, layers: 4, w: 576, h: 324, ground: 312, water: [218, 280], props: ['branchL', 'post'] },
   n1: { id: 'n1', label: "Lone tree at sunrise", level: 2, layers: 4, w: 576, h: 324, ground: 262, props: ['branchL', 'branchR'] },
   nfb: { id: 'nfb', label: "Misty wood", level: 2, layers: 6, w: 620, h: 300, ground: 262, props: ['branchL', 'branchR'] },
@@ -76,11 +77,15 @@ export const SCENES: Record<string, SceneDef> = {
   bulk: { id: 'bulk', label: "Bulkhead tunnel", level: 25, layers: 4, w: 352, h: 224, ground: 214, props: ['branchL', 'wire', 'feeder'] },
 };
 
-// New players start with two homes (the default day/night pair); every other home unlocks one level later.
+// New players start with two homes (the default day/night pair); every other home unlocks one level later,
+// and then has to be bought with Feather Coins in Merlin's Shop (v1.28).
 for (const sc of Object.values(SCENES)) sc.level = sc.id === 'skyday' || sc.id === 'dusk' ? 1 : sc.level + 1;
+export const FREE_HOMES = ['skyday', 'dusk'];
+/** Price of a Bird Home in Feather Coins: grows with the level it unlocks at. */
+export const homePrice = (id: string) => (FREE_HOMES.includes(id) ? 0 : Math.round((40 + (SCENES[id]?.level ?? 1) * 25) / 5) * 5);
 
 const BY_PHASE: Record<Habitat, Record<DayPhase, [string, string?]>> = {
-  urban: { dawn: ['skyline'], morning: ['c2'], day: ['c2'], golden: ['c4'], dusk: ['c4', 'rgba(60,20,70,0.28)'], night: ['neoncity'] },
+  urban: { dawn: ['skyline'], morning: ['c4'], day: ['c4'], golden: ['c4', 'rgba(255,170,60,0.14)'], dusk: ['c4', 'rgba(60,20,70,0.28)'], night: ['neoncity'] },
   woodland: { dawn: ['n1'], morning: ['nfb'], day: ['pine'], golden: ['b3', 'rgba(255,170,60,0.14)'], dusk: ['dusk'], night: ['nfa'] },
   water: { dawn: ['valley', 'rgba(255,140,120,0.18)'], morning: ['valley'], day: ['n3'], golden: ['n3', 'rgba(255,150,40,0.18)'], dusk: ['valley', 'rgba(110,40,100,0.34)'], night: ['v_tundra', 'rgba(6,8,30,0.45)'] },
 };
@@ -236,21 +241,12 @@ function feederGeom(W: number, H: number) {
   const x = Math.round(W * 0.64), top = Math.round(H * 0.1);
   return { x, top, tubeY: top + 4, tubeH: 26, trayY: top + 32 };
 }
-function paintFeeder(g: CanvasRenderingContext2D, W: number, H: number, fill: number) {
-  const { x, top, tubeY, tubeH, trayY } = feederGeom(W, H);
-  rect(g, x, 0, 1, top, C('ink'));
-  rect(g, x - 8, top, 17, 3, C('rust')); rect(g, x - 7, top + 1, 15, 1, C('oriole'));          // roof
-  rect(g, x - 6, tubeY, 13, tubeH, C('ink'));                                                   // tube outline
-  rect(g, x - 5, tubeY, 11, tubeH, 'rgba(214,238,242,0.35)');                                  // glass
-  const lvl = Math.round((tubeH - 2) * Math.max(0, Math.min(1, fill)));
-  if (lvl > 0) {
-    rect(g, x - 5, tubeY + tubeH - 1 - lvl, 11, lvl, C('warbler'));
-    for (let yy = tubeY + tubeH - lvl; yy < tubeY + tubeH - 1; yy += 2) for (let xx = x - 5 + (yy % 4 === 0 ? 1 : 0); xx < x + 6; xx += 3) rect(g, xx, yy, 1, 1, C('bark'));
-  }
-  rect(g, x - 4, tubeY + 2, 1, tubeH - 6, 'rgba(255,255,255,0.55)');                          // glint
-  rect(g, x - 13, trayY, 27, 2, C('rust')); rect(g, x - 13, trayY + 2, 27, 1, C('brick'));     // tray
-  if (fill > 0) for (let i = -11; i < 12; i += 3) rect(g, x + i, trayY - 1, 1, 1, C('warbler'));
+function paintFeeder(g: CanvasRenderingContext2D, W: number, H: number, fill: number, style?: string) {
+  const { x, top, trayY } = feederGeom(W, H);
+  paintFeederDef(g, x, top, trayY, fill, feederOf(style));
 }
+/** Where the player's perch stands, and its size. */
+function perchGeom(L: Layout, W: number, H: number) { return { x: Math.round(W * 0.42), ground: L.gy, h: Math.max(26, Math.min(44, Math.round(H * 0.36))) }; }
 
 function paintWindowFrame(g: CanvasRenderingContext2D, W: number, H: number) {
   const f = '#12161B', d = '#07090B';
@@ -280,7 +276,7 @@ export interface Bird {
   returnAt?: number; arc?: number; pokeAt?: number; // fly-about: when to head home, and how high the flight arcs
 }
 
-export interface DioramaOpts { sceneId?: string; frame?: boolean; hpBars?: boolean; wander?: boolean; reduced?: boolean; viewW: number; viewH: number; feeder?: number /* 0–1 fill */ }
+export interface DioramaOpts { sceneId?: string; frame?: boolean; hpBars?: boolean; wander?: boolean; reduced?: boolean; viewW: number; viewH: number; feeder?: number /* 0–1 fill */; feederStyle?: string; perch?: string }
 
 export class Diorama {
   private ctx: CanvasRenderingContext2D;
@@ -302,6 +298,13 @@ export class Diorama {
     canvas.width = this.W; canvas.height = this.H;
     this.ctx = canvas.getContext('2d')!;
     this.L = layout(this.scene, this.W, this.H);
+    // the player's own perch (from Merlin's Shop): birds can land on it
+    const pd = perchOf(opts.perch);
+    if (pd) {
+      const { x, ground, h } = perchGeom(this.L, this.W, this.H), scratch = document.createElement('canvas');
+      scratch.width = this.W; scratch.height = this.H;
+      for (const [px, py] of paintPerchDef(scratch.getContext('2d')!, x, ground, h, pd)) this.L.perches.push({ x: px, y: py, kind: 'perch' });
+    }
     loadScene(this.scene).then((imgs) => { this.imgs = imgs; this.bakeFront(); });
   }
   private bakeFront() {
@@ -312,7 +315,9 @@ export class Diorama {
     const n = this.imgs.length;
     paintLayers(g, this.imgs.slice(Math.max(0, n - 2)), { ...this.scene, tint: undefined }, this.W, this.H, 0, 2);
     paintProps(g, this.L, this.W, this.H, this.phase === 'night');
-    if (this.opts.feeder !== undefined) paintFeeder(g, this.W, this.H, this.opts.feeder);
+    const pd = perchOf(this.opts.perch);
+    if (pd) { const { x, ground, h } = perchGeom(this.L, this.W, this.H); paintPerchDef(g, x, ground, h, pd); }
+    if (this.opts.feeder !== undefined) paintFeeder(g, this.W, this.H, this.opts.feeder, this.opts.feederStyle);
   }
   /** Update the feeder's fill level (0–1). */
   setFeeder(fill: number) { this.opts.feeder = fill; if (this.imgs.length) this.bakeFront(); }

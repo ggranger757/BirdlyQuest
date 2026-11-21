@@ -8,19 +8,32 @@ type Tab = 'explore' | 'dex' | 'aviary' | 'you';
 interface Step { tab?: Tab; section?: string; target?: string; text: string }
 
 const STEPS: Step[] = [
-  { tab: 'explore', text: 'Welcome to your field kit! Let me show you around. Tap Next to follow me.' },
-  { tab: 'explore', target: '.map-wrap', text: 'This is your map. Real birds people have seen near you in the last 30 days appear here, live.' },
-  { tab: 'explore', target: '.drawer .seg', text: 'LATEST shows the newest sightings around you. LIKELY shows the birds you are most likely to find right now.' },
-  { tab: 'explore', target: '.tabbar .tab.cam', text: 'This is the SNAP button. Open the camera, point it at a real bird and press the shutter.' },
-  { tab: 'explore', target: '.tabbar .tab.cam', text: 'Every photo gets a SNAP POWER score out of 100. Sharp, close, well-lit shots score higher and earn more XP.' },
-  { tab: 'explore', target: '.tabbar .tab.cam', text: 'Then tell me which bird it is. I turn your photo into a pixel bird coloured from YOUR shot, and you record it with your Snap Lens.' },
-  { tab: 'dex', target: '.jgrid', text: 'Your BirdDex holds every bird in your region. Silhouettes are birds still waiting to be discovered.' },
-  { tab: 'aviary', target: '[data-tour="aviary"]', text: 'Your Aviary! Birds you discover live here as pets. Their HP slowly drops, so they need food.' },
-  { tab: 'aviary', target: '[role="tablist"][aria-label="Aviary sections"]', text: 'Keep the FEEDER full. Hungry birds fly in and eat by themselves. Buy food in my shop with Feather Coins.' },
-  { tab: 'you', section: 'lenses', target: '[aria-label="Your Snap Lenses"]', text: 'Your Snap Lenses. Better lenses add Snap Power to every photo, and each has its own recording effect.' },
-  { tab: 'you', section: 'quests', target: '[role="tablist"][aria-label="Trainer sections"]', text: 'Quests and badges earn XP and Feather Coins. Level up to unlock new Bird Homes for your Aviary.' },
-  { tab: 'explore', text: 'That is everything! Go outside and find your first bird. You can replay this tour in Settings.' },
+  { tab: 'explore', text: 'Welcome, birder! I’m Professor Merlin. Let me walk you through your whole field kit. It takes a minute, and you can skip any time.' },
+  // Explore
+  { tab: 'explore', target: '.map-wrap', text: 'This is your MAP. Real birds people have reported near you in the last 30 days show up here, live. Parks marked with a pin are good birding spots.' },
+  { tab: 'explore', target: '.drawer .seg', text: 'LATEST shows the newest sightings around you. LIKELY shows the birds you’re most likely to find right now, here, at this time of day.' },
+  { tab: 'explore', target: '.feather-chip', text: 'These are FEATHER COINS, BirdlyQuest’s money. You earn them by logging birds, winning battles and finishing quests. Tap here any time to open my shop.' },
+  // Camera + Snap Power
+  { tab: 'explore', target: '.tabbar .tab.cam', text: 'This is the SNAP button. Point the camera at a real bird and press the shutter. Pinch to zoom, and use the brightness button in dim light.' },
+  { tab: 'explore', target: '.tabbar .tab.cam', text: 'Every photo gets a SNAP POWER score out of 100. Close, sharp, well-lit, centred birds score highest. Higher Snap Power earns more XP and makes your capture more certain.' },
+  { tab: 'explore', target: '.tabbar .tab.cam', text: 'Then tell me which bird it is (the Likely list helps). I turn it into a pixel bird coloured from YOUR photo. Rarer birds pay more: up to ×10 XP and ×6 Feather Coins!' },
+  // BirdDex
+  { tab: 'dex', target: '.goals', text: 'Your BirdDex! These are your GOALS. Each is a set of local birds to find. Complete one to open a treasure chest of coins.' },
+  { tab: 'dex', target: '.jgrid', text: 'Every bird in your region is listed here. Silhouettes are birds still waiting to be discovered. Tap any bird for facts and where to look.' },
+  // Aviary
+  { tab: 'aviary', target: '[data-tour="aviary"]', text: 'Your AVIARY. Birds you discover live here as pets and fly between perches. Tap one for a fun fact. Healthy birds bring you Feather Coins every day.' },
+  { tab: 'aviary', target: '[role="tablist"][aria-label="Aviary sections"]', text: 'Their HP slowly drops, so keep the FEEDER full. Hungry birds fly to the feeder and eat by themselves.' },
+  { tab: 'aviary', target: '.home-strip', text: 'BIRD HOMES. New homes unlock as you level up, then you buy them with Feather Coins. You can also hang new feeders and set out perches from my shop.' },
+  { tab: 'aviary', target: '.trials-entry', text: 'FIELD TRIALS! Battle rival birders with your birds’ real-life talents: songs, displays, flight and foraging. Win to level your birds up so they learn new moves.' },
+  { tab: 'aviary', target: '.trials-entry', text: 'Each rival battle costs a TRIAL TICKET. You earn one for every bird you log (up to 5). Wandering birders sometimes challenge you after a new find, and those battles are free.' },
+  { tab: 'aviary', target: '.trials-entry', text: 'In battle: FIGHT to pick a move, BAG for snacks, BIRDS to swap. The faster bird moves first, and styles have matchups. Song beats Display, Display beats Forage, Forage beats Sky, Sky beats Song.' },
+  // Trainer
+  { tab: 'you', section: 'lenses', target: '[aria-label="Your Snap Lenses"]', text: 'SNAP LENSES add Snap Power to every photo, and each records your bird with its own effect. Better lenses unlock as you level up.' },
+  { tab: 'you', section: 'quests', target: '[role="tablist"][aria-label="Trainer sections"]', text: 'QUESTS and BADGES earn XP and Feather Coins. Each trainer level also adds BOND: +1% HP and power for every bird you bring to battle.' },
+  { tab: 'explore', target: '.feather-chip', text: 'My SHOP sells bird food, Snap Lenses, Bird Homes, 50 feeders and 50 perches. Everything is paid in Feather Coins.' },
+  { tab: 'explore', text: 'That’s everything! Go outside and find your first bird. You can replay this tour any time from Settings. Happy birding!' },
 ];
+export const TOUR_VERSION = 2;
 
 export function Tutorial({ setTab, onDone }: { setTab: (t: Tab) => void; onDone: () => void }) {
   const [i, setI] = useState(0);
@@ -53,7 +66,7 @@ export function Tutorial({ setTab, onDone }: { setTab: (t: Tab) => void; onDone:
     return () => { alive = false; clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); window.removeEventListener('resize', measure); };
   }, [i]);
 
-  const finish = () => { setState((s) => ({ ...s, tutorialDone: true, tourOn: false })); sfx.levelUp(); onDone(); };
+  const finish = () => { setState((s) => ({ ...s, tutorialDone: true, tourOn: false, tourSeen: TOUR_VERSION })); sfx.levelUp(); onDone(); };
   const next = () => { sfx.select(); if (i < STEPS.length - 1) setI(i + 1); else finish(); };
   const back = () => { sfx.back(); setI(Math.max(0, i - 1)); };
   useEffect(() => {
@@ -71,6 +84,7 @@ export function Tutorial({ setTab, onDone }: { setTab: (t: Tab) => void; onDone:
         <div className="tour-merlin"><Professor height={96} /></div>
         <div className="dialog" style={{ cursor: 'default' }}>
           <span className="dialog-name">Professor Merlin · {i + 1}/{STEPS.length}</span>
+          <span className="tour-progress" aria-hidden><i style={{ width: `${((i + 1) / STEPS.length) * 100}%` }} /></span>
           <p className="dialog-text" aria-live="polite">{step.text}</p>
           <div className="row mt8" style={{ gap: 8 }}>
             <button className="btn small ghost tour-skip" onClick={finish}>Skip tour</button>

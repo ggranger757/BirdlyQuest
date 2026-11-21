@@ -1,7 +1,7 @@
 import { FoodIcon } from '../FoodIcon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNav } from '../nav';
-import { useGame, getState, counts, speciesOf, speciesCount, setBiome, setHome, toggleHabitatBird, setState, claimChallenge, refreshChallenges, buyFood, buyLens, equipLens, collectAviary, petBird, partnerPet, birdName, nameBird, fillFeeder, tickFeeder } from '../../app/store';
+import { useGame, getState, counts, speciesOf, speciesCount, setBiome, setHome, ownsHome, buyHome, toggleHabitatBird, setState, claimChallenge, refreshChallenges, buyFood, buyLens, equipLens, collectAviary, petBird, partnerPet, birdName, nameBird, fillFeeder, tickFeeder } from '../../app/store';
 import { FOODS, Food, hpNow, mood, MOOD_LINE, FEEDER_CAP, AVIARY_MAX, Meal } from '../../core/pets';
 import { getRegion, regionLabel } from '../../data/geo';
 import { allKnownSpecies } from '../../data/provider';
@@ -12,7 +12,8 @@ import { LensList } from '../LensList';
 import { factsFor } from '../../data/facts';
 import { PageHeader, Segmented, Alert, FeatherChip } from '../kit';
 import { Professor } from '../Characters';
-import { Diorama, SCENES, paintHomeThumb } from '../../render/diorama';
+import { Diorama, SCENES, paintHomeThumb, homePrice } from '../../render/diorama';
+import { FeatherIcon } from '../FeatherIcon';
 import { sunTimes, dayPhase } from '../../core/sun';
 import { rankFor, RANKS, liveStreak, dayKey, trainerLevel } from '../../core/xp';
 import { BADGES, TIER_FEATHERS } from '../../core/badges';
@@ -35,6 +36,7 @@ export function HabitatTab() {
   const [sheet, setSheet] = useState<'box' | 'fill' | 'shop' | null>(null);
   const [section, setSection] = useState<'birds' | 'feeder'>('birds');
   const [sceneLabel, setSceneLabel] = useState('');
+  const [buying, setBuying] = useState<string | null>(null);
   const [gift, setGift] = useState(0);
   const [meals, setMeals] = useState<Meal[]>([]);
   const stripRef = useRef<HTMLDivElement>(null);
@@ -84,7 +86,7 @@ export function HabitatTab() {
   useEffect(() => { const w = boxRef.current?.clientWidth ?? 358; setDims({ w: Math.floor(w / 2), h: Math.floor(Math.min(window.innerHeight * 0.46, 480) / 2) }); }, []);
   useEffect(() => {
     if (!dims) return;
-    const d = new Diorama(ref.current!, st.diorama.biome, phase, { sceneId: st.diorama.home && (SCENES[st.diorama.home]?.level ?? 99) <= lv ? st.diorama.home : undefined, hpBars: true, wander: true, reduced, viewW: dims.w, viewH: dims.h, feeder: fill });
+    const d = new Diorama(ref.current!, st.diorama.biome, phase, { sceneId: st.diorama.home && (SCENES[st.diorama.home]?.level ?? 99) <= lv && ownsHome(st, st.diorama.home) ? st.diorama.home : undefined, hpBars: true, wander: true, reduced, viewW: dims.w, viewH: dims.h, feeder: fill, feederStyle: st.diorama.feeder, perch: st.diorama.perch });
     dio.current = d;
     setSceneLabel(d.scene.label);
     const partner = st.partner ? allKnownSpecies().find((x) => x.id === st.partner!.speciesId) : null;
@@ -92,7 +94,7 @@ export function HabitatTab() {
     aviary.forEach((s, i) => d.add(s.id, speciesOf(s), s.sprite.parts, { arrive: false, seed: i * 7 + 3, hp: hpNow(s) }));
     d.start();
     return () => { d.dispose(); dio.current = null; };
-  }, [st.diorama.biome, st.diorama.home, aviary.map((p) => p.id).join(), reduced, dims]);
+  }, [st.diorama.biome, st.diorama.home, st.diorama.feeder, st.diorama.perch, aviary.map((p) => p.id).join(), reduced, dims]);
   useEffect(() => { dio.current?.setFeeder(fill); }, [fill]);
 
   const hungry = aviary.filter((x) => hpNow(x) < 30).length;
@@ -185,24 +187,40 @@ export function HabitatTab() {
           })()}
           <button className="btn block" onClick={() => setSheet('box')}>Bird Box · {box.length} resting</button>
           <p className="small muted">Aviary birds eat from the feeder and earn you Feather Coins. Birds in the Bird Box rest and don't get hungry.</p>
-          <div className="section-title"><span>Bird Homes</span><span className="small muted" style={{ textTransform: 'none', fontFamily: 'var(--body)' }}>{Object.values(SCENES).filter((h) => h.level <= lv).length}/{Object.keys(SCENES).length} unlocked</span></div>
+          <div className="section-title"><span>Bird Homes</span><span className="small muted" style={{ textTransform: 'none', fontFamily: 'var(--body)' }}>{Object.keys(SCENES).filter((id) => ownsHome(st, id)).length}/{Object.keys(SCENES).length} owned</span></div>
           <div className="home-strip" role="radiogroup" aria-label="Bird Homes" ref={stripRef}>
             <button role="radio" className={`home-card auto ${!st.diorama.home ? 'on' : ''}`} aria-checked={!st.diorama.home} onClick={() => { sfx.select(); haptic(8); setHome(undefined); }}>
               <span className="home-auto" aria-hidden><HomeThumb id="skyday" /><HomeThumb id="dusk" /></span>
               <span className="small">Day &amp; night (default)</span>
             </button>
             {Object.values(SCENES).slice().sort((a, b) => a.level - b.level).map((sc) => {
-              const locked = sc.level > lv, on = st.diorama.home === sc.id;
+              const locked = sc.level > lv, owned = ownsHome(st, sc.id), on = st.diorama.home === sc.id, price = homePrice(sc.id);
               return (
-                <button key={sc.id} role="radio" className={`home-card ${on ? 'on' : ''} ${locked ? 'locked' : ''}`} aria-checked={on} disabled={locked}
-                  aria-label={locked ? `${sc.label}, unlocks at level ${sc.level}` : sc.label}
-                  onClick={() => { sfx.select(); haptic(8); setHome(sc.id); }}>
+                <button key={sc.id} role="radio" className={`home-card ${on ? 'on' : ''} ${locked ? 'locked' : ''} ${!owned && !locked ? 'forsale' : ''}`} aria-checked={on} disabled={locked}
+                  aria-label={locked ? `${sc.label}, unlocks at level ${sc.level}` : owned ? sc.label : `${sc.label}, buy for ${price} Feather Coins`}
+                  onClick={() => { sfx.select(); haptic(8); if (owned) setHome(sc.id); else setBuying(sc.id); }}>
                   <HomeThumb id={sc.id} />
                   <span className="small">{locked ? `🔒 Lv ${sc.level}` : sc.label}</span>
+                  {!owned && !locked && <span className="home-price"><FeatherIcon size={11} /> {price}</span>}
                 </button>
               );
             })}
           </div>
+          {buying && SCENES[buying] && (
+            <div className="panel home-buy" role="dialog" aria-label={`Buy ${SCENES[buying].label}`}>
+              <HomeThumb id={buying} />
+              <div className="grow">
+                <b>{SCENES[buying].label}</b>
+                <p className="small" style={{ margin: '2px 0 6px' }}>Move your birds here for <FeatherIcon size={12} /> <b>{homePrice(buying)}</b> Feather Coins. You have {st.feathers}.</p>
+                <div className="btn-pair">
+                  <button className="btn ghost small" onClick={() => { sfx.back(); setBuying(null); }}>Not now</button>
+                  <button className="btn primary small" disabled={st.feathers < homePrice(buying)} onClick={() => { if (buyHome(buying)) { playClip('buy'); nav.toast(`Moved to ${SCENES[buying].label}!`); setBuying(null); } else sfx.error(); }}>
+                    {st.feathers < homePrice(buying) ? `Need ${homePrice(buying) - st.feathers} more` : 'Buy & move in'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       )}
 

@@ -24,8 +24,10 @@ describe('snap lenses', () => {
   it('has no Legendary tier any more, and each rare lens has its own colour', () => {
     expect(LENS_TIERS).toEqual(['common', 'rare', 'epic']);
     for (const id of Object.keys(RETIRED_LENSES)) expect(LENSES[id]).toBe(undefined);
-    const rares = LENS_ORDER.filter((id) => LENSES[id].tier === 'rare').map((id) => LENSES[id].colors.A);
-    expect(new Set(rares).size).toBe(rares.length);
+    for (const tier of ['rare', 'epic'] as const) {
+      const cols = LENS_ORDER.filter((id) => LENSES[id].tier === tier).map((id) => LENSES[id].colors.A);
+      expect(new Set(cols).size).toBe(cols.length);
+    }
   });
   it('adds the bonus and caps Snap Power at 100', () => {
     expect(boostedPower(60, 'ember')).toBe(70);

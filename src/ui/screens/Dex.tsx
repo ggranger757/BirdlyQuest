@@ -133,7 +133,8 @@ export function Dex() {
         return (
           <div className="section-title goals-title">
             <span>Your goals <span className="goals-score">★ {doneCount}/{chapters.length}</span>{chests > 0 && <span className="goals-chests">{chests} chest{chests > 1 ? 's' : ''} to open!</span>}</span>
-            {chap && <button className="link" style={{ minHeight: 0 }} onClick={() => setChap(null)}>Show all birds</button>}
+            {/* only offer "Show all" when the tapped goal actually has birds you've found */}
+            {chap && (() => { const c = chapters.find((x) => x.id === chap); return c && chapterProgress(c, found) > 0; })() && <button className="link" style={{ minHeight: 0 }} onClick={() => setChap(null)}>Show all birds</button>}
           </div>
         );
       })()}

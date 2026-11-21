@@ -1119,9 +1119,9 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 :root.theme-field .tticket-out { color: var(--brick); }
 
 /* ── Field Trials v1.26: classic command menu, PP, status, readable text box, battle log ── */
-.tlog { cursor: pointer; padding-right: 44px; min-height: 48px; }
-.tlog.speech { padding-right: 44px; }
-.tlog-next { position: absolute; right: 30px; bottom: 6px; font-size: 11px; color: var(--accent); animation: tpulse .6s steps(2) infinite; }
+.tlog { cursor: pointer; padding-right: 22px; min-height: 48px; }
+.tlog.speech { padding-right: 22px; }
+.tlog-next { position: absolute; right: 8px; bottom: 6px; font-size: 11px; color: var(--accent); animation: tpulse .6s steps(2) infinite; }
 :root.theme-field .tlog-next { color: var(--brick); }
 .tlog-hist { position: absolute; right: 4px; top: 4px; padding: 1px 4px; font-family: var(--lbl); font-size: 8px; letter-spacing: .04em; color: var(--muted); background: transparent; border: 1px solid currentColor; cursor: pointer; }
 .thistory { position: absolute; inset: 8px; z-index: 9; display: flex; flex-direction: column; background: var(--surface); border: 2px solid #000; box-shadow: 4px 4px 0 #000; cursor: default; }
@@ -1207,3 +1207,52 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 @keyframes tbarc2 { 0% { left: var(--x0); top: var(--y0); transform: scale(.6) rotate(-12deg); } 50% { top: calc((var(--y0) + var(--y1)) / 2 - 9%); transform: scale(1.1) rotate(0deg); } 100% { left: var(--x1); top: var(--y1); transform: scale(1) rotate(10deg); } }
 .tpop { animation-timing-function: cubic-bezier(.2, .9, .3, 1) !important; }
 @media (prefers-reduced-motion: reduce) { .tbird .tbody { animation: none; } }
+.tbio { margin: 6px 0 0; line-height: 1.35; }
+.tmotive { margin: 4px 0 0; line-height: 1.35; color: var(--muted); }
+.tmotive b { color: var(--accent); font-weight: 600; } :root.theme-field .tmotive b { color: var(--brick); }
+/* park pop-up: centred Directions button and a close button with breathing room */
+.leaflet-popup-content .spot-info { padding-right: 26px; }
+.leaflet-popup-content a.spot-dir { box-sizing: border-box; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 42px; margin-top: 10px; padding: 0 12px;
+  background: #C6FF1A; color: #0A0C0F !important; border: 2px solid #000; box-shadow: 2px 2px 0 #000; font: 12px/1 Silkscreen, monospace; letter-spacing: .06em; text-transform: uppercase; text-decoration: none; }
+.leaflet-popup-content a.spot-dir:active { transform: translateY(2px); box-shadow: 0 0 0 #000; }
+.leaflet-container a.leaflet-popup-close-button { top: 8px; right: 8px; width: 26px; height: 26px; display: grid; place-items: center; padding: 0; font: 18px/1 var(--body);
+  color: var(--on-hi, #0A0C0F); background: rgba(0,0,0,.06); border: 2px solid #000; }
+
+/* ── Merlin's Shop v1.28 ── */
+.shop-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.shop-head h3 { margin: 0; }
+.wallet-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; color: var(--text); background: var(--well); border: 2px solid #000; box-shadow: 2px 2px 0 #000; font: inherit; cursor: pointer; }
+.wallet-chip b { font-size: 16px; color: var(--accent); } :root.theme-field .wallet-chip b { color: var(--brick); }
+.shop-earn { margin: 0 0 10px; padding: 8px 12px 8px 26px; background: var(--well); border: 2px solid #000; line-height: 1.45; }
+/* Merlin: framed portrait + classic RPG text box with a name plate and a typewriter line */
+.shop-npc { display: flex; align-items: flex-end; gap: 10px; margin: 4px 0 14px; cursor: pointer; }
+.shop-npc-portrait { flex: none; width: 92px; height: 100px; display: grid; place-items: end center; overflow: hidden;
+  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--accent) 26%, var(--well)), var(--well) 70%); border: 3px solid #000; box-shadow: 3px 3px 0 #000, inset 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent); }
+.shop-npc-box { position: relative; flex: 1; min-width: 0; min-height: 84px; padding: 16px 14px 18px; background: var(--hi, #F4F1E6); color: var(--on-hi, #14121F);
+  border: 3px solid #000; box-shadow: 3px 3px 0 #000, inset 0 0 0 3px var(--hi, #F4F1E6), inset 0 0 0 5px #000; }
+.shop-npc-box::before { content: ''; position: absolute; left: -11px; bottom: 18px; width: 0; height: 0; border-top: 8px solid transparent; border-bottom: 8px solid transparent; border-right: 10px solid #000; }
+.shop-npc-box .dialog-name { position: absolute; top: -13px; left: 10px; padding: 2px 8px; font-family: var(--lbl); font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--accent-ink, #0A0C0F); background: var(--accent-fill, var(--accent)); border: 2px solid #000; }
+.shop-npc-box .dialog-text { font: 600 14px/20px var(--body); }
+.shop-npc-ghost { visibility: hidden; }
+.shop-npc-next { position: absolute; right: 10px; bottom: 4px; font-size: 11px; animation: tpulse .6s steps(2) infinite; }
+.shop-tabs { position: sticky; top: -1px; z-index: 2; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 0 0 10px; padding: 6px 0; background: var(--surface); }
+.shop-tab { min-height: 40px; padding: 0 2px; font-family: var(--lbl); font-size: 10px; text-transform: uppercase; letter-spacing: .03em; color: var(--text); background: var(--well); border: 2px solid #000; cursor: pointer; }
+.shop-tab.on { color: var(--accent-ink, #0A0C0F); background: var(--accent-fill, var(--accent)); box-shadow: 0 3px 0 #000; }
+:root.theme-field .shop-tab { font-size: 12px; font-weight: 600; }
+.shop-thumb { flex: none; image-rendering: pixelated; border: 2px solid #000; background: var(--well); }
+.srow.on .name { color: var(--accent); } :root.theme-field .srow.on .name { color: var(--brick); }
+.srow.locked { opacity: .55; }
+.shop-group + .shop-group { margin-top: 6px; }
+/* Bird Homes for sale in the Aviary */
+.home-card { position: relative; }
+.home-price { position: absolute; top: 4px; right: 4px; display: inline-flex; align-items: center; gap: 3px; padding: 1px 5px; font-family: var(--lbl); font-size: 9px; color: var(--accent-ink, #0A0C0F); background: var(--accent-fill, var(--accent)); border: 1px solid #000; }
+.home-buy { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+.home-buy canvas { flex: none; width: 96px; border: 2px solid #000; }
+@media (max-width: 360px) { .shop-tab { font-size: 9px; } .shop-npc-portrait { width: 72px; height: 84px; } }
+.tour-progress { display: block; height: 4px; margin: 0 0 8px; background: rgba(0,0,0,.15); border: 1px solid #000; }
+.tour-progress i { display: block; height: 100%; background: var(--accent); transition: width 240ms ease-out; }
+.shop-npc-portrait { width: 96px; height: 108px; place-items: end center;
+  background: radial-gradient(circle at 50% 38%, #FFF3CF 0 22%, #F2C14E 48%, #B07A2A 78%, #6E4A1A); box-shadow: 3px 3px 0 #000, inset 0 0 0 2px #FFE7A0; }
+.shop-npc-portrait > * { margin-bottom: -6px; }
+@media (max-width: 360px) { .shop-npc-portrait { width: 80px; height: 92px; } }

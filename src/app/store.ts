@@ -1,5 +1,6 @@
 // Game state: one local store, persisted to IndexedDB on every change.
-import { SCENES } from '../render/diorama';
+import { SCENES, FREE_HOMES, homePrice } from '../render/diorama';
+import { DECOR, DEFAULT_FEEDER } from '../core/decor';
 import { LENSES, RETIRED_LENSES, boostedPower, type LensId } from '../core/lenses';
 import { useSyncExternalStore } from 'react';
 import type { GameState, Sighting, Verification, ChallengeSlot } from '../core/model';
@@ -69,6 +70,9 @@ export function logEvent(e: string, d?: unknown) {
 function adopt(saved: GameState | undefined) {
   if (saved && saved.version) state = { ...freshState(), ...saved, settings: { ...freshState().settings, ...saved.settings }, items: { ...freshState().items, ...(saved.items ?? {}) }, feeder: saved.feeder ?? freshState().feeder, stats: { ...freshState().stats, ...(saved.stats ?? {}) }, badgeQueue: saved.badgeQueue ?? [], lenses: saved.lenses?.length ? saved.lenses : ['ripple'], lens: saved.lens ?? 'ripple' };
   // The Legendary lens tier was retired (v1.25): refund what each one cost and fall back to a lens still owned.
+  // v1.28: Bird Homes are bought now. Whatever home a player already uses stays theirs; High Street was retired.
+  if (!state.ownedHomes) state = { ...state, ownedHomes: state.diorama.home && state.diorama.home !== 'c2' ? [state.diorama.home] : [] };
+  if (state.diorama.home === 'c2' || (state.diorama.home && !SCENES[state.diorama.home])) state = { ...state, diorama: { ...state.diorama, home: undefined } };
   const retired = state.lenses.filter((id) => RETIRED_LENSES[id] != null);
   if (retired.length) {
     const refund = retired.reduce((n, id) => n + RETIRED_LENSES[id], 0);
@@ -256,7 +260,7 @@ export async function fileCatch(input: CatchInput): Promise<CatchResult> {
   emit(); persist();
   const rankAfter = rankFor(state.xp).name;
   const lvA = trainerLevel(previousXp).level, lvB = trainerLevel(state.xp).level;
-  const homes = Object.values(SCENES).filter((h) => h.level > lvA && h.level <= lvB).map((h) => h.label);
+  const homes = Object.values(SCENES).filter((h) => h.level > lvA && h.level <= lvB && !FREE_HOMES.includes(h.id)).map((h) => h.label);
   return { sighting, species: sp, badges: earned, rankUp: rankAfter !== rankBefore ? rankAfter : null, levelUp: lvB > lvA ? { level: lvB, homes } : null, previousXp, firstEver, missionDone, ticket };
 }
 
@@ -332,7 +336,29 @@ export function toggleHabitatBird(id: string): boolean {
   return true;
 }
 
-export function setHome(id: string | undefined) { setState((s) => ({ ...s, diorama: { ...s.diorama, home: id } })); }
+export function setHome(id: string | undefined) { if (id && !ownsHome(state, id)) return; setState((s) => ({ ...s, diorama: { ...s.diorama, home: id } })); }
+/** Bird Homes: the default pair is free; every other home unlocks by level and is then bought. */
+export const ownsHome = (s: GameState, id: string) => FREE_HOMES.includes(id) || !!s.ownedHomes?.includes(id);
+export function buyHome(id: string): boolean {
+  const sc = SCENES[id], price = homePrice(id);
+  if (!sc || ownsHome(state, id) || trainerLevel(state.xp).level < sc.level || state.feathers < price) return false;
+  setState((s) => ({ ...s, feathers: s.feathers - price, ownedHomes: [...(s.ownedHomes ?? []), id], diorama: { ...s.diorama, home: id }, stats: { ...s.stats, spent: s.stats.spent + price } }));
+  logEvent('buy_home', id);
+  return true;
+}
+/** Feeders and perches. */
+export const ownsDecor = (s: GameState, id: string) => id === DEFAULT_FEEDER || s.ownedDecor.includes(id);
+export function buyDecor(id: string): boolean {
+  const d = DECOR[id];
+  if (!d || ownsDecor(state, id) || trainerLevel(state.xp).level < d.level || state.feathers < d.price) return false;
+  setState((s) => ({ ...s, feathers: s.feathers - d.price, ownedDecor: [...s.ownedDecor, id], diorama: { ...s.diorama, [d.kind]: id }, stats: { ...s.stats, spent: s.stats.spent + d.price } }));
+  logEvent('buy_decor', id);
+  return true;
+}
+export function equipDecor(kind: 'feeder' | 'perch', id: string | undefined) {
+  if (id && !ownsDecor(state, id)) return;
+  setState((s) => ({ ...s, diorama: { ...s.diorama, [kind]: id } }));
+}
 export function setBiome(b: Habitat) { setState((s) => ({ ...s, diorama: { ...s.diorama, biome: b } })); }
 
 export function speciesCount(s: GameState) { return new Set(s.sightings.filter(counts).map((x) => x.speciesId)).size; }

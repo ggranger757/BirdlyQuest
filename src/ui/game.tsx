@@ -98,8 +98,9 @@ export function Capsule({ size = 48, glow, className, style, lens }: { size?: nu
   const L = lens ? lensOf(lens) : null;
   const tier = L?.tier ?? 'common';
   const body = BODIES[tier];
-  // Rare lenses wear their own colour on the whole body (frame, rim and trim), so each one is easy to tell apart.
-  const bc = L && tier === 'rare' ? { ...BODY_COL.rare, w: L.colors.a, t: L.colors.A, L: L.colors.g } : BODY_COL[tier];
+  // Rare and Epic lenses wear their own colour on the whole body (frame, rim and trim), so each one is easy to tell apart.
+  const bc = L && tier === 'rare' ? { ...BODY_COL.rare, w: L.colors.a, t: L.colors.A, L: L.colors.g }
+    : L && tier === 'epic' ? { ...BODY_COL.epic, k: '#0A0C0F', e: '#0F1318', w: L.colors.a, t: L.colors.A, L: L.colors.g } : BODY_COL[tier];
   const col = (ch: string) => (L && (ch === 'A' || ch === 'a' || ch === 'g') ? L.colors[ch as 'A' | 'a' | 'g'] : CAP_COL[ch] ?? bc[ch]);
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" shapeRendering="crispEdges" className={className} style={style} aria-hidden>

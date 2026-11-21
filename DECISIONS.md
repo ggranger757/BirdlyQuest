@@ -166,3 +166,35 @@ One line per meaningful choice, with the reason.
   - XP already scaled ×1/×1.5/×2.5/×5/×10 by rarity.
   - Feather Coins now scale too, ×1/×1.5/×2.5/×4/×6. This is a gentler curve so lens prices stay meaningful: a first Legendary record pays 120 coins.
   - The catch screen calls out the bonus: "★ RARE BIRD! Rarer birds pay more: ×2.5 XP and ×2.5 Feather Coins."
+- **v1.28: shop, homes, decor, tour and rival characters (owner requests).**
+  - **Battle:** the LOG button and battle history are removed. Rival speech still waits for a tap.
+  - **Rival personalities:** each rival has a bio, a motive, and in-character lines for their intro, sending out a bird, their bird fainting, taunting when yours faints, announcing a Big Move, their last bird running low, and their win and loss.
+    - Pip: a 10-year-old who wants his sister to take him on the dawn walk.
+    - Wren: a sound recordist casting birds for her dawn-chorus album.
+    - Captain Gale: a retired ferry captain defending his unbeaten coast.
+    - Mara: a fashion designer hunting for a muse bird.
+    - Old Hawkins: looking for a successor for his 40-year ridge count.
+    - Professor Merlin: the final exam.
+    - The 8 wandering birders each have a title, a bio, a motive and lines. Their challenge pop-up shows their own opening line.
+    - The party screen shows the rival's bio and "Why they're here".
+  - **BirdDex goals:** "Show all birds" appears after tapping a goal only when that goal has found birds.
+  - **Bird Homes:**
+    - High Street (`c2`) is deleted, art included. The urban day scene now uses Old town square.
+    - Every home except the default pair now unlocks by level and must be bought: 40 + 25×level coins, rounded to 5 (90 coins at Lv2).
+    - The Aviary strip shows prices and asks before buying. The shop has a Homes tab.
+    - Migration: a player's currently chosen home is kept as owned.
+  - **Epic lenses:** each has its own capsule colour (violet, indigo, teal, red, sky, lime, gold, silver, magenta), as the Rare tier did in v1.25.
+  - **Decor:**
+    - 50 feeders (10 designs × 5 colourways: tube, cottage, platform, globe, lantern, suet, hopper, teacup, gourd, tower).
+    - 50 perches (10 structures × 5 seasonal finishes: twig stand, oak bough, blossom, pine, driftwood, bamboo, rope swing, ladder, stone pillar, garden arch).
+    - All are drawn in pixel art by `src/render/decor.ts`. They're level-gated and priced 30–330 coins, and the Classic Tube is free.
+    - Every feeder keeps the same tray, so feeding still works. The perch stands in the Aviary and adds landing spots birds fly to.
+  - **Merlin's Shop:**
+    - Tabs: Food, Lenses, Homes, Feeders, Perches. Decor is grouped by design with "x/5 owned".
+    - The wallet chip opens and closes the "how to earn" notes.
+    - Merlin talks in an RPG dialogue box (name plate, typewriter text, ▼), with a framed, lamp-lit portrait.
+  - **Merlin's tour:** a new 19-step walkthrough of the whole app.
+    - It covers the map, Latest/Likely, Feather Coins, the Snap button, Snap Power, rarity rewards, goals, the BirdDex, Aviary pets and HP, the feeder, Bird Homes, decor, Field Trials, Trial Tickets, battle controls and matchups, lenses, quests, Bond and the shop.
+    - It shows a progress bar and can be skipped.
+    - It runs automatically once (`tourSeen` version 2): for new players after onboarding, and once for existing players.
+  - **Explore park pop-up:** the Directions button is a centred flex button, and the close ✕ has 8px of breathing room and a box.

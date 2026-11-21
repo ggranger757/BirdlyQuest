@@ -436,18 +436,99 @@ export function takeTurn(b0: Battle, mine: Action, rng: () => number, opts: { fo
 }
 
 // ─── rivals ───
-export interface RivalDef {
+/** How a trainer talks. `{bird}` is replaced with the bird's name. */
+export interface Persona {
+  bio: string; motive: string;
+  send: string[];    // sending out their next bird
+  faint: string[];   // their bird flies off to rest
+  taunt: string[];   // your bird flies off to rest
+  charge: string[];  // announcing a Big Move
+  low: string;       // their last bird is nearly out
+}
+export interface RivalDef extends Persona {
   id: string; name: string; title: string; line: string; win: string; lose: string;
   styles: Contest[]; size: number; level: number; quality: number; scene: string;
   coins: number; xp: number; time: number; music: string; face?: string; merlin?: boolean;
 }
 export const RIVALS: RivalDef[] = [
-  { id: 'pip', name: 'Pip', title: 'Backyard rookie', line: "My birds sing all morning. Bet yours can't keep up!", win: 'Whoa! Your birds are good!', lose: 'Ha! Told you my birds were the best!', styles: ['song'], size: 1, level: 3, quality: 30, scene: 'valley', coins: 25, xp: 40, time: 12, music: 'music/battle/default-1.mp3', face: 'trainers/t002.png' },
-  { id: 'wren', name: 'Wren', title: 'Dawn chorus fan', line: 'A good song beats bright feathers. Prove me wrong.', win: 'Fine, fine. That was a lovely performance.', lose: 'Listen to that chorus! Come back when you can match it.', styles: ['song', 'forage'], size: 2, level: 5, quality: 40, scene: 'pine', coins: 35, xp: 60, time: 10, music: 'music/battle/battle-6.mp3', face: 'trainers/t016.png' },
-  { id: 'gale', name: 'Captain Gale', title: 'Shoreline racer', line: 'Out on the coast, it’s all about the wind.', win: 'You sailed right past me!', lose: 'The wind was on my side today.', styles: ['sky', 'forage'], size: 2, level: 8, quality: 48, scene: 'n3', coins: 45, xp: 80, time: 9, music: 'music/battle/battle-4.mp3', face: 'trainers/t023.png' },
-  { id: 'mara', name: 'Mara', title: 'Plumage collector', line: 'Colour is everything. Show me your brightest!', win: 'Stunning. Absolutely stunning.', lose: 'Not quite bright enough, darling.', styles: ['display', 'song'], size: 3, level: 11, quality: 55, scene: 'n1', coins: 60, xp: 110, time: 8, music: 'music/battle/default-3.mp3', face: 'trainers/t024.png' },
-  { id: 'hawkins', name: 'Old Hawkins', title: 'Ridge watcher', line: 'Forty years on this ridge. My birds know every trick.', win: 'Well I never. You’ve got a real eye.', lose: 'Patience, young birder. Come back stronger.', styles: ['sky', 'display', 'forage'], size: 3, level: 14, quality: 62, scene: 'dusk', coins: 80, xp: 150, time: 8, music: 'music/battle/battle-8.mp3', face: 'trainers/t020.png' },
-  { id: 'merlin', name: 'Professor Merlin', title: 'Grand finale', line: 'So, you’ve come this far. Show me what your birds can do!', win: 'Magnificent! You are a true birder.', lose: 'Not yet, my friend. Not yet.', styles: ['song', 'display', 'sky'], size: 3, level: 18, quality: 70, scene: 'nfb', coins: 120, xp: 250, time: 7, music: 'music/battle/elven.mp3', merlin: true },
+  {
+    id: 'pip', name: 'Pip', title: 'Backyard rookie', styles: ['song'], size: 1, level: 3, quality: 30, scene: 'valley', coins: 25, xp: 40, time: 12, music: 'music/battle/default-1.mp3', face: 'trainers/t002.png',
+    bio: 'Ten years old, with binoculars bigger than his head. Watches his backyard feeder every morning before school.',
+    motive: 'His big sister promised to take him on the dawn bird walk if he ever wins a Field Trial.',
+    line: 'Okay okay okay! My sister says if I beat you she’ll FINALLY take me on the dawn walk. So… prepare to lose!',
+    send: ['Go, {bird}! You’re my best one!', '{bird}, it’s your turn! Do the thing!'],
+    faint: ['Nooo, {bird}! You were doing so good!', 'It’s okay, {bird}! Extra snacks later, I promise!'],
+    taunt: ['Ha! Did you see that?! My backyard birds rule!', 'Whoa, I actually did it!'],
+    charge: ['{bird}, do the super loud one! The one that wakes up my whole street!'],
+    low: 'Uh oh. Uh oh uh oh uh oh.',
+    win: 'Aww, man! That was SO cool though. Can you show me how you trained them?',
+    lose: 'I WON?! Wait till my sister hears about this!',
+  },
+  {
+    id: 'wren', name: 'Wren', title: 'Dawn chorus fan', styles: ['song', 'forage'], size: 2, level: 5, quality: 40, scene: 'pine', coins: 35, xp: 60, time: 10, music: 'music/battle/battle-6.mp3', face: 'trainers/t016.png',
+    bio: 'A sound recordist who is out with her microphone at 4 a.m. She has 900 hours of dawn chorus recorded and an opinion about every minute.',
+    motive: 'She’s choosing birds for her dawn-chorus album. Birds that lose don’t make the tracklist.',
+    line: 'Shh. Hear that? No? That’s the problem. I only record birds that can hold a stage. Prove yours can.',
+    send: ['{bird}, take it from the top.', 'Your cue, {bird}. Don’t rush the tempo.'],
+    faint: ['Cut. {bird}, we’ll do another take.', 'Hm. {bird} went flat on that one.'],
+    taunt: ['That’s what a clean recording sounds like.', 'Pitch perfect. Yours was… enthusiastic.'],
+    charge: ['Building to the crescendo… {bird}, now!'],
+    low: 'Fine. Final verse. Make it count, {bird}.',
+    win: 'That was a lovely performance. You’ve earned a track on the album.',
+    lose: 'Too noisy, too soon. Come back when your birds can listen as well as sing.',
+  },
+  {
+    id: 'gale', name: 'Captain Gale', title: 'Shoreline racer', styles: ['sky', 'forage'], size: 2, level: 8, quality: 48, scene: 'n3', coins: 45, xp: 80, time: 9, music: 'music/battle/battle-4.mp3', face: 'trainers/t023.png',
+    bio: 'Skippered the island ferry for forty years. Now he races shorebirds against the tide, and he has never lost on home water.',
+    motive: 'Defending his unbeaten record. Nobody takes his harbour.',
+    line: 'Ahoy, landlubber! Fair winds or foul, nobody beats Gale on his own coast. Batten down!',
+    send: ['Hoist the sails, {bird}! Full speed ahead!', '{bird}, ride that headwind!'],
+    faint: ['Man overboard! Hang on, {bird}!', 'Rough seas, {bird}. Rest easy, matey.'],
+    taunt: ['Ha! Caught you in my wake!', 'That’s how it’s done on open water!'],
+    charge: ['All hands! {bird}, bring the storm!'],
+    low: 'Steady as she goes… we’re not sunk yet!',
+    win: 'Blow me down! You sailed right past me. The harbour’s yours today.',
+    lose: 'The tide never lies, sailor. Come back when you’ve found your sea legs.',
+  },
+  {
+    id: 'mara', name: 'Mara', title: 'Plumage collector', styles: ['display', 'song'], size: 3, level: 11, quality: 55, scene: 'n1', coins: 60, xp: 110, time: 8, music: 'music/battle/default-3.mp3', face: 'trainers/t024.png',
+    bio: 'A fashion designer who sketches feathers for her runway collections. Her studio walls are covered in plumage swatches.',
+    motive: 'She’s hunting for a muse bird for her next collection. Only the most dazzling will do.',
+    line: 'Darling. Let me see them. …Hm. We’ll see if any of yours could possibly be my muse.',
+    send: ['{bird}, walk for me, darling.', 'Show them the collection, {bird}.'],
+    faint: ['Tragic. {bird}, go and fix your feathers.', 'No, no, no. That look was all wrong.'],
+    taunt: ['Stunning. Simply stunning. Mine, I mean.', 'Did you see the shimmer on that?'],
+    charge: ['{bird}, the grand finale look! Now!'],
+    low: 'Last look of the season. Make it unforgettable, {bird}.',
+    win: 'Stunning. Absolutely stunning. I think I’ve found my muse… and it’s yours.',
+    lose: 'Not quite bright enough, darling. Come back with more colour.',
+  },
+  {
+    id: 'hawkins', name: 'Old Hawkins', title: 'Ridge watcher', styles: ['sky', 'display', 'forage'], size: 3, level: 14, quality: 62, scene: 'dusk', coins: 80, xp: 150, time: 8, music: 'music/battle/battle-8.mp3', face: 'trainers/t020.png',
+    bio: 'Has counted migrating hawks from the same ridge every autumn for forty years. Gruff, patient, and misses nothing.',
+    motive: 'His knees can’t take the climb much longer. He’s looking for someone worthy to take over the count.',
+    line: 'Forty years on this ridge, kid. Seen a lot of birders come and go. Let’s see if you’re one who stays.',
+    send: ['Steady, {bird}. Watch the wind.', 'Your turn, {bird}. Like we practised.'],
+    faint: ['Good effort, {bird}. Rest your wings.', 'Saw that coming. Should’ve moved sooner.'],
+    taunt: ['Patience wins on the ridge.', 'You rushed it. Birds can tell.'],
+    charge: ['Now, {bird}. Ride the thermal and drop.'],
+    low: 'Heh. Last one. Haven’t had to say that in years.',
+    win: 'Well I never. You’ve got a real eye. Maybe the ridge will be in good hands.',
+    lose: 'Patience, young birder. The ridge will still be here. Come back stronger.',
+  },
+  {
+    id: 'merlin', name: 'Professor Merlin', title: 'Grand finale', styles: ['song', 'display', 'sky'], size: 3, level: 18, quality: 70, scene: 'nfb', coins: 120, xp: 250, time: 7, music: 'music/battle/elven.mp3', merlin: true,
+    bio: 'Your mentor and the keeper of the shop. Claims he was birding before binoculars had lenses.',
+    motive: 'The final exam: has his student learned that every bird’s real-life talent is its true strength?',
+    line: 'So, you’ve come this far. Every bird has a true talent. Today, show me you’ve learned to see it.',
+    send: ['Come, {bird}. One more lesson to teach.', '{bird}, my old friend. Show them.'],
+    faint: ['Splendid! You were watching closely.', 'Well spotted. Rest now, {bird}.'],
+    taunt: ['Ah, a lesson I learned the hard way too.', 'Mind the matchups, my friend.'],
+    charge: ['Watch carefully now. {bird}, the grand finale!'],
+    low: 'My last bird. How very exciting!',
+    win: 'Magnificent! There’s nothing left I can teach you. You are a true birder.',
+    lose: 'Not yet, my friend. Not yet. Study your birds’ talents and come back.',
+  },
 ];
 /** Wandering birders who challenge you after you discover a new bird; each gets a portrait from the trainer set. */
 const RIVAL_FACES = new Set(['002', '016', '023', '024', '020']);
@@ -455,6 +536,17 @@ const WANDERER_FACES = Array.from({ length: 60 }, (_, i) => String(i + 1).padSta
 export const hashStr = (s: string) => [...s].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7);
 export const wandererFace = (key: string) => `trainers/t${WANDERER_FACES[hashStr(key + 'face') % WANDERER_FACES.length]}.png`;
 export const WANDERERS = ['Birder Sky', 'Fern', 'Rook', 'Juniper', 'Marsh', 'Willow', 'Robin Lee', 'Sparrow Sam'];
+/** Wandering birders: short personalities for the challenges that pop up after a new find. `{new}` is your new bird. */
+export const WANDERER_PERSONA: Record<string, Persona & { line: string; win: string; lose: string; title: string }> = {
+  'Birder Sky': { title: 'Wildlife photographer', bio: 'Carries three cameras and zero snacks.', motive: 'Wants an action shot of your new bird for her portfolio.', line: 'Hold still… a {new}?! I need this shot. Battle me while I shoot!', send: [], faint: ['Got the shot anyway!'], taunt: ['Ooh, that’ll make a great photo.'], charge: ['{bird}, give me your best angle!'], low: 'One more frame…', win: 'Perfect shot. Thanks for the show!', lose: 'Great photos, though. Truly.' },
+  Fern: { title: 'Shy botanist', bio: 'Knows every plant on the trail and talks mostly to them.', motive: 'Curious whether your {new} can keep up with her garden birds.', line: 'Oh! Um. Sorry. Is that a {new}? Could we… maybe have a small trial?', send: [], faint: ['Oh no, sorry, {bird}!'], taunt: ['Oh! I didn’t mean to win that one.'], charge: ['{bird}, um… go big?'], low: 'Okay. Deep breaths.', win: 'You’re really good. Thank you for being gentle.', lose: 'I… won? Oh my.' },
+  Rook: { title: 'Cocky teen birder', bio: 'Has 400 species on his list and mentions it constantly.', motive: 'Wants to prove your {new} is just beginner’s luck.', line: 'A {new}? Cute. I’ve got that one five times over. Let’s see if yours can actually battle.', send: [], faint: ['Whatever, {bird} wasn’t trying.'], taunt: ['Too easy.'], charge: ['Watch this, {bird}. Show-off time.'], low: 'Okay, okay, I’m focusing now.', win: 'Fine. Beginner’s luck. Twice.', lose: 'Told you. Four hundred species, baby.' },
+  Juniper: { title: 'Field researcher', bio: 'Clipboard, waders, and a spreadsheet for everything.', motive: 'Collecting data on how a {new} performs under pressure.', line: 'Fascinating, a {new}. For science: may I test it in a trial?', send: [], faint: ['Noted. Interesting result.'], taunt: ['Consistent with my hypothesis.'], charge: ['Trial three, {bird}: maximum output.'], low: 'The sample size is getting small…', win: 'Excellent data. Thank you for participating.', lose: 'Results recorded. Try again for a larger sample.' },
+  Marsh: { title: 'Old fisherman', bio: 'Fishes the same pond every day and knows every heron by name.', motive: 'Reckons nothing beats a pond bird, not even your {new}.', line: 'Well now, a {new}. Pond birds’ll teach it a thing or two. Fancy a trial?', send: [], faint: ['That one got away.'], taunt: ['Patience. Like fishing.'], charge: ['Reel it in, {bird}!'], low: 'Last cast of the day.', win: 'Hah! Good catch, that bird of yours.', lose: 'The pond always wins in the end.' },
+  Willow: { title: 'Landscape painter', bio: 'Paints birds in watercolour, usually slightly the wrong colour.', motive: 'Wants to see your {new} move so she can paint it.', line: 'Look at the colours on that {new}! Battle me, I need to see how it moves.', send: [], faint: ['Such lovely brushwork, {bird}.'], taunt: ['Beautiful! I must paint that.'], charge: ['{bird}, a bold stroke now!'], low: 'Final layer of paint…', win: 'Gorgeous! That one’s going on canvas.', lose: 'Lovely composition. Mine, I mean!' },
+  'Robin Lee': { title: 'Birding streamer', bio: 'Live-streams every walk to 12 loyal viewers.', motive: 'Chat wants to see a {new} battle. Content is content.', line: 'Chat, CHAT. A {new}! Okay, okay, let’s do a trial on stream!', send: [], faint: ['Chat, that was a misclick.'], taunt: ['Clip that! CLIP IT!'], charge: ['{bird}, hit them with the big one for chat!'], low: 'Chat, we’re in trouble.', win: 'GG! Chat, follow this birder.', lose: 'And THAT’s why we stream, chat.' },
+  'Sparrow Sam': { title: 'Kid with a notebook', bio: 'Draws every bird she sees with a purple crayon.', motive: 'Has never seen a {new} up close and wants to know if it’s strong.', line: 'Is that a REAL {new}?! Can my bird try battling it? Please please please?', send: [], faint: ['Sorry, {bird}! You did great!'], taunt: ['Yay! Did you see?!'], charge: ['{bird}, do your biggest flap!'], low: 'Come on come on come on!', win: 'Wow! Your bird is the best one!', lose: 'We won! I’m drawing this in my notebook!' },
+};
 export const WILD = { coins: 15, xp: 30, time: 10, chance: 0.4, scenes: ['valley', 'pine', 'n1', 'nfb', 'n3'], music: ['music/battle/battle-2.mp3', 'music/battle/battle-8.mp3', 'music/battle/battle-6.mp3', 'music/battle/default-1.mp3'] };
 
 /** Rival levels keep pace with your team so later rivals stay a challenge. */

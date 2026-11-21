@@ -1,6 +1,6 @@
 import { Component, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { NavCtx, Nav, Route, Tab, consumeBackGuard } from './nav';
-import { useGame, isReady, getState, hungryCount, tickFeeder , welcomeBack } from '../app/store';
+import { useGame, isReady, getState, setState, hungryCount, tickFeeder , welcomeBack } from '../app/store';
 import { Icon, Toast } from './components';
 import { Boot, Onboarding } from './screens/Onboarding';
 import { Explore } from './screens/Explore';
@@ -49,7 +49,7 @@ function hasClaimable() {
 
 const THEME_BAR: Record<string, string> = { neon: '#0A0C0F', dusk: '#0E0B22', ember: '#150906', field: '#EADCBC' };
 
-import { Tutorial } from './Tutorial';
+import { Tutorial, TOUR_VERSION } from './Tutorial';
 import { QuickLog } from './screens/QuickLog';
 import { MerlinTip } from './MerlinTip';
 import { Shop } from './screens/Shop';
@@ -65,6 +65,9 @@ export function App() {
   const motion = useGame((s) => s.settings.motion);
   useGame((s) => s.challenges); useGame((s) => s.sightings.length);
   const [booted, setBooted] = useState(false);
+  // Merlin's full tour runs once for everyone (new players after onboarding, and existing players once when it's updated)
+  const tourSeen = useGame((s) => s.tourSeen ?? 0);
+  useEffect(() => { if (ready && onboarded && !tourOn && tourSeen < TOUR_VERSION) { const t = setTimeout(() => setState((s) => ({ ...s, tourOn: true })), 900); return () => clearTimeout(t); } }, [ready, onboarded, tourSeen]);
   const [tab, setTabState] = useState<Tab>(() => {
     const h = location.hash.slice(2) as Tab;
     return (['explore', 'dex', 'aviary', 'you'] as Tab[]).includes(h) ? h : 'explore';

@@ -3,7 +3,7 @@ import { useGame, clearChallenge, speciesOf } from '../app/store';
 import { useNav } from './nav';
 import { Sprite } from './components';
 import { sfx, playClip } from '../app/audio';
-import { WANDERERS, wandererFace } from '../core/trials';
+import { WANDERERS, WANDERER_PERSONA, wandererFace } from '../core/trials';
 
 export function ChallengePrompt() {
   const nav = useNav();
@@ -23,7 +23,8 @@ export function ChallengePrompt() {
           <div className="tchallenge-bird"><Sprite species={sp} parts={sighting.sprite?.parts} scale={2} mode="idle" /></div>
         </div>
         <b className="tchallenge-title">{who} wants a Field Trial</b>
-        <p>They spotted your new <b>{sp.common}</b> and want to see its talents in a quick battle.</p>
+        <span className="small muted">{WANDERER_PERSONA[who]?.title}</span>
+        <p className="tchallenge-line">“{(WANDERER_PERSONA[who]?.line ?? 'They spotted your new {new}!').replace(/\{new\}/g, sp.common)}”</p>
         <div className="tchallenge-row">
           <button className="btn ghost" onClick={() => { sfx.back(); clearChallenge(); }}>Not now</button>
           <button className="btn primary" onClick={() => { playClip('tStart'); clearChallenge(); nav.open({ name: 'trials', wild: sighting.id }); }}>Battle!</button>
