@@ -1117,3 +1117,41 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 @media (max-width: 360px) { .trow { gap: 6px; } .trow .btn { padding-left: 8px; padding-right: 8px; font-size: 11px; } .thero-stats .btn { margin-left: 0; } }
 :root.theme-field .tticket-chip { color: var(--brick); } :root.theme-field .tticket-chip.empty { color: var(--muted); }
 :root.theme-field .tticket-out { color: var(--brick); }
+
+/* ── Field Trials v1.26: classic command menu, PP, status, readable text box, battle log ── */
+.tlog { cursor: pointer; padding-right: 44px; min-height: 48px; }
+.tlog.speech { padding-right: 44px; }
+.tlog-next { position: absolute; right: 30px; bottom: 6px; font-size: 11px; color: var(--accent); animation: tpulse .6s steps(2) infinite; }
+:root.theme-field .tlog-next { color: var(--brick); }
+.tlog-hist { position: absolute; right: 4px; top: 4px; padding: 1px 4px; font-family: var(--lbl); font-size: 8px; letter-spacing: .04em; color: var(--muted); background: transparent; border: 1px solid currentColor; cursor: pointer; }
+.thistory { position: absolute; inset: 8px; z-index: 9; display: flex; flex-direction: column; background: var(--surface); border: 2px solid #000; box-shadow: 4px 4px 0 #000; cursor: default; }
+.thistory-top { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-bottom: 2px solid #000; font-family: var(--lbl); text-transform: uppercase; font-size: 12px; }
+.thistory ol { flex: 1; margin: 0; padding: 8px 12px 8px 30px; overflow-y: auto; font-size: 13px; line-height: 18px; display: flex; flex-direction: column; gap: 4px; }
+.thistory li.who { color: var(--accent); font-style: italic; } :root.theme-field .thistory li.who { color: var(--brick); }
+.thud-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 4px; min-height: 11px; }
+.thud-row .thud-pips { margin-top: 0; }
+.thud-status { display: flex; gap: 3px; flex-wrap: wrap; justify-content: flex-end; }
+.thud-status i { font-style: normal; font-family: var(--lbl); font-size: 7.5px; line-height: 10px; padding: 0 3px; border: 1px solid #000; color: #0C0F14; }
+.thud-status i.good { background: var(--accent); } .thud-status i.bad { background: var(--brick, #E8313A); color: #fff; }
+.tcmd { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tcmd-b { min-height: 58px; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--lbl); font-size: 15px; text-transform: uppercase; letter-spacing: .08em; color: var(--text);
+  background: var(--slate); border: 2px solid #000; box-shadow: 0 3px 0 #000; cursor: pointer; }
+.tcmd-b small { font-size: 10px; color: var(--muted); letter-spacing: 0; }
+.tcmd-b.fight { background: var(--accent-fill, var(--accent)); color: var(--accent-ink, #0C0F14); }
+.tcmd-b.run { color: var(--muted); }
+.tcmd-b:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 0 0 #000; }
+.tcmd-b:disabled { opacity: .45; cursor: default; }
+:root.theme-field .tcmd-b { font-size: 16px; font-weight: 600; }
+.tfight-top { display: flex; justify-content: space-between; gap: 8px; font-family: var(--lbl); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+.tpp { position: absolute; right: 6px; bottom: 4px; font-family: var(--lbl); font-size: 9px; color: var(--muted); }
+.tact .tact-txt { padding-bottom: 6px; }
+.ttray.busy .tcmd, .ttray.busy .tsuper { opacity: .55; }
+.tface.tall img { object-position: 50% 0; }
+.tticket-chip { cursor: pointer; font: inherit; font-family: var(--lbl); font-size: 10px; }
+.tticket-caret { font-size: 9px; color: var(--muted); }
+.tticket-note { width: 100%; margin: 6px 0 0; color: var(--muted); line-height: 1.4; }
+.tcta-note { display: flex; flex-direction: column; align-items: center; margin-top: 8px; }
+.tcta-note .tticket-note { text-align: center; }
+@media (max-height: 700px) { .tcmd-b { min-height: 48px; } }
+@media (max-width: 360px) { .tcmd-b { font-size: 13px; } .tfight-top { font-size: 9px; } }
+@media (max-width: 360px) { .tgrid .tact-ic { display: none; } .tgrid .tact { padding: 6px 8px; } }

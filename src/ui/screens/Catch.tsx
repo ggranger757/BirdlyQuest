@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ticketsOf, bondFor } from '../../core/trials';
+import { ticketsOf, bondFor, TICKETS } from '../../core/trials';
 import type { CaptureJob } from '../nav';
 import { useNav } from '../nav';
 import type { Analysis, FieldcraftScore } from '../../core/pixel/extract';
@@ -193,7 +193,7 @@ function CaughtText({ result, onContinue }: { result: CatchResult; onContinue: (
     ...(s.sprite.variant !== 'normal' ? [`Incredible — a rare ${s.sprite.variant} bird!`] : []),
     ...(result.badges.length === 1 ? [`You earned the ${result.badges[0].name.toUpperCase()} badge!`]
       : result.badges.length > 1 ? [`You earned ${result.badges.length} badges: ${result.badges.map((b) => b.name).join(', ')}!`] : []),
-    ...(result.ticket ? [`You earned a TRIAL TICKET! You have ${ticketsOf(getState().trials)} to spend on rival battles in Field Trials.`] : []),
+    ...(result.ticket ? [`+1 TRIAL TICKET for Field Trials (${ticketsOf(getState().trials)}/${TICKETS.max}).`] : []),
     ...(result.levelUp ? [`Trainer level up! You are now Lv ${result.levelUp.level}. Your birds' Bond grows: +${Math.round(bondFor(result.levelUp.level) * 100)}% HP and power in battle.${result.rankUp ? ` ${RANK_LINES[result.rankUp] ?? result.rankUp}` : ''}`] : result.rankUp ? [`Trainer level up! ${RANK_LINES[result.rankUp] ?? result.rankUp}`] : []),
     ...(result.levelUp?.homes.length ? [`New Bird Home${result.levelUp.homes.length > 1 ? 's' : ''} unlocked: ${result.levelUp.homes.length > 1 ? `${result.levelUp.homes.slice(0, -1).join(', ')} and ${result.levelUp.homes.at(-1)}` : result.levelUp.homes[0]}! Visit your Aviary to move in.`] : []),
   ];

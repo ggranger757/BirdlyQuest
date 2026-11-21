@@ -70,12 +70,16 @@ describe('field trials: battles', () => {
     expect(hitG && hitG.t === 'dmg' && hitG.blocked).toBe(true);
     expect(hitG && hitO && hitG.t === 'dmg' && hitO.t === 'dmg' ? hitG.amount < hitO.amount : false).toBe(true);
   });
-  it('the skill recharges and the Super gauge fills, then empties', () => {
+  it('skills spend PP and the Limit Break gauge fills, then empties', () => {
     let b = startBattle([bird('amerob', 30)], [bird('amerob', 30)], 'Rival');
+    const pp = active(b, 'you').pp;
     ({ b } = takeTurn(b, { kind: 'skill' }, rng(3)));
-    expect(skillReady(b)).toBe(false);
-    ({ b } = takeTurn(b, { kind: 'guard' }, rng(3)));
+    expect(active(b, 'you').pp).toBe(pp - 1);
     expect(skillReady(b)).toBe(true);
+    b.you[0].pp = 0;
+    const none = takeTurn(b, { kind: 'skill' }, rng(3));
+    expect(none.b).toBe(b); // out of PP: the turn isn't used
+    expect(skillReady(b)).toBe(false);
     b.gauge = 100;
     const r = takeTurn(b, { kind: 'super' }, rng(4));
     expect(r.b.gauge).toBe(0);
@@ -117,6 +121,26 @@ describe('field trials: rivals and rewards', () => {
   });
 });
 
+describe('field trials v1.26: speed and priority', () => {
+  it('the faster bird acts first; Guard always goes first', () => {
+    // an American Kestrel (fast flier) out-speeds a Robin of the same level
+    const fast = startBattle([bird('amerob', 10)], [bird('amekes', 10)], 'R');
+    expect(active(fast, 'foe').spd).toBeGreaterThan(active(fast, 'you').spd);
+    const r = takeTurn(fast, { kind: 'quick' }, rng(4));
+    const firstMove = r.ev.find((e) => e.t === 'move');
+    expect(firstMove && firstMove.t === 'move' ? firstMove.side : '').toBe('foe');
+    const g = takeTurn(fast, { kind: 'guard' }, rng(4));
+    expect(g.ev.findIndex((e) => e.t === 'guard') < g.ev.findIndex((e) => e.t === 'move' || e.t === 'charge')).toBe(true);
+  });
+  it('a bird knocked out before it acts does not act', () => {
+    const b = startBattle([bird('amerob', 3), bird('norcar', 10)], [bird('amekes', 40)], 'R');
+    b.you[0].hp = 1;
+    const r = takeTurn(b, { kind: 'quick' }, rng(5));
+    expect(r.b.yi).toBe(1);
+    expect(r.ev.some((e) => e.t === 'move' && e.side === 'you')).toBe(false);
+  });
+});
+
 describe('field trials v1.25: growth, matchups, swap, bond, tickets', () => {
   it('birds learn moves as they level up', () => {
     const lv = (n: number) => fighter(bird('rethaw', n));
@@ -134,12 +158,14 @@ describe('field trials v1.25: growth, matchups, swap, bond, tickets', () => {
     expect(nextUnlock(sp('rethaw'), 40)).toBe(null);
   });
   it('techniques work and recharge', () => {
-    let b = startBattle([bird('bkcchi', 15)], [bird('amerob', 15)], 'Rival');
+    let b = startBattle([bird('bkcchi', 15)], [bird('amerob', 5)], 'Rival');
     expect(takeTurn(startBattle([bird('bkcchi', 5)], [bird('amerob', 5)], 'R'), { kind: 'tech' }, rng(1)).ev.some((e) => e.t === 'move')).toBe(false);
-    b.you[0].hp = 10;
+    b.you[0].hp = Math.round(b.you[0].max * 0.5);
     const r = takeTurn(b, { kind: 'tech' }, rng(2));
     expect(r.ev.some((e) => e.t === 'heal' && e.side === 'you')).toBe(true);
-    expect(techReady(r.b)).toBe(false);
+    expect(active(r.b, 'you').pp2).toBe(T.techPP - 1);
+    b.you[0].pp2 = 0;
+    expect(techReady(b)).toBe(false);
   });
   it('style matchups: song > display > forage > sky > song', () => {
     expect(matchup('song', 'display')).toBe(1);

@@ -124,3 +124,23 @@ One line per meaningful choice, with the reason.
 - **Lenses (v1.25, owner request):**
   - The Legendary tier is removed. Owners are refunded each retired lens's price in Feather Coins on load and switched back to a lens they still own.
   - Rare lenses each have their own colour on the whole capsule body, with the hues spread out so no two look alike.
+- **Battle mode v1.26: Pokémon / Final Fantasy battle flow (owner: battles felt unengaging, some taps didn't register, rival lines vanished too fast, intro portrait was cropped).**
+  - **Lost taps fixed:**
+    - Root cause: move buttons were a component declared inside the battle render, so every re-render rebuilt them. The 10-per-second turn timer made taps between press and release vanish.
+    - Buttons are now plain render output, and the turn timer is removed (as in Pokémon; reading time matters more). FIGHT opens in about 65ms in testing.
+  - **Command menu:** FIGHT / BAG / BIRDS / RUN.
+    - FIGHT shows four moves with PP: quick move ∞; signature skill 5 PP; Technique 3 PP, or locked until Lv12; Guard ∞.
+    - The header says who is faster and the style matchup.
+    - The Super is a Final Fantasy-style **Limit** gauge above the menu.
+  - **Turn order:** the faster bird acts first. Speed comes from flying ability plus level.
+    - Guard, Bag, Birds and Run always go first, like Protect, items and switching.
+    - A bird knocked out before it acts doesn't act.
+    - Cooldowns are replaced by PP; out-of-PP or invalid moves don't use the turn.
+  - **Readable text:**
+    - Narration stays up for about 0.65–1.9s depending on length, and a tap skips it.
+    - Rival speech waits for a tap (▼). This covers the opening line, sending out the next bird, and the win/lose quote.
+    - "X uses Y!" now appears before the move animation.
+    - A LOG button shows the whole battle's text, including everything the rival said.
+  - **Status chips** under HP: PWR▲, PWR▼, FOCUS, SHIELD, DAZED.
+  - **Intro:** "Rival Wren wants to battle!" with the full 2:3 portrait (no square crop).
+  - **Ticket copy:** the ticket count is now a chip that shows or hides a one-line explanation (remembered). It replaces the longer paragraphs on the ladder, party screen and in How it works. The catch-screen line is shortened to "+1 TRIAL TICKET (n/5)".

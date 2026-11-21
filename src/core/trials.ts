@@ -1,7 +1,9 @@
 // Field Trials (v3, Step Quest-style): fast, one-tap-per-turn bird battles. Kept bird-true and non-violent:
 // birds out-sing, out-dazzle, out-fly and out-forage each other. When a bird's HP reaches 0 it flies off to rest.
 //
-// Your turn, one tap:  Quick move (always ready) · Signature skill (from a real-life fact; recharges)
+// v1.26 (Pokémon / Final Fantasy feel): moves have PP, the faster bird acts first, and Guard, Snack, Swap and Run
+// always go first (priority). The Super is a Limit Break that fills as you battle.
+// Your turn, one tap:  Quick move (unlimited) · Signature skill (from a real-life fact; limited PP)
 //                      · Guard (block 60% of the next hit) · Snack (pantry food) · Super (gauge fills as you battle) · Run
 // The rival:           quick move or its own signature skill, now and then a Big Move it announces a turn ahead (Guard!)
 // Parties:             up to 3 birds a side; when one rests the next flies in automatically. Swap costs your turn.
@@ -157,8 +159,8 @@ export const bondFor = (trainerLevel: number) => Math.min(0.3, Math.max(0, train
 
 // ─── tuning ───
 export const T = {
-  skillCooldown: 2,     // turns before a signature skill is ready again
-  techCooldown: 3,      // turns before a technique is ready again
+  skillPP: 5,           // signature skill uses per battle
+  techPP: 3,            // technique uses per battle
   guardBlock: 0.6,      // Guard (and Waterproof) cut the next hit by this much
   bigMove: 2.5,         // the rival's announced Big Move
   superPower: 3,        // your Super move
@@ -173,12 +175,12 @@ export interface Contender { sp: Species; level: number; quality: number; parts?
 export interface Fighter {
   c: Contender; style: Contest; skill: Skill; quick: string; quickPow: number;
   tech: Skill | null;  // learned at Lv12
-  cd2: number;         // turns until the technique is ready
-  skillCd: number;     // signature cooldown length
+  pp: number; ppMax: number;    // signature skill uses left
+  pp2: number; pp2Max: number;  // technique uses left
+  spd: number;         // speed: the faster bird acts first
   mastered: boolean;   // Lv30: signature skill is 30% stronger (Zen Stalk ×2.6, Aqua Shield heals 35%)
   superName: string; superPow: number;
   hp: number; max: number; atk: number;
-  cd: number;          // turns until the signature skill is ready
   weak: number;        // turns of -30% power (from Dawn Chorus)
   dazzle: number;      // 50% miss on its next attack
   focus: boolean;      // next attacking move ×2.2 (Patient Stalk)
@@ -196,11 +198,13 @@ export function fighter(c: Contender, hpScale = 1, bond = 0): Fighter {
     c: { ...c, level: lv }, style, hp: max, max, atk,
     // a mastered skill hits 30% harder
     skill: mastered ? { ...base, name: `${base.name}+`, power: base.power * 1.3, tag: base.kind === 'shelter' ? 'Heals 35% · blocks next hit' : base.kind === 'focus' ? 'Next move does ×2.6' : `${base.tag} · +30%` } : base,
-    skillCd: T.skillCooldown, mastered,
+    mastered, pp: T.skillPP, ppMax: T.skillPP, pp2: lv >= GROW.tech ? T.techPP : 0, pp2Max: lv >= GROW.tech ? T.techPP : 0,
+    // speed comes from flying ability (fast fliers act first), plus level
+    spd: Math.round(contestStat(c.sp, 'sky') * 0.6 + lv * 1.5 + clamp(c.quality, 0, 100) / 20),
     quick: lv >= GROW.quick ? QUICK_PLUS[style] : CONTESTS[style].quick, quickPow: lv >= GROW.quick ? 1.3 : 1,
-    tech: lv >= GROW.tech ? TECHNIQUES[style] : null, cd2: 0,
+    tech: lv >= GROW.tech ? TECHNIQUES[style] : null,
     superName: lv >= GROW.ultra ? ULTRA[style] : CONTESTS[style].super, superPow: lv >= GROW.ultra ? T.superPower * 1.2 : T.superPower,
-    cd: 0, weak: 0, dazzle: 0, focus: false, fed: 0, shelter: false, out: false,
+    weak: 0, dazzle: 0, focus: false, fed: 0, shelter: false, out: false,
   };
 }
 
@@ -287,7 +291,7 @@ function checkRest(b: Battle, side: Side, ev: Ev[]) {
 /** Use a signature skill or a learned technique (either side). */
 function useSkill(b: Battle, side: Side, rng: () => number, ev: Ev[], slot: 'skill' | 'tech' = 'skill') {
   const f = active(b, side), s = slot === 'tech' && f.tech ? f.tech : f.skill;
-  if (slot === 'tech') f.cd2 = T.techCooldown; else f.cd = f.skillCd;
+  if (slot === 'tech') f.pp2 = Math.max(0, f.pp2 - 1); else f.pp = Math.max(0, f.pp - 1);
   ev.push({ t: 'move', side, kind: slot, name: s.name, style: s.style }, { t: 'log', text: `${nameOf(b, side)} uses ${s.name}!` });
   const foe = active(b, other(side));
   switch (s.kind) {
@@ -322,9 +326,9 @@ function foeTurn(b: Battle, rng: () => number, ev: Ev[], forceCharge = false) {
   } else if (forceCharge || (b.turn % T.bigEvery === T.bigEvery - 1 && b.turn > 1)) {
     b.foeCharging = true;
     ev.push({ t: 'charge', side: 'foe' }, { t: 'log', text: `${nameOf(b, 'foe')} is powering up ${CONTESTS[f.style].big}! Guard!` });
-  } else if (f.cd === 0 && rng() < 0.45) {
+  } else if (f.pp > 0 && rng() < 0.45) {
     useSkill(b, 'foe', rng, ev);
-  } else if (f.tech && f.cd2 === 0 && rng() < (f.tech.kind === 'mend' ? (f.hp < f.max * 0.5 ? 0.6 : 0) : 0.3)) {
+  } else if (f.tech && f.pp2 > 0 && rng() < (f.tech.kind === 'mend' ? (f.hp < f.max * 0.5 ? 0.6 : 0) : 0.3)) {
     useSkill(b, 'foe', rng, ev, 'tech');
   } else if (f.hp < f.max * 0.3 && rng() < 0.25) {
     b.foeGuard = true; ev.push({ t: 'guard', side: 'foe' }, { t: 'log', text: `${nameOf(b, 'foe')} puffs up and guards.` });
@@ -334,7 +338,7 @@ function foeTurn(b: Battle, rng: () => number, ev: Ev[], forceCharge = false) {
   }
   checkRest(b, 'you', ev);
 }
-const tick = (f: Fighter) => { if (f.cd > 0) f.cd--; if (f.cd2 > 0) f.cd2--; if (f.weak > 0) f.weak--; if (f.fed > 0) f.fed--; };
+const tick = (f: Fighter) => { if (f.weak > 0) f.weak--; if (f.fed > 0) f.fed--; };
 
 /** The rival may act before your very first move. */
 export function ambush(b0: Battle, rng: () => number): { b: Battle; ev: Ev[] } {
@@ -346,65 +350,87 @@ export function ambush(b0: Battle, rng: () => number): { b: Battle; ev: Ev[] } {
   return { b, ev };
 }
 
-export const skillReady = (b: Battle) => active(b, 'you').cd === 0;
-export const techReady = (b: Battle) => { const f = active(b, 'you'); return !!f.tech && f.cd2 === 0; };
+export const skillReady = (b: Battle) => active(b, 'you').pp > 0;
+export const techReady = (b: Battle) => { const f = active(b, 'you'); return !!f.tech && f.pp2 > 0; };
+/** Guard, snacks, swapping and running always happen before attacks (like Protect, items and switching). */
+export const PRIORITY = new Set<Action['kind']>(['guard', 'snack', 'swap', 'run', 'wait']);
+/** Who acts first this turn. */
+export function youFirst(b: Battle, a: Action, rng: () => number): boolean {
+  if (PRIORITY.has(a.kind)) return true;
+  const me = active(b, 'you'), foe = active(b, 'foe');
+  return me.spd > foe.spd || (me.spd === foe.spd && rng() < 0.5);
+}
 export const superReady = (b: Battle) => b.gauge >= 100;
 
-/** Resolve one turn: your action, then the rival's. Returns what happened, in order, for the screen to play. */
+/** Resolve one turn. Priority actions and the faster bird go first. Returns what happened, in order, for the screen to play. */
 export function takeTurn(b0: Battle, mine: Action, rng: () => number, opts: { forceCharge?: boolean } = {}): { b: Battle; ev: Ev[] } {
+  if (b0.over) return { b: b0, ev: [] };
+  const m0 = active(b0, 'you');
+  // moves that can't be used right now don't cost the turn
+  if (mine.kind === 'skill' && m0.pp < 1) return { b: b0, ev: [{ t: 'log', text: `${m0.skill.name} is out of PP!` }] };
+  if (mine.kind === 'tech' && (!m0.tech || m0.pp2 < 1)) return { b: b0, ev: [{ t: 'log', text: m0.tech ? `${m0.tech.name} is out of PP!` : `${m0.c.sp.common} hasn't learned a technique yet.` }] };
+  if (mine.kind === 'super' && b0.gauge < 100) return { b: b0, ev: [{ t: 'log', text: 'Your Limit Break isn’t ready yet.' }] };
+  if (mine.kind === 'swap' && (!b0.you[mine.to] || b0.you[mine.to].out || mine.to === b0.yi)) return { b: b0, ev: [] };
   const b = clone(b0), ev: Ev[] = [];
-  if (b.over) return { b, ev };
   b.turn++;
   b.guarding = false;
-  const me = active(b, 'you');
-  switch (mine.kind) {
-    case 'run': b.over = 'foe'; ev.push({ t: 'log', text: 'You bowed out of the trial.' }, { t: 'end', winner: 'foe' }); return { b, ev };
-    case 'wait': ev.push({ t: 'log', text: `Too slow! ${me.c.sp.common} hesitates.` }); break;
-    case 'quick':
-      ev.push({ t: 'move', side: 'you', kind: 'quick', name: me.quick, style: me.style }, { t: 'log', text: `${me.c.sp.common} uses ${me.quick}!` });
-      strike(b, 'you', me.quickPow, me.style, rng, ev);
-      b.gauge = Math.min(100, b.gauge + T.gauge.quick); ev.push({ t: 'gauge', value: b.gauge });
-      break;
-    case 'tech':
-      if (!me.tech || me.cd2 > 0) { ev.push({ t: 'log', text: me.tech ? `${me.tech.name} is still recharging.` : `${me.c.sp.common} hasn't learned a technique yet.` }); return { b: b0, ev }; }
-      useSkill(b, 'you', rng, ev, 'tech');
-      b.gauge = Math.min(100, b.gauge + T.gauge.skill); ev.push({ t: 'gauge', value: b.gauge });
-      break;
-    case 'swap': {
-      const to = b.you[mine.to];
-      if (!to || to.out || mine.to === b.yi) return { b: b0, ev };
-      ev.push({ t: 'recall', side: 'you' }, { t: 'log', text: `Come back, ${me.c.sp.common}! Go, ${to.c.sp.common}!` });
-      me.focus = false;
-      b.yi = mine.to;
-      ev.push({ t: 'send', side: 'you', index: mine.to });
-      break;
+  const first = youFirst(b, mine, rng);
+  if (!first && b.turn === 1) ev.push({ t: 'log', text: `${nameOf(b, 'foe')} is faster and moves first!` });
+  const mineAct = () => {
+    const me = active(b, 'you');
+    switch (mine.kind) {
+      case 'run': b.over = 'foe'; ev.push({ t: 'log', text: 'You bowed out of the trial.' }, { t: 'end', winner: 'foe' }); return;
+      case 'wait': ev.push({ t: 'log', text: `${me.c.sp.common} hesitates.` }); return;
+      case 'quick':
+        ev.push({ t: 'move', side: 'you', kind: 'quick', name: me.quick, style: me.style }, { t: 'log', text: `${me.c.sp.common} uses ${me.quick}!` });
+        strike(b, 'you', me.quickPow, me.style, rng, ev);
+        b.gauge = Math.min(100, b.gauge + T.gauge.quick); ev.push({ t: 'gauge', value: b.gauge });
+        return;
+      case 'tech':
+        useSkill(b, 'you', rng, ev, 'tech');
+        b.gauge = Math.min(100, b.gauge + T.gauge.skill); ev.push({ t: 'gauge', value: b.gauge });
+        return;
+      case 'skill':
+        useSkill(b, 'you', rng, ev);
+        b.gauge = Math.min(100, b.gauge + T.gauge.skill); ev.push({ t: 'gauge', value: b.gauge });
+        return;
+      case 'swap': {
+        const to = b.you[mine.to];
+        ev.push({ t: 'recall', side: 'you' }, { t: 'log', text: `Come back, ${me.c.sp.common}! Go, ${to.c.sp.common}!` });
+        me.focus = false;
+        b.yi = mine.to;
+        ev.push({ t: 'send', side: 'you', index: mine.to });
+        return;
+      }
+      case 'guard':
+        b.guarding = true; b.gauge = Math.min(100, b.gauge + T.gauge.guard);
+        ev.push({ t: 'guard', side: 'you' }, { t: 'log', text: `${me.c.sp.common} puffs up and guards!` }, { t: 'gauge', value: b.gauge });
+        return;
+      case 'super': {
+        b.gauge = 0;
+        const name = me.superName;
+        ev.push({ t: 'gauge', value: 0 }, { t: 'move', side: 'you', kind: 'super', name, style: me.style }, { t: 'log', text: `${me.c.sp.common} unleashes ${name}!` });
+        strike(b, 'you', me.superPow, me.style, rng, ev, { pierce: true, sure: true, big: true });
+        return;
+      }
+      case 'snack':
+        ev.push({ t: 'log', text: `${me.c.sp.common} gobbles up some ${SNACKS[mine.item].name}.` });
+        if (mine.item === 'worms') { me.fed = 3; ev.push({ t: 'buff', side: 'you', text: 'Power up!', good: true }); }
+        else heal(b, 'you', me.max * (mine.item === 'seeds' ? 0.3 : 0.6), ev);
+        return;
     }
-    case 'skill':
-      if (me.cd > 0) { ev.push({ t: 'log', text: `${me.skill.name} is still recharging.` }); return { b: b0, ev }; }
-      useSkill(b, 'you', rng, ev);
-      b.gauge = Math.min(100, b.gauge + T.gauge.skill); ev.push({ t: 'gauge', value: b.gauge });
-      break;
-    case 'guard':
-      b.guarding = true; b.gauge = Math.min(100, b.gauge + T.gauge.guard);
-      ev.push({ t: 'guard', side: 'you' }, { t: 'log', text: `${me.c.sp.common} puffs up and guards!` }, { t: 'gauge', value: b.gauge });
-      break;
-    case 'super': {
-      if (b.gauge < 100) { ev.push({ t: 'log', text: 'Your Super move isn’t ready yet.' }); return { b: b0, ev }; }
-      b.gauge = 0;
-      const name = me.superName;
-      ev.push({ t: 'gauge', value: 0 }, { t: 'move', side: 'you', kind: 'super', name, style: me.style }, { t: 'log', text: `${me.c.sp.common} unleashes ${name}!` });
-      strike(b, 'you', me.superPow, me.style, rng, ev, { pierce: true, sure: true, big: true });
-      break;
-    }
-    case 'snack': {
-      ev.push({ t: 'log', text: `${me.c.sp.common} gobbles up some ${SNACKS[mine.item].name}.` });
-      if (mine.item === 'worms') { me.fed = 3; ev.push({ t: 'buff', side: 'you', text: 'Power up!', good: true }); }
-      else heal(b, 'you', me.max * (mine.item === 'seeds' ? 0.3 : 0.6), ev);
-      break;
-    }
+  };
+  if (first) {
+    mineAct();
+    if (b.over) return { b, ev };
+    checkRest(b, 'foe', ev);
+    if (!b.over) foeTurn(b, rng, ev, opts.forceCharge);
+  } else {
+    const yi = b.yi;
+    foeTurn(b, rng, ev, opts.forceCharge);
+    // a bird that flew off to rest doesn't get to act; the next one has just arrived
+    if (!b.over && b.yi === yi) { mineAct(); if (!b.over) checkRest(b, 'foe', ev); }
   }
-  checkRest(b, 'foe', ev);
-  if (!b.over) foeTurn(b, rng, ev, opts.forceCharge);
   if (!b.over) { tick(active(b, 'you')); tick(active(b, 'foe')); }
   return { b, ev };
 }
