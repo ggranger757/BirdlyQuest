@@ -254,3 +254,4 @@ One line per meaningful choice, with the reason.
     - Her onboarding greeting is rewritten (no more falcon), and her rival bio uses "she".
     - The tour, Settings, the welcome-back toast and the Arcane lens description are updated.
     - Code identifiers (`MerlinSays`, `MerlinTip`, the `merlin` rival id) are unchanged so saves keep working.
+- **v1.31.1: in onboarding, Professor Woods stands in a container with no backdrop (owner request).** Her pictures are transparent cut-outs. On every onboarding step (intro, name, region, partner, outro) she now sits in a `.woods-card`: a container with the same cream panel and double black border as the dialogue box beneath it. The sky gradient is not used there. She's still shown whole at 3:4 and bottom-aligned inside the container's padding (browser-audited in both themes). Everywhere else she keeps the sky-blue frame.

@@ -49,7 +49,7 @@ export function Onboarding({ onFinish }: { onFinish: () => void }) {
 
   const prof = (
     <div className="merlin-stage">
-      <Professor framed height={168} mood="delighted" />
+      <span className="woods-card"><Professor height={168} mood="delighted" /></span>
           </div>
   );
 
@@ -89,7 +89,7 @@ export function Onboarding({ onFinish }: { onFinish: () => void }) {
     return (
       <div className="screen onb">
         <SceneBackdrop dim={0.7} />
-        <div className="row" style={{ alignItems: 'flex-end', gap: 10, marginTop: 8 }}><Professor framed height={96} /><div className="grow"><Dialog speaker="Professor Woods" lines={[`${name.trim() || 'Birder'}! Where do you live? Every place has its own birds.`]} /></div></div>
+        <div className="row" style={{ alignItems: 'flex-end', gap: 10, marginTop: 8 }}><span className="woods-card sm"><Professor height={96} /></span><div className="grow"><Dialog speaker="Professor Woods" lines={[`${name.trim() || 'Birder'}! Where do you live? Every place has its own birds.`]} /></div></div>
         <div className="mt16">
           <RegionPicker value={getState().onboarded ? region : undefined} onPick={(code) => { setRegion(code); setStep('partner'); }} />
         </div>
@@ -108,7 +108,7 @@ function Outro({ r, region, onFinish }: { r: ReturnType<typeof getRegion>; regio
     <div className="screen onb" style={{ justifyContent: 'flex-end' }}>
       <SceneBackdrop />
       <div className="merlin-stage">
-        <Professor framed height={168} mood="delighted" />
+        <span className="woods-card"><Professor height={168} mood="delighted" /></span>
               </div>
       <Dialog speaker="Professor Woods" lines={[
         `${r.flag ?? ''} ${regionLabel(region)}. Splendid birding country!`,
@@ -145,7 +145,7 @@ function PartnerPick({ region, onDone }: { region: string; onDone: () => void })
   return (
     <div className="screen onb">
       <SceneBackdrop dim={0.7} />
-      <div className="row" style={{ alignItems: 'flex-end', gap: 10, marginTop: 8 }}><Professor framed height={96} /><div className="grow"><Dialog speaker="Professor Woods" lines={['Every trainer needs a partner. These three are common where you live. Choose one!']} /></div></div>
+      <div className="row" style={{ alignItems: 'flex-end', gap: 10, marginTop: 8 }}><span className="woods-card sm"><Professor height={96} /></span><div className="grow"><Dialog speaker="Professor Woods" lines={['Every trainer needs a partner. These three are common where you live. Choose one!']} /></div></div>
       {!ready && <p className="small muted mt8">Looking up the birds of {regionLabel(region)}…</p>}
       {!ready && <div className="col mt16" style={{ gap: 12 }}>{[0, 1, 2].map((i) => <div key={i} className="panel skeleton" style={{ margin: 0, height: 84 }} />)}</div>}
       <div className="col mt16" style={{ gap: 12 }}>

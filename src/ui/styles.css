@@ -1343,3 +1343,9 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 .tface.woods-face img.woods { width: 100% !important; height: 100% !important; object-fit: contain; object-position: 50% 100%; }
 .tface.woods-face { position: relative; }
 .tface.woods-face img.woods { position: absolute; inset: 0; margin: auto; }
+
+/* onboarding (v1.31.1): Professor Woods stands in a dialogue-style container, her picture has no backdrop of its own */
+.woods-card { display: inline-block; flex: none; line-height: 0; overflow: hidden; vertical-align: bottom; padding: 10px 12px;
+  background: var(--hi); border: 3px solid #000; box-shadow: inset 0 0 0 3px var(--hi), inset 0 0 0 5px #1B2229, 4px 4px 0 #000; }
+.woods-card .woods { background: none; }
+.woods-card.sm { padding: 7px 8px; box-shadow: inset 0 0 0 2px var(--hi), inset 0 0 0 4px #1B2229, 3px 3px 0 #000; }
