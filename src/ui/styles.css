@@ -815,3 +815,14 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 }
 /* v1.19: zoom hint sits in the upper part of the view, clear of the Likely birds and shutter */
 .cam-gesture-hint { bottom: auto; top: calc((100% - var(--cam-ui)) * 0.28); }
+
+/* v1.19: Field Guide theme — typewriter headings: Courier, semi-bold, letters set close */
+:root.theme-field { --head: 'Courier Prime', 'Courier New', Courier, ui-monospace, monospace; }
+:root.theme-field :is(h1, h2, h3, h4, .section-title, .goal-name, .cam-peek-name) {
+  font-family: var(--head); font-weight: 600; letter-spacing: -0.05em; word-spacing: -0.15em;
+}
+:root.theme-field h1 { font-size: 26px; }
+:root.theme-field :is(h2, .topbar h2) { font-size: 17px; }
+:root.theme-field h3 { font-size: 16px; }
+:root.theme-field .section-title { font-size: 14px; color: var(--stone); }
+:root.theme-field .goal-name { font-size: 15px; }
