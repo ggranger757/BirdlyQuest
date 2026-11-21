@@ -91,8 +91,16 @@ export const sfx = {
 };
 
 // ─── recorded jingles (owner-supplied MP3s), played through WebAudio for low latency ───
-type Clip = 'buy' | 'newBird' | 'levelUp' | 'throw';
-const CLIP_URL: Record<Clip, string> = { buy: 'sfx/buy.mp3', newBird: 'sfx/new-bird.mp3', levelUp: 'sfx/level-up.mp3', throw: 'sfx/throw.mp3' };
+type Clip = 'buy' | 'newBird' | 'levelUp' | 'throw' | TrialClip;
+/** Field Trials sounds (owner-supplied pack): one per contest, plus hits, results and UI. */
+export type TrialClip = 'tSong' | 'tDisplay' | 'tSky' | 'tForage' | 'tHit' | 'tCritical' | 'tRoundWin' | 'tLose' | 'tPick' | 'tTie' | 'tStart';
+const CORE_CLIPS = ['buy', 'newBird', 'levelUp', 'throw'] as const;
+const CLIP_URL: Record<Clip, string> = {
+  buy: 'sfx/buy.mp3', newBird: 'sfx/new-bird.mp3', levelUp: 'sfx/level-up.mp3', throw: 'sfx/throw.mp3',
+  tSong: 'sfx/trials/song.mp3', tDisplay: 'sfx/trials/display.mp3', tSky: 'sfx/trials/sky.mp3', tForage: 'sfx/trials/forage.mp3',
+  tHit: 'sfx/trials/hit.mp3', tCritical: 'sfx/trials/critical.mp3', tRoundWin: 'sfx/trials/round-win.mp3', tLose: 'sfx/trials/lose.mp3',
+  tPick: 'sfx/trials/pick.mp3', tTie: 'sfx/trials/tie.mp3', tStart: 'sfx/trials/start.mp3',
+};
 const clipBuf = new Map<Clip, Promise<AudioBuffer | null>>();
 function loadClip(name: Clip): Promise<AudioBuffer | null> {
   const c = ac(); if (!c) return Promise.resolve(null);
@@ -125,7 +133,9 @@ export async function playClip(name: Clip, opts: { duck?: boolean; vol?: number 
   }
 }
 /** Warm the clip cache after the first user gesture so jingles start instantly. */
-export function preloadClips() { (Object.keys(CLIP_URL) as Clip[]).forEach((k) => loadClip(k)); }
+export function preloadClips() { CORE_CLIPS.forEach((k) => loadClip(k)); }
+/** Warm the Field Trials sounds when that screen opens (kept out of the app-wide preload). */
+export function preloadTrialClips() { (Object.keys(CLIP_URL) as Clip[]).filter((k) => k.startsWith('t') && k !== 'throw').forEach((k) => loadClip(k)); }
 
 export function haptic(pattern: number | number[] = 10) {
   if (!getState().settings.haptics) return;

@@ -25,7 +25,8 @@ export type Route =
   | { name: 'settings' }
   | { name: 'year' }
   | { name: 'lab' }
-  | { name: 'debug' };
+  | { name: 'debug' }
+  | { name: 'trials' };
 
 export interface Nav {
   tab: Tab;

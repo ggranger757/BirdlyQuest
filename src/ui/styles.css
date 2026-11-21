@@ -826,3 +826,111 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 :root.theme-field h3 { font-size: 16px; }
 :root.theme-field .section-title { font-size: 14px; color: var(--stone); }
 :root.theme-field .goal-name { font-size: 15px; }
+
+/* ─── Field Trials (v1.20) ─── */
+.tfx { display: inline-block; flex: none; background-repeat: no-repeat; background-position: 0 0; image-rendering: pixelated; pointer-events: none; }
+@keyframes tfx { to { background-position-x: var(--sheet-w); } }
+
+.trials-entry { display: flex; align-items: center; gap: 10px; width: 100%; margin: 12px 0 4px; padding: 10px 12px; font: inherit; color: var(--text); cursor: pointer;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--river) 28%, var(--slate)), var(--slate)); border: 2px solid #000; box-shadow: 4px 4px 0 #000; min-height: 64px; }
+.trials-entry:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+.trials-entry-icon { flex: none; width: 52px; height: 48px; display: grid; place-items: center; }
+.trials-entry-title { display: block; font-family: var(--px); font-weight: 400; font-size: 14px; text-transform: uppercase; color: var(--accent); }
+.trials-entry .small { display: block; line-height: 16px; }
+.trials-entry-go { color: var(--accent); white-space: nowrap; }
+
+.trials { display: flex; flex-direction: column; }
+.trials .tstage { margin: 0; }
+.trials-body { padding: 0 16px calc(24px + var(--safe-b)); overflow-y: auto; flex: 1; min-height: 0; }
+.trials-hero { display: flex; align-items: center; gap: 12px; margin: 8px 0 10px; padding: 10px; background: var(--slate); border: 2px solid #000; box-shadow: 3px 3px 0 #000; }
+.trials-hero-ring { flex: none; }
+.tcontests { flex-direction: column; gap: 4px; margin-bottom: 4px; }
+.tcontest-key { display: flex; align-items: center; gap: 8px; }
+.tchip { display: inline-block; flex: none; min-width: 64px; text-align: center; padding: 2px 6px; font-family: var(--px); font-size: 10px; text-transform: uppercase; background: var(--c); color: #0A0F02; border: 1px solid #000; box-shadow: 1px 1px 0 #000; }
+.tchip.small { min-width: 0; font-size: 9px; padding: 1px 4px; }
+.tstars { color: var(--sun); font-size: 11px; letter-spacing: -1px; white-space: nowrap; } .tstars i { font-style: normal; color: rgba(127,127,127,.4); }
+
+.trials-ladder { display: flex; flex-direction: column; gap: 10px; }
+.trival { display: flex; align-items: center; gap: 10px; padding: 8px; background: var(--slate); border: 2px solid #000; box-shadow: 3px 3px 0 #000; }
+.trival.next { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow), 3px 3px 0 #000; }
+.trival.beaten { border-color: var(--moss); }
+.trival.locked { opacity: .6; }
+.trival.boss { background: linear-gradient(90deg, color-mix(in srgb, var(--violet) 35%, var(--slate)), var(--slate)); }
+.trival-portrait { flex: none; width: 64px; height: 64px; display: grid; place-items: center; background: rgba(0,0,0,.25); border: 2px solid #000; overflow: hidden; }
+.trival-main { flex: 1; min-width: 0; }
+.trival-name { font-family: var(--px); font-weight: 400; font-size: 13px; }
+.trival-side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.trival-badge { font-family: var(--px); font-size: 10px; color: var(--moss); }
+.trival-lock { font-size: 20px; min-height: 36px; display: grid; place-items: center; }
+.trival-prize { display: inline-flex; align-items: center; gap: 3px; }
+.trival-say { margin: 8px 0; padding: 8px 10px; background: var(--hi); color: var(--on-hi); border: 2px solid #000; box-shadow: 3px 3px 0 #000; font-size: 14px; line-height: 19px; }
+
+.tslots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tslot { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 4px; font: inherit; color: var(--text); background: var(--slate); border: 2px solid #000; box-shadow: 2px 2px 0 #000; cursor: pointer; min-width: 0; }
+.tslot.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow), 2px 2px 0 #000; }
+.tslot-head { display: flex; align-items: center; gap: 4px; }
+.tslot-vs { display: flex; align-items: center; gap: 2px; }
+.tslot-bird { display: flex; flex-direction: column; align-items: center; }
+.tslot-bird canvas { width: 40px !important; height: 40px !important; }
+.tslot-empty { width: 40px; height: 40px; display: grid; place-items: center; border: 2px dashed var(--smoke); font-family: var(--px); }
+.tslot-odds { font-family: var(--px); font-size: 9px; text-transform: uppercase; color: var(--stone); }
+.tslot-odds.good { color: var(--moss); } .tslot-odds.bad { color: var(--oriole); }
+.tpicker { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+.tpick { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; font: inherit; color: var(--text); background: var(--slate); border: 2px solid #000; cursor: pointer; min-height: 44px; }
+.tpick.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--slate)); }
+.tpick-name { text-align: center; line-height: 14px; min-height: 28px; display: flex; align-items: center; }
+.tpick-pow { font-family: var(--px); font-size: 12px; }
+.tpick-tag { position: absolute; top: 3px; right: 3px; font-family: var(--px); font-size: 9px; padding: 0 3px; background: var(--accent); color: var(--accent-ink); }
+.trials-cta { position: sticky; bottom: 0; padding: 12px 0 4px; background: linear-gradient(transparent, var(--bg) 30%); }
+.trials-cta.col { display: flex; flex-direction: column; gap: 8px; position: static; background: none; }
+
+/* the contest stage */
+.tstage { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #07090B; }
+.tstage.shake { animation: tshake 420ms steps(6); }
+@keyframes tshake { 20% { transform: translate(-6px, 3px); } 40% { transform: translate(5px, -4px); } 60% { transform: translate(-4px, -2px); } 80% { transform: translate(3px, 3px); } }
+.tstage-bg { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.tstage::after { content: ''; position: absolute; inset: 0; background: linear-gradient(rgba(6,8,10,.35), transparent 30%, transparent 70%, rgba(6,8,10,.55)); pointer-events: none; }
+.tstage-hud { position: absolute; left: 10px; right: 10px; top: 10px; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; background: rgba(6,8,10,.72); border: 2px solid #000; color: #F7F4E9; }
+.tstage-name { font-family: var(--px); font-size: 11px; text-transform: uppercase; }
+.tstage-dots { display: flex; gap: 6px; }
+.tstage-dots i { width: 14px; height: 14px; border: 2px solid #F7F4E9; background: transparent; }
+.tstage-dots i.now { border-color: var(--c); animation: goalpulse .8s steps(2) infinite; }
+.tstage-dots i.w { background: var(--moss); border-color: var(--moss); } .tstage-dots i.l { background: var(--oriole); border-color: var(--oriole); } .tstage-dots i.t { background: var(--stone); }
+.tstage-skip { position: absolute; right: 10px; top: 60px; z-index: 3; background: rgba(6,8,10,.6) !important; color: #F7F4E9 !important; }
+.tbanner { position: absolute; left: 50%; top: 34%; transform: translate(-50%, -50%); z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 4px; width: min(86%, 340px); padding: 12px 16px;
+  text-align: center; background: rgba(6,8,10,.82); border: 3px solid var(--c); box-shadow: 4px 4px 0 #000; color: #F7F4E9; animation: tagpop 300ms steps(3); }
+.tbanner-name { font-family: var(--px); font-weight: 400; font-size: 26px; line-height: 30px; text-transform: uppercase; color: var(--c); }
+.tbird { position: absolute; bottom: 14%; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: transform 200ms steps(3), filter 300ms; }
+.tbird.you { left: 8%; } .tbird.rival { right: 8%; }
+.tbird canvas { filter: drop-shadow(3px 3px 0 rgba(0,0,0,.6)); }
+.tbird.perform { transform: translateY(-14px); }
+.tbird.win { transform: translateY(-8px); }
+.tbird.lose { filter: grayscale(.7) brightness(.75); }
+.tbird-name { padding: 1px 6px; background: rgba(6,8,10,.75); color: #F7F4E9; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+.tscore { position: absolute; top: -34px; font-family: var(--px); font-size: 22px; color: #F7F4E9; text-shadow: 2px 2px 0 #000; animation: tagpop 300ms steps(3); }
+.tbird.win .tscore { color: var(--sun); }
+.tboom { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 3; }
+.tproj { position: absolute; bottom: calc(14% + 70px); z-index: 3; animation: tfly 650ms linear forwards; }
+.tproj.from-you { left: calc(8% + 60px); --to: calc(84vw - 150px); }
+.tproj.from-rival { right: calc(8% + 60px); --to: calc(-84vw + 150px); }
+@keyframes tfly { 0% { transform: translate(0, 0); } 50% { transform: translate(calc(var(--to) / 2), -26px); } 100% { transform: translate(var(--to), 0); } }
+.tverdict { position: absolute; left: 50%; top: 32%; transform: translateX(-50%); z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 6px; width: min(88%, 340px); padding: 10px 14px; text-align: center;
+  background: rgba(6,8,10,.82); border: 3px solid var(--stone); box-shadow: 4px 4px 0 #000; color: #F7F4E9; animation: tagpop 300ms steps(3); }
+.tverdict.you { border-color: var(--sun); } .tverdict.rival { border-color: var(--oriole); }
+.tcrit { font-size: 22px; color: var(--oriole); text-shadow: 2px 2px 0 #000; animation: goalbob .5s steps(2) infinite; }
+
+/* result */
+.tresult-hero { position: relative; margin: 12px 0; padding: 18px 12px; text-align: center; background: var(--slate); border: 3px solid var(--stone); box-shadow: 4px 4px 0 #000; overflow: hidden; }
+.tresult-hero.won { border-color: var(--sun); background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--sun) 25%, var(--slate)), var(--slate) 70%); }
+.tresult-hero h1 { position: relative; color: var(--sun); }
+.tresult-hero.lost h1 { color: var(--stone); }
+.tresult-ring { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); opacity: .7; }
+.tprize { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; padding: 10px; background: var(--sun); color: #1A1200; border: 2px solid #000; box-shadow: 3px 3px 0 #000; font-weight: 700; }
+.tprize span { display: inline-flex; align-items: center; gap: 4px; }
+.tprize-tag { font-family: var(--px); font-size: 10px; text-transform: uppercase; padding: 1px 6px; background: #1A1200; color: var(--sun); }
+.tsummary { display: flex; flex-direction: column; gap: 6px; }
+.trow { display: grid; grid-template-columns: auto 1fr auto auto auto 1fr; align-items: center; gap: 6px; padding: 6px 8px; background: var(--slate); border: 2px solid #000; }
+.trow.you { border-left: 6px solid var(--moss); } .trow.rival { border-left: 6px solid var(--oriole); }
+.trow-bird { display: flex; align-items: center; gap: 4px; min-width: 0; } .trow-bird .small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trow-bird.them { justify-content: flex-end; text-align: right; }
+@media (prefers-reduced-motion: reduce) { .tstage.shake, .tcrit, .tstage-dots i.now { animation: none; } .tbird { transition: none; } }

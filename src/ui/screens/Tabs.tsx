@@ -146,6 +146,14 @@ export function HabitatTab() {
       {!fact && aviary.length + (st.partner ? 1 : 0) > 0 && <p className="small muted mt8" style={{ textAlign: 'center' }}>Tap a bird for a fun fact.</p>}
       {meals.length > 0 && <div className="small mt8" role="status" style={{ color: 'var(--lichen)' }}>{meals.map((m) => `${birdName(m.id, st)} ate (+${m.ate} HP)`).join(' · ')}</div>}
 
+      <button className="trials-entry" onClick={() => { sfx.select(); nav.open({ name: 'trials' }); }} aria-label={`Field Trials: friendly bird contests. ${st.trials?.cleared ?? 0} of 6 rivals beaten`}>
+        <span className="trials-entry-icon" aria-hidden><span className="tfx" style={{ width: 52, height: 48, backgroundImage: 'url(fx/trials/sa_nova.png)', backgroundSize: '312px 48px', ['--sheet-w' as string]: '-312px', animation: 'tfx 900ms steps(6) infinite' }} /></span>
+        <span className="grow" style={{ textAlign: 'left' }}>
+          <b className="trials-entry-title">Field Trials</b>
+          <span className="small">Song-offs, displays, sky races and foraging. Pit your birds against rival birders.</span>
+        </span>
+        <span className="px small trials-entry-go">{st.trials?.cleared ?? 0}/6 ▶</span>
+      </button>
       <Segmented label="Aviary sections" value={section} onChange={setSection} options={[
         { id: 'birds', label: 'Birds', badge: hungry || undefined },
         { id: 'feeder', label: 'Feeder', badge: st.feeder.level < 20 },

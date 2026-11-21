@@ -37,6 +37,7 @@ function renderRoute(r: Route) {
     case 'year': return <YearScreen />;
     case 'lab': return <Lab />;
     case 'debug': return <Debug />;
+    case 'trials': return <Trials />;
   }
 }
 
@@ -52,6 +53,7 @@ import { Tutorial } from './Tutorial';
 import { QuickLog } from './screens/QuickLog';
 import { MerlinTip } from './MerlinTip';
 import { Shop } from './screens/Shop';
+import { Trials } from './screens/Trials';
 
 export function App() {
   const ready = useGame(() => isReady());

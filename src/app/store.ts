@@ -18,6 +18,7 @@ import { deltaE2000 } from '../core/color';
 import { PAL_LAB } from '../core/color';
 import { P } from '../core/pixel/archetypes';
 import { FOODS, Food, hpNow, visitFeeder, rest, wake, Meal, AVIARY_MAX, FEEDER_CAP } from '../core/pets';
+import { RIVALS, rewardFor } from '../core/trials';
 import { loadState, saveState, putPhoto, getPhoto, photoKeys, deletePhoto as dbDeletePhoto, forgetPhotoURL } from './db';
 
 const VERSION = 1;
@@ -409,6 +410,25 @@ export function claimChapter(id: string, reward: number): boolean {
   setState((s) => ({ ...s, feathers: s.feathers + reward, chapters: { ...(s.chapters ?? {}), [id]: new Date().toISOString() } }));
   logEvent('chapter_claim', id);
   return after(true);
+}
+
+/** Finish a Field Trial. A win pays the rival's prize the first time, then a small capped rematch bonus. */
+export function finishTrial(index: number, won: boolean): { coins: number; xp: number; first: boolean } {
+  const rival = RIVALS[index];
+  if (!rival) return { coins: 0, xp: 0, first: false };
+  if (!won) { logEvent('trial_loss', rival.id); return { coins: 0, xp: 0, first: false }; }
+  const today = dayKey(new Date());
+  const r = rewardFor(state.trials, index, today);
+  setState((s) => {
+    const t = s.trials ?? { cleared: 0, wins: 0 };
+    const used = t.day === today ? t.rematches ?? 0 : 0;
+    return {
+      ...s, xp: s.xp + r.xp, feathers: s.feathers + r.coins,
+      trials: { cleared: Math.max(t.cleared, index + 1), wins: t.wins + 1, day: today, rematches: r.first ? used : used + 1 },
+    };
+  });
+  logEvent('trial_win', { rival: rival.id, ...r });
+  return after(r);
 }
 
 /** Buy a Snap Lens with Feather Coins and put it on. */
