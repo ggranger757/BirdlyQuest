@@ -367,9 +367,9 @@ export function takeTurn(b0: Battle, mine: Action, rng: () => number, opts: { fo
   if (b0.over) return { b: b0, ev: [] };
   const m0 = active(b0, 'you');
   // moves that can't be used right now don't cost the turn
-  if (mine.kind === 'skill' && m0.pp < 1) return { b: b0, ev: [{ t: 'log', text: `${m0.skill.name} is out of PP!` }] };
-  if (mine.kind === 'tech' && (!m0.tech || m0.pp2 < 1)) return { b: b0, ev: [{ t: 'log', text: m0.tech ? `${m0.tech.name} is out of PP!` : `${m0.c.sp.common} hasn't learned a technique yet.` }] };
-  if (mine.kind === 'super' && b0.gauge < 100) return { b: b0, ev: [{ t: 'log', text: 'Your Limit Break isn’t ready yet.' }] };
+  if (mine.kind === 'skill' && m0.pp < 1) return { b: b0, ev: [{ t: 'log', text: `${m0.skill.name} has no uses left this battle. Quick moves and Guard always work.` }] };
+  if (mine.kind === 'tech' && (!m0.tech || m0.pp2 < 1)) return { b: b0, ev: [{ t: 'log', text: m0.tech ? `${m0.tech.name} has no uses left this battle. Quick moves and Guard always work.` : `${m0.c.sp.common} hasn't learned a technique yet.` }] };
+  if (mine.kind === 'super' && b0.gauge < 100) return { b: b0, ev: [{ t: 'log', text: 'Your Super isn’t ready yet. The Super meter fills as you fight.' }] };
   if (mine.kind === 'swap' && (!b0.you[mine.to] || b0.you[mine.to].out || mine.to === b0.yi)) return { b: b0, ev: [] };
   const b = clone(b0), ev: Ev[] = [];
   b.turn++;
@@ -578,7 +578,7 @@ export function wildTeam(pool: Species[], level: number, rng: () => number, excl
 export const REMATCH = { coins: 5, xp: 15, perDay: 3 };
 /** Trial Tickets: earned by logging birds, spent on rival battles (wandering challenges and your first battle are free). */
 export const TICKETS = { start: 3, max: 5 };
-export interface TrialsState { cleared: number; wins: number; day?: string; rematches?: number; tutorial?: boolean; battles?: number; wildDay?: string; tickets?: number }
+export interface TrialsState { cleared: number; wins: number; day?: string; rematches?: number; tutorial?: boolean; battles?: number; wildDay?: string; tickets?: number; ticketsEarned?: number; ticketsUsed?: number }
 export const ticketsOf = (st?: TrialsState) => st?.tickets ?? TICKETS.start;
 export const battleIsFree = (st?: TrialsState) => !st?.tutorial;
 export function rewardFor(st: TrialsState | undefined, index: number, today: string): { coins: number; xp: number; first: boolean } {

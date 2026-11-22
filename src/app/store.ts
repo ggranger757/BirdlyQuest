@@ -252,7 +252,7 @@ export async function fileCatch(input: CatchInput): Promise<CatchResult> {
   }
   // every bird you log earns a Trial Ticket for rival battles (up to the cap)
   const ticket = counts(sighting) && ticketsOf(next.trials) < TICKETS.max;
-  if (ticket) next = { ...next, trials: { cleared: 0, wins: 0, ...next.trials, tickets: ticketsOf(next.trials) + 1 } };
+  if (ticket) next = { ...next, trials: { cleared: 0, wins: 0, ...next.trials, tickets: ticketsOf(next.trials) + 1, ticketsEarned: (next.trials?.ticketsEarned ?? 0) + 1 } };
   // sometimes a wandering birder challenges you to show off a newly discovered bird (at most once a day)
   if (sighting.firstRecord && counts(sighting) && next.sightings.filter(counts).length >= 2 && next.trials?.wildDay !== dayKey(at) && Math.random() < WILD.chance) {
     next = { ...next, pendingChallenge: { sightingId: sighting.id, at: at.toISOString() } };
@@ -504,7 +504,7 @@ export function spendTicket(): boolean {
   if (battleIsFree(state.trials)) return true;
   const n = ticketsOf(state.trials);
   if (n < 1) return false;
-  setState((s) => ({ ...s, trials: { cleared: 0, wins: 0, ...s.trials, tickets: n - 1 } }));
+  setState((s) => ({ ...s, trials: { cleared: 0, wins: 0, ...s.trials, tickets: n - 1, ticketsUsed: (s.trials?.ticketsUsed ?? 0) + 1 } }));
   logEvent('ticket_used', n - 1);
   return true;
 }

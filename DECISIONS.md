@@ -276,3 +276,15 @@ One line per meaningful choice, with the reason.
   - In tube, window, globe, lantern, hopper and cage feeders you see the stacked layers. In tray, teacup and gourd feeders you see the top food. The suet cage shows seed as a suet cake, or berries / mealworms packed in. Tower tiers fill from the bottom tier up. The tray crumbs take the top food's colour.
   - **Level going down:** the level is snapped to 1/80 instead of quarters, so it drops about a pixel at a time. When a meal happens, the Aviary keeps showing the old contents, and each bird's share drains away smoothly while that bird pecks at the tray (`setFeeder(after, before)` and `visit(…, { eat })`). A bird that can't get a spot at the tray has its share taken off at once (`settle`).
   - **No pretend snacks:** the ambient "snack time" visits are removed. A bird at the feeder is now always really eating, so food never stays level while a bird pecks. Idle birds still fly laps and change perches.
+- **v1.34: battles explain themselves (owner: "the rules, Bond and PP aren't very clear").** The rules are unchanged; only the presentation changed.
+  - **No jargon:**
+    - "PP" is gone. Limited moves show **dots for uses left**, plus "n left" on wider screens and "Used up" at zero. Moves that never run out show **Always** (replacing "∞").
+    - The "Limit" gauge is now the **Super meter**.
+    - Status tags say POWER▲ / POWER▼ instead of PWR.
+    - Messages say "has no uses left this battle. Quick moves and Guard always work."
+  - **Rulebook:** "How battles work" opens 8 short numbered cards: goal, turns, moves and uses (with the real dots), the style loop (Song ▶ Display ▶ Forage ▶ Sky ▶ Song) with Strong/Weak badges, Super meter, the "!" Big Move warning, Bond, and tickets. It's on the rival list and behind a **?** button in every battle, which opens it over the battle without losing your turn.
+  - **Bond:** the chip is tappable on the rival list and the party screen. It says in plain words what Bond is, the bonus now (trainer Lv → +%), the next level's bonus and the +30% cap.
+  - **Fight panel:** says "⚡ You attack first" or "⚡ <bird> attacks first", and the matchup in words ("▲ Your Sky beats Song" / "▼ Song beats your Sky" / "even"). A hint appears when it matters: Guard against a charging Big Move, or which benched bird has the edge.
+  - **Menu buttons:** each has a 12×12 multi-colour pixel emoji: lightning bolt (Fight), satchel (Bag), bluebird (Birds), dust cloud (Run). Bond gets a pixel heart.
+  - **No spillage:** labels ellipsize instead of overflowing, and long move names wrap to two lines instead of being cut. The Strong/Weak badge moved to the top-left so it never covers the uses dots. Browser-audited at 390px and 320px in both themes: no button content outside its button, and no cut-off text.
+  - **Tickets:** they only change by logging a bird (+1, max 5) or starting a rival battle (−1). Everyone starts with 3, and nothing refills them over time. To make that checkable, the save now tallies `ticketsEarned` / `ticketsUsed` from this version on, and the ticket note shows "You started with 3 · +E from logging birds · −U used in battles".

@@ -1,7 +1,7 @@
 // Field Trials v3: fast, Step Quest-style bird battles with a modern HUD. One tap a turn:
 // Quick move · Signature skill (a real-life talent) · Guard · Snack, plus a Super gauge and Run.
 // HP reaching 0 means the bird flies off to rest; nobody gets hurt.
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useNav } from '../nav';
 import { useGame, getState, counts, speciesOf, finishTrial, finishWild, noteBattle, spendTrialItem, spendTicket } from '../../app/store';
 import { regionEntries, speciesById } from '../../data/provider';
@@ -15,7 +15,7 @@ import { runBackdrop } from '../../render/diorama';
 import { dayKey, trainerLevel } from '../../core/xp';
 import type { Species } from '../../data/types';
 import {
-  CONTESTS, RIVALS, WANDERERS, WANDERER_PERSONA, WILD, wandererFace, FX_CRIT, FX_RING, SNACKS, GROW, TECHNIQUES, BEATS, TICKETS,
+  CONTESTS, RIVALS, WANDERERS, WANDERER_PERSONA, WILD, wandererFace, FX_CRIT, FX_RING, SNACKS, GROW, TECHNIQUES, BEATS, TICKETS, T,
   fighter, startBattle, takeTurn, active, rivalTeam, wildTeam, rewardFor, birdStyle, matchup, bondFor, learnedBetween, nextUnlock, ticketsOf, battleIsFree,
   type Contender, type Battle, type Ev, type Side, type Item, type Action, type Sheet, type Contest, type Persona,
 } from '../../core/trials';
@@ -48,6 +48,7 @@ export function TicketIcon({ size = 16 }: { size?: number }) {
 }
 /** Trial Ticket count that opens or closes a short explanation (remembered between visits). */
 function TicketInfo({ tickets, free }: { tickets: number; free: boolean }) {
+  const tst = useGame((s) => s.trials);
   const [open, setOpen] = useState(() => { try { return localStorage.getItem('bq-ticket-info') === '1'; } catch { return false; } });
   const toggle = () => { sfx.select(); setOpen((v) => { try { localStorage.setItem('bq-ticket-info', v ? '0' : '1'); } catch { /* private mode */ } return !v; }); };
   return (
@@ -56,8 +57,102 @@ function TicketInfo({ tickets, free }: { tickets: number; free: boolean }) {
         aria-label={`${free ? 'First battle free. ' : ''}${tickets} of ${TICKETS.max} Trial Tickets. ${open ? 'Hide' : 'Show'} details`}>
         <TicketIcon /> {free ? 'First battle free' : `${tickets}/${TICKETS.max} tickets`} <span className="tticket-caret" aria-hidden>{open ? '▴' : '▾'}</span>
       </button>
-      {open && <p className="tticket-note small">Rival battles use 1 ticket. Log a bird to earn one (max {TICKETS.max}). Challenges after a new find are free.</p>}
+      {open && (
+        <p className="tticket-note small">
+          Rival battles use 1 ticket. Log a bird to earn one (max {TICKETS.max}). Challenges after a new find are free. Tickets never refill on their own.
+          {(tst?.ticketsEarned !== undefined || tst?.ticketsUsed !== undefined) && (
+            <span className="tticket-tally">You started with {TICKETS.start} · +{tst?.ticketsEarned ?? 0} from logging birds · −{tst?.ticketsUsed ?? 0} used in battles</span>
+          )}
+        </p>
+      )}
     </>
+  );
+}
+
+/** Trainer Bond chip: tap it to see what Bond is and what it does right now. */
+function BondChip() {
+  const tlv = trainerLevel(useGame((s) => s.xp)).level, pct = Math.round(bondFor(tlv) * 100), next = Math.round(bondFor(tlv + 1) * 100);
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button className="tbond-chip" onClick={() => { sfx.select(); setOpen((v) => !v); }} aria-expanded={open}
+        aria-label={`Bond plus ${pct} percent. ${open ? 'Hide' : 'Show'} what Bond does`}>
+        <PixelEmoji name="heart" size={14} /> Bond +{pct}% <span className="tticket-caret" aria-hidden>{open ? '▴' : '▾'}</span>
+      </button>
+      {open && (
+        <p className="tticket-note tbond-note small">
+          <b>Bond</b> is how well you know your birds. Your trainer level (Lv{tlv}) gives <b>every bird you bring +{pct}% HP and power</b>.
+          {pct < 30 ? ` It grows by 1% each trainer level (next level: +${next}%), up to +30%. Log birds to earn trainer XP.` : ' That’s the maximum.'}
+        </p>
+      )}
+    </>
+  );
+}
+
+// Pixel emojis for the battle menu (12×12, one letter per colour; '.' is see-through).
+const EMOJI_PAL: Record<string, string> = { K: '#141018', Y: '#FFD23F', O: '#F08A24', W: '#FFFFFF', L: '#E7A766', B: '#B8682A', D: '#6E3A14', G: '#F6C945', S: '#4FA7E3', N: '#2864A6', P: '#FFB36B', C: '#B9C6D6', R: '#E5484D' };
+const EMOJI: Record<'fight' | 'bag' | 'birds' | 'run' | 'heart', string[]> = {
+  heart: ['............', '.KKK...KKK..', 'KRRRK.KRRRK.', 'KRWRRKRRRRK.', 'KRRRRRRRRRK.', 'KRRRRRRRRRK.', '.KRRRRRRRK..', '..KRRRRRK...', '...KRRRK....', '....KRK.....', '.....K......', '............'],
+  fight: ['......KKKK..', '.....KWYYK..', '....KWYYK...', '...KYYYK....', '..KYYYYKKKK.', '.KYYYYYYYOK.', '.KKKKYYYOK..', '....KYYOK...', '...KYYOK....', '...KYOK.....', '..KYOK......', '..KKK.......'],
+  bag: ['....KKKK....', '...KDDDDK...', '...KD..DK...', '.KKKKKKKKKK.', 'KLLLLLLLLLLK', 'KBBBBBBBBBBK', 'KBBBKGGKBBBK', 'KBBBKGGKBBBK', 'KBBBBBBBBBBK', 'KDBBBBBBBBDK', '.KDDDDDDDDK.', '..KKKKKKKK..'],
+  birds: ['............', '......KKKK..', '.....KSSSSK.', '.....KSSKSOO', '..KK.KSSSSK.', '.KSSKKSSSSK.', 'KSSSSSSSWWSK', 'KNSSSSSWWWWK', '.KNNSSWWWWK.', '..KKNNNNNK..', '....KKKKK...', '.....O.O....'],
+  run: ['............', '........KKK.', '.......KWWWK', '..KKK.KWWWWK', '.KWWWKWWWCWK', 'KWWWWWWWWWCK', 'KWWWWWWWWCCK', '.KCWWWWCCCK.', '..KKKKKKKK..', '............', 'KKKK..KKKKK.', '...KKKK.....'],
+};
+function PixelEmoji({ name, size = 22 }: { name: keyof typeof EMOJI; size?: number }) {
+  const rows = EMOJI[name];
+  return (
+    <svg className="temoji" width={size} height={size} viewBox="0 0 12 12" shapeRendering="crispEdges" aria-hidden>
+      {rows.flatMap((r, y) => [...r].map((ch, x) => (ch === '.' ? null : <rect key={`${x}-${y}`} x={x} y={y} width={1.02} height={1.02} fill={EMOJI_PAL[ch]} />)))}
+    </svg>
+  );
+}
+
+/** Uses left on a move: dots for limited moves (refilled every battle), "Always" for moves that never run out. */
+function Uses({ left, max }: { left?: number; max?: number }) {
+  if (max === undefined || left === undefined) return <span className="tuses always" aria-hidden>Always</span>;
+  return (
+    <span className={`tuses ${left < 1 ? 'none' : ''}`} aria-hidden>
+      <span className="tuses-pips">{Array.from({ length: max }, (_, i) => <i key={i} className={i < left ? 'on' : ''} />)}</span>
+      <span className="tuses-n">{left < 1 ? 'Used up' : `${left} left`}</span>
+    </span>
+  );
+}
+
+/** The whole rulebook, short and visual. Shown from the rival list and from the ? button during a battle. */
+function BattleGuide() {
+  const tlv = trainerLevel(useGame((s) => s.xp)).level, pct = Math.round(bondFor(tlv) * 100);
+  const loop: Contest[] = ['song', 'display', 'forage', 'sky', 'song'];
+  const sec = (n: number, title: string, body: ReactNode) => <section className="tg-sec"><h4><span className="tg-n">{n}</span>{title}</h4>{body}</section>;
+  return (
+    <div className="tguide">
+      {sec(1, 'The goal', <p>Bring the rival’s birds to <b>0 HP</b>. A bird at 0 flies off to rest (nobody gets hurt) and the next one flies in. Beat all their birds to win.</p>)}
+      {sec(2, 'Taking turns', <>
+        <p>Each turn you choose <b>one</b> action, then the rival chooses one.</p>
+        <ul className="tg-acts">
+          <li><b>Fight</b><span>use a move</span></li><li><b>Bag</b><span>feed a snack</span></li>
+          <li><b>Birds</b><span>swap birds</span></li><li><b>Run</b><span>leave</span></li>
+        </ul>
+        <p>⚡ The faster bird attacks first. Guard, Bag and Birds always happen before any attack.</p>
+      </>)}
+      {sec(3, 'Moves and uses', <>
+        <div className="tg-moves">
+          <span><b>Quick move</b><small>A steady hit</small></span><Uses />
+          <span><b>Signature skill</b><small>Stronger, based on a real bird fact</small></span><Uses left={T.skillPP} max={T.skillPP} />
+          <span><b>Technique</b><small>Learned at Lv{GROW.tech}</small></span><Uses left={T.techPP} max={T.techPP} />
+          <span><b>Guard</b><small>Goes first, blocks 60% of the next hit</small></span><Uses />
+        </div>
+        <p>The dots are <b>uses left</b>. Every battle starts with all of them refilled.</p>
+      </>)}
+      {sec(4, 'Styles', <>
+        <p>Every bird has a style. Each style beats the next one along:</p>
+        <div className="tg-loop">{loop.map((c, i) => <Fragment key={i}>{i > 0 && <b aria-hidden>▶</b>}<i style={{ ['--c' as string]: CONTESTS[c].color }}>{CONTESTS[c].name}</i></Fragment>)}</div>
+        <p><span className="tedge up">▲ Strong</span> hits 30% harder. <span className="tedge down">▼ Weak</span> hits about 25% softer. Losing the matchup? Use <b>Birds</b> to swap in a better style.</p>
+      </>)}
+      {sec(5, 'Super meter', <p>The <b>Super</b> bar fills when you attack, Guard or take a hit. When it says <b>Ready!</b>, tap it for a huge hit.</p>)}
+      {sec(6, 'Watch for “!”', <p>A rival bird showing a red <b>!</b> is powering up a <b>Big Move</b>. Choose <b>Guard</b> that turn.</p>)}
+      {sec(7, 'Bond', <p>Your trainer level makes every bird you bring stronger: +1% HP and power per level after Lv1, up to +30%. You’re Lv{tlv}, so your birds get <b>+{pct}%</b>. Log birds to level up.</p>)}
+      {sec(8, 'Trial Tickets', <p>Each rival battle uses 1 ticket; your very first battle is free. Every bird you log earns 1 (you can hold {TICKETS.max}). Challenges that appear after a new find are free.</p>)}
+    </div>
   );
 }
 
@@ -168,7 +263,7 @@ export function Trials({ wild }: { wild?: string }) {
 function Ladder({ team, pool, cleared, wins, onPick, onCamera }: { team: Contender[]; pool: Species[]; cleared: number; wins: number; onPick: (i: number) => void; onCamera: () => void }) {
   const tst = useGame((s) => s.trials);
   const xp = useGame((s) => s.xp);
-  const tickets = ticketsOf(tst), free = battleIsFree(tst), tlv = trainerLevel(xp).level;
+  const tickets = ticketsOf(tst), free = battleIsFree(tst);
   const [howOpen, setHow] = useState(false);
   const today = dayKey(new Date());
   const avg = team.slice(0, 3).reduce((n, c) => n + c.level, 0) / Math.max(1, Math.min(3, team.length));
@@ -180,18 +275,10 @@ function Ladder({ team, pool, cleared, wins, onPick, onCamera }: { team: Contend
         <span className="thero-sub">Birds compete with their real-life talents. Beat each rival birder to unlock the next.</span>
         <div className="thero-stats">
           <TicketInfo tickets={tickets} free={free} />
-          <span className="tbond-chip" aria-label={`Trainer level ${tlv}: Bond plus ${Math.round(bondFor(tlv) * 100)} percent`}>Bond +{Math.round(bondFor(tlv) * 100)}%</span>
-          <button className="btn ghost small" onClick={() => { sfx.select(); setHow((v) => !v); }} aria-expanded={howOpen}>{howOpen ? 'Close' : 'How it works'}</button>
+          <BondChip />
+          <button className="btn ghost small" onClick={() => { sfx.select(); setHow((v) => !v); }} aria-expanded={howOpen}>{howOpen ? 'Close rules' : 'How battles work'}</button>
         </div>
-        {howOpen && (
-          <div className="thow">
-            <p><b>Speed.</b> The faster bird moves first. Guard, Bag and Birds always go before attacks.</p>
-            <p><b>PP.</b> Quick moves and Guard never run out. Signature skills and Techniques have a few uses (PP) per battle.</p>
-            <p><b>Matchups.</b> {(Object.keys(BEATS) as Contest[]).map((c) => `${CONTESTS[c].name} beats ${CONTESTS[BEATS[c]].name}`).join(' · ')}. A strong matchup hits 30% harder. Swap birds mid-battle to get the edge.</p>
-            <p><b>Growing up.</b> Birds level up when they win. At Lv{GROW.tech} they learn a Technique, at Lv{GROW.quick} their quick move gets stronger, at Lv{GROW.master} they master their signature skill, and at Lv{GROW.ultra} their Super becomes an Ultra move.</p>
-            <p><b>Bond.</b> Your trainer level makes every bird you bring stronger: +1% HP and power per level, up to +30%.</p>
-          </div>
-        )}
+        {howOpen && <BattleGuide />}
       </div>
       {team.length === 0 && (
         <div className="panel" style={{ textAlign: 'center' }}>
@@ -255,7 +342,8 @@ function Party({ setup, size, team, party, setParty, onGo, bond }: { setup: Setu
           <p className="small tmotive"><b>Why they’re here:</b> {setup.persona.motive}</p>
         </div>
       </div>
-      <div className="section-title"><span>Your party · {party.length}/3</span><span className="small muted" style={{ textTransform: 'none', fontFamily: 'var(--body)' }}>First one leads{bond > 0 ? ` · Bond +${Math.round(bond * 100)}%` : ''}</span></div>
+      <div className="section-title"><span>Your party · {party.length}/3</span><span className="small muted" style={{ textTransform: 'none', fontFamily: 'var(--body)' }}>First one leads</span></div>
+      <div className="tparty-bond"><BondChip /></div>
       <div className="tpicker" role="list">
         {team.map((c) => {
           const f = fighter(c, 1, bond), at = party.findIndex((p) => p.sp.id === c.sp.id);
@@ -322,19 +410,19 @@ const TUT = (b: Battle) => {
   return [
     { id: 'hud', info: true, text: `Welcome to your first Field Trial! Birds compete with their real-life talents. Bring ${foe.c.sp.common}'s HP to 0 and it flies off to rest. Nobody gets hurt. Tap the text box any time to read faster.` },
     { id: 'quick', info: false, text: `Tap FIGHT, then ${me.quick}. Quick moves never run out.` },
-    { id: 'skill', info: false, text: `Now FIGHT, then ${me.skill.name}: your ${me.c.sp.common}'s signature skill. Real fact: ${me.skill.fact} It's stronger, but it only has ${me.ppMax} uses (PP) per battle.` },
+    { id: 'skill', info: false, text: `Now FIGHT, then ${me.skill.name}: your ${me.c.sp.common}'s signature skill. Real fact: ${me.skill.fact} It's stronger, but you can only use it ${me.ppMax} times per battle. The dots on the button show how many uses are left.` },
     { id: 'guard', info: false, text: `${foe.c.sp.common} is powering up a Big Move! FIGHT, then Guard. Guard always goes first and blocks most of it.` },
     { id: 'snack', info: true, text: 'Nicely blocked! BAG feeds your bird snacks from your pantry, and BIRDS swaps in another bird from your party. Both happen before the rival moves.' },
-    { id: 'super', info: false, text: `Your Limit gauge is full! Tap it to unleash ${me.superName}.` },
-    { id: 'done', info: true, text: `Last tips: the faster bird moves first, and styles have matchups: ${(Object.keys(BEATS) as Contest[]).map((c) => `${CONTESTS[c].name} beats ${CONTESTS[BEATS[c]].name}`).join(', ')}. Look for ▲ Strong. Now finish the trial!` },
+    { id: 'super', info: false, text: `Your Super meter is full! Tap it to unleash ${me.superName}.` },
+    { id: 'done', info: true, text: `Last tips: the faster bird moves first, and styles have matchups: ${(Object.keys(BEATS) as Contest[]).map((c) => `${CONTESTS[c].name} beats ${CONTESTS[BEATS[c]].name}`).join(', ')}. Look for ▲ Strong. Tap ? at the top any time to see all the rules. Now finish the trial!` },
   ];
 };
 
 /** Little status tags under a bird's HP bar. */
 function statusOf(f: Battle['you'][number]): { t: string; good: boolean }[] {
   const out: { t: string; good: boolean }[] = [];
-  if (f.fed > 0) out.push({ t: 'PWR▲', good: true });
-  if (f.weak > 0) out.push({ t: 'PWR▼', good: false });
+  if (f.fed > 0) out.push({ t: 'POWER▲', good: true });
+  if (f.weak > 0) out.push({ t: 'POWER▼', good: false });
   if (f.focus) out.push({ t: 'FOCUS', good: true });
   if (f.shelter) out.push({ t: 'SHIELD', good: true });
   if (f.dazzle > 0) out.push({ t: 'DAZED', good: false });
@@ -361,6 +449,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
   const [pops, setPops] = useState<Pop[]>([]);
   const [shake, setShake] = useState(false);
   const [flash, setFlash] = useState(false);
+  const [guide, setGuide] = useState(false);
   const [tut, setTut] = useState<number>(firstBattle ? 0 : -1);
   const tutRef = useRef(tut); tutRef.current = tut;
   const used = useRef(new Set<string>([party[0]?.sightingId ?? '']));
@@ -493,7 +582,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
     const { b, ev } = takeTurn(before, a, Math.random, { forceCharge: s === 'skill' });
     if (b === before) { for (const e of ev) if (e.t === 'log') await narrate(e.text); setPanel('menu'); return; }
     await play(ev, before);
-    // tutorial: move on to the next lesson, and fill the gauge for the Limit lesson
+    // tutorial: move on to the next lesson, and fill the meter for the Super lesson
     if (tutRef.current >= 0) {
       let n = tutRef.current + 1;
       if (!b.over && steps[n]?.id === 'guard' && !b.foeCharging) n = steps.findIndex((x) => x.id === 'snack');
@@ -512,14 +601,15 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
   const sReady = gauge >= 100;
   const bench = bat.you.map((f, i) => ({ f, i })).filter(({ f, i }) => !f.out && i !== bat.yi);
   const meFirst = cur.spd >= them.spd;
+  const myEdge = matchup(cur.style, them.style);
+  const betterBench = bench.map(({ f }) => f).find((f) => matchup(f.style, them.style) > 0) ?? null;
 
   // plain render helper (not a component), so buttons are never rebuilt mid-tap
-  const move = (o: { id: string; cls: string; icon: ReactNode; name: string; sub: string; pp?: string; onClick: () => void; disabled?: boolean; edge?: Contest }) => (
+  const move = (o: { id: string; cls: string; icon: ReactNode; name: string; sub: string; uses?: [number, number]; onClick: () => void; disabled?: boolean; edge?: Contest }) => (
     <button key={o.id} className={`tact ${o.cls} ${tutId === o.id && !step?.info ? 'tut-focus' : ''}`} onClick={o.onClick} disabled={o.disabled || lock(o.id)}
-      aria-label={`${o.name}: ${o.sub}${o.pp ? `, ${o.pp}` : ''}${o.edge && matchup(o.edge, them.style) ? (matchup(o.edge, them.style) > 0 ? ', strong matchup' : ', weak matchup') : ''}`}>
+      aria-label={`${o.name}: ${o.sub}, ${o.uses ? `${o.uses[0]} of ${o.uses[1]} uses left this battle` : 'always available'}${o.edge && matchup(o.edge, them.style) ? (matchup(o.edge, them.style) > 0 ? ', strong matchup' : ', weak matchup') : ''}`}>
       <span className="tact-ic" aria-hidden>{o.icon}</span>
-      <span className="tact-txt"><b>{o.name}</b><small>{o.sub}</small></span>
-      {o.pp && <span className="tpp">{o.pp}</span>}
+      <span className="tact-txt"><span className="tact-top"><b>{o.name}</b>{o.uses ? <Uses left={o.uses[0]} max={o.uses[1]} /> : <Uses />}</span><small>{o.sub}</small></span>
       {o.edge && !foe.hidden && <Edge move={o.edge} vs={them.style} />}
     </button>
   );
@@ -541,6 +631,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
         <canvas ref={canvas} className="tb-bg pix" aria-hidden />
         <div className={`tb-flash ${flash ? 'on' : ''}`} aria-hidden />
 
+        <button className="thelp" onClick={(e) => { e.stopPropagation(); sfx.select(); setGuide(true); }} aria-label="How battles work">?</button>
         <div className={`thud ${tutId === 'hud' ? 'tut-focus' : ''}`}>
           {card('you', me, you, bat.you, bat.yi)}
           <div className="tvs-dot" aria-hidden>VS</div>
@@ -584,6 +675,12 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
         )}
       </div>
 
+      {guide && (
+        <div className="tguide-sheet" role="dialog" aria-label="How battles work">
+          <div className="tguide-head"><b>How battles work</b><button className="btn small" onClick={() => { sfx.back(); setGuide(false); }}>Close</button></div>
+          <div className="tguide-scroll"><BattleGuide /></div>
+        </div>
+      )}
       <div className={`ttray ${live ? '' : 'busy'}`} onClick={live ? undefined : advance}>
         {step && (
           <div className="ttut dialog" role="dialog" aria-label="Battle tutorial">
@@ -599,38 +696,40 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
           </div>
         )}
         <button className={`tsuper ${sReady ? 'ready' : ''} ${tutId === 'super' ? 'tut-focus' : ''}`} disabled={!sReady || lock('super')} onClick={() => pick({ kind: 'super' })}
-          aria-label={sReady ? `Limit Break ${cur.superName}: ready` : `Limit gauge ${gauge}%`}>
+          aria-label={sReady ? `Super ${cur.superName}: ready, tap to use` : `Super meter ${gauge}%: fills as you fight`}>
           <i style={{ width: `${gauge}%` }} aria-hidden />
-          <span className="tsuper-l"><Icon name="star" size={16} /> <span>{sReady ? cur.superName : 'Limit'}</span></span>
+          <span className="tsuper-l"><Icon name="star" size={16} /> <span>{sReady ? cur.superName : 'Super meter'}</span></span>
           <span className="tsuper-r">{sReady ? 'Ready!' : `${gauge}%`}</span>
         </button>
 
         {(panel === 'menu' || panel === 'busy') && (
           <div className="tcmd">
-            <button className={`tcmd-b fight ${fightLesson && !step?.info ? 'tut-focus' : ''}`} disabled={lock('fight')} onClick={() => { sfx.select(); setPanel('fight'); }}>Fight</button>
-            <button className="tcmd-b" disabled={lock('bag') || !snacks} onClick={() => { sfx.select(); setPanel('snack'); }}>Bag <small>×{snacks}</small></button>
-            <button className="tcmd-b" disabled={lock('birds') || !bench.length} onClick={() => { sfx.select(); setPanel('swap'); }}>Birds <small>×{bench.length}</small></button>
-            <button className="tcmd-b run" disabled={!live || !!step} onClick={() => { sfx.back(); act({ kind: 'run' }); }}>Run</button>
+            <button className={`tcmd-b fight ${fightLesson && !step?.info ? 'tut-focus' : ''}`} disabled={lock('fight')} onClick={() => { sfx.select(); setPanel('fight'); }} aria-label="Fight: choose a move"><PixelEmoji name="fight" /><span className="tcmd-l">Fight</span></button>
+            <button className="tcmd-b" disabled={lock('bag') || !snacks} onClick={() => { sfx.select(); setPanel('snack'); }} aria-label={`Bag: ${snacks} snacks`}><PixelEmoji name="bag" /><span className="tcmd-l">Bag</span><small>×{snacks}</small></button>
+            <button className="tcmd-b" disabled={lock('birds') || !bench.length} onClick={() => { sfx.select(); setPanel('swap'); }} aria-label={`Birds: ${bench.length} to swap in`}><PixelEmoji name="birds" /><span className="tcmd-l">Birds</span><small>×{bench.length}</small></button>
+            <button className="tcmd-b run" disabled={!live || !!step} onClick={() => { sfx.back(); act({ kind: 'run' }); }} aria-label="Run: leave the battle"><PixelEmoji name="run" /><span className="tcmd-l">Run</span></button>
           </div>
         )}
         {panel === 'fight' && (
           <>
             <div className="tfight-top">
-              <span>{meFirst ? `⚡ ${cur.c.sp.common} is faster` : `⚡ ${them.c.sp.common} is faster`}</span>
-              <span className="muted">{CONTESTS[cur.style].name} vs {CONTESTS[them.style].name}</span>
+              <span>{meFirst ? '⚡ You attack first' : `⚡ ${them.c.sp.common} attacks first`}</span>
+              <span className={`tmatch ${myEdge > 0 ? 'up' : myEdge < 0 ? 'down' : ''}`}>{myEdge > 0 ? `▲ Your ${CONTESTS[cur.style].name} beats ${CONTESTS[them.style].name}` : myEdge < 0 ? `▼ ${CONTESTS[them.style].name} beats your ${CONTESTS[cur.style].name}` : `${CONTESTS[cur.style].name} vs ${CONTESTS[them.style].name}: even`}</span>
             </div>
+            {charging ? <p className="tfight-hint warn">The rival is powering up a Big Move. <b>Guard</b> blocks most of it.</p>
+              : myEdge < 0 && betterBench ? <p className="tfight-hint">Tip: go Back and tap <b>Birds</b> to swap in {betterBench.c.sp.common}, who has the edge.</p> : null}
             <div className="tgrid">
-              {move({ id: 'quick', cls: 'quick', icon: <Fx sheet={CONTESTS[cur.style].proj} scale={1} frame={1} />, name: cur.quick, sub: cur.quickPow > 1 ? 'Upgraded quick move' : 'Quick move', pp: '∞', edge: cur.style, onClick: () => pick({ kind: 'quick' }) })}
-              {move({ id: 'skill', cls: 'skill', icon: <Fx sheet={CONTESTS[cur.skill.style].boom} scale={1} frame={2} />, name: cur.skill.name, sub: cur.skill.tag, pp: `${cur.pp}/${cur.ppMax}`, disabled: cur.pp < 1, edge: cur.skill.power ? cur.skill.style : undefined, onClick: () => pick({ kind: 'skill' }) })}
+              {move({ id: 'quick', cls: 'quick', icon: <Fx sheet={CONTESTS[cur.style].proj} scale={1} frame={1} />, name: cur.quick, sub: cur.quickPow > 1 ? 'Upgraded quick move' : 'Quick move · a steady hit', edge: cur.style, onClick: () => pick({ kind: 'quick' }) })}
+              {move({ id: 'skill', cls: 'skill', icon: <Fx sheet={CONTESTS[cur.skill.style].boom} scale={1} frame={2} />, name: cur.skill.name, sub: cur.skill.tag, uses: [cur.pp, cur.ppMax], disabled: cur.pp < 1, edge: cur.skill.power ? cur.skill.style : undefined, onClick: () => pick({ kind: 'skill' }) })}
               {cur.tech
-                ? move({ id: 'tech', cls: 'tech', icon: <Fx sheet={CONTESTS[cur.tech.style].proj} scale={1} frame={3} />, name: cur.tech.name, sub: cur.tech.tag, pp: `${cur.pp2}/${cur.pp2Max}`, disabled: cur.pp2 < 1, edge: cur.tech.power ? cur.tech.style : undefined, onClick: () => pick({ kind: 'tech' }) })
+                ? move({ id: 'tech', cls: 'tech', icon: <Fx sheet={CONTESTS[cur.tech.style].proj} scale={1} frame={3} />, name: cur.tech.name, sub: cur.tech.tag, uses: [cur.pp2, cur.pp2Max], disabled: cur.pp2 < 1, edge: cur.tech.power ? cur.tech.style : undefined, onClick: () => pick({ kind: 'tech' }) })
                 : (
                   <div className="tact locked" aria-label={`${TECHNIQUES[cur.style].name}: learned at level ${GROW.tech}`}>
                     <span className="tact-ic" aria-hidden>🔒</span>
                     <span className="tact-txt"><b>{TECHNIQUES[cur.style].name}</b><small>Learns at Lv{GROW.tech}</small></span>
                   </div>
                 )}
-              {move({ id: 'guard', cls: 'guard', icon: <Fx sheet={FX_RING} scale={1} frame={3} />, name: 'Guard', sub: 'Goes first · blocks 60%', pp: '∞', onClick: () => pick({ kind: 'guard' }) })}
+              {move({ id: 'guard', cls: 'guard', icon: <Fx sheet={FX_RING} scale={1} frame={3} />, name: 'Guard', sub: 'Goes first · blocks 60%', onClick: () => pick({ kind: 'guard' }) })}
             </div>
             <button className="btn ghost small trun" disabled={!!step && !step.info && fightLesson} onClick={() => { sfx.back(); setPanel('menu'); }}>Back</button>
           </>
