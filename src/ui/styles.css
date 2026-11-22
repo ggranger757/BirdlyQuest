@@ -1394,7 +1394,13 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 .tg-loop i { font-style: normal; font-family: var(--lbl); font-size: 10px; text-transform: uppercase; padding: 2px 6px; border: 2px solid #000; background: color-mix(in srgb, var(--c) 45%, var(--well)); }
 .tg-loop b { font-size: 10px; color: var(--muted); }
 /* ? button and the in-battle rulebook */
-.thelp { position: absolute; top: 6px; right: 6px; z-index: 6; width: 30px; height: 30px; display: grid; place-items: center; font-family: var(--lbl); font-size: 14px; color: var(--text); background: var(--slate); border: 2px solid #000; box-shadow: 2px 2px 0 #000; cursor: pointer; }
+/* "How battles work" spans the full width under Fight / Bag / Birds / Run */
+.thelp { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; min-height: 40px; padding: 6px 10px; overflow: hidden; white-space: nowrap;
+  font-family: var(--lbl); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--text); background: var(--well); border: 2px solid #000; box-shadow: 2px 2px 0 #000; cursor: pointer; }
+.thelp:active { transform: translateY(2px); box-shadow: 0 0 0 #000; }
+.thelp-q { flex: none; display: grid; place-items: center; width: 20px; height: 20px; background: var(--accent-fill, var(--accent)); color: var(--accent-ink, #0C0F14); border: 2px solid #000; font-size: 11px; }
+.thelp-l { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+:root.theme-field .thelp { font-weight: 600; text-transform: none; font-size: 14px; letter-spacing: 0; }
 .tb { position: relative; }
 .tguide-sheet { position: absolute; inset: 0; z-index: 40; display: flex; flex-direction: column; background: var(--bg); border: 3px solid #000; }
 .tguide-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-bottom: 3px solid #000; background: var(--slate); font-family: var(--head, var(--lbl)); text-transform: uppercase; }
@@ -1405,7 +1411,70 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 .tact-top .tuses { margin-top: 2px; }
 .tact .tact-txt small { -webkit-line-clamp: 2; }
 /* the ? sits just under the rival's card, clear of the speech box and the birds */
-.thelp { top: calc(var(--safe-t, 0px) + 100px); bottom: auto; right: 8px; }
 /* the Strong / Weak badge sits on the top-left edge so it never covers the uses dots on the right */
 .tgrid .tact > .tedge { left: 8px; right: auto; }
 .tgrid .tact { padding-top: 12px; }
+
+/* v1.34.1: on smaller screens the moves stack in one column, full width, so nothing is squeezed or spills out */
+@media (max-width: 480px) {
+  .tgrid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .tgrid .tact { min-height: 0; padding: 12px 10px 8px; }
+  .tgrid .tact-ic { display: grid; width: 32px; height: 32px; }
+  .tgrid .tuses-n { display: inline; }
+  .tgrid .tuses.always { font-size: 9px; padding: 0 4px; }
+  .tgrid .tact-txt { flex: 1; }
+  .tgrid .tact-txt small { -webkit-line-clamp: 3; }
+}
+/* the tray never takes more than ~60% of the screen; if the stacked moves need more room it scrolls */
+.ttray { max-height: 62svh; overflow-y: auto; overscroll-behavior: contain; }
+.ttray > * { flex-shrink: 0; } /* scroll, never squash the buttons */
+.tact.guard .tact-ic > * { transform: scale(.52); } /* the Guard ring sprite is 52px: shrink it to sit wholly inside its icon box */
+
+
+/* v1.34.1: Field guide theme, a little less letter spacing (Courier is already wide). Body text is tightened slightly,
+   and every label that adds tracking gets about 0.04em less in this theme only. */
+:root.theme-field body { letter-spacing: -0.02em; }
+:root.theme-field .px { letter-spacing: 0.0em; }
+:root.theme-field h1, :root.theme-field h2, :root.theme-field h3 { letter-spacing: 0.0em; }
+:root.theme-field .label { letter-spacing: 0.02em; }
+:root.theme-field .btn { letter-spacing: 0.04em; }
+:root.theme-field .chip { letter-spacing: 0.0em; }
+:root.theme-field .filter { letter-spacing: 0.01em; }
+:root.theme-field .tab { letter-spacing: 0.02em; }
+:root.theme-field .stampmark { letter-spacing: 0.02em; }
+:root.theme-field .dialog-name { letter-spacing: 0.04em; }
+:root.theme-field .type-chip { letter-spacing: 0.02em; }
+:root.theme-field .title-logo { letter-spacing: -0.02em; }
+:root.theme-field .press { letter-spacing: 0.06em; }
+:root.theme-field .seg-btn { letter-spacing: 0.02em; }
+:root.theme-field .section-title { letter-spacing: 0.04em; }
+:root.theme-field .npc .bubble b { letter-spacing: 0.02em; }
+:root.theme-field .bird-card .seen { letter-spacing: -0.02em; }
+:root.theme-field .region-change { letter-spacing: 0.02em; }
+:root.theme-field .reveal-arrow { letter-spacing: 3.4px; }
+:root.theme-field .lens-power { letter-spacing: 0.0em; }
+:root.theme-field .merlin-tip-body b { letter-spacing: 0.02em; }
+:root.theme-field .dex-head-name { letter-spacing: 0.02em; }
+:root.theme-field .thero-kicker { letter-spacing: 0.06em; }
+:root.theme-field .tintro-k { letter-spacing: 0.16em; }
+:root.theme-field .tsuper { letter-spacing: 0.0em; }
+:root.theme-field .tact-txt b { letter-spacing: -0.01em; }
+:root.theme-field .tticket-chip, :root.theme-field .tbond-chip { letter-spacing: 0.0em; }
+:root.theme-field .tedge { letter-spacing: -0.01em; }
+:root.theme-field .tlog-hist { letter-spacing: 0.0em; }
+:root.theme-field .tcmd-b { letter-spacing: 0.04em; }
+:root.theme-field .tfight-top { letter-spacing: 0.0em; }
+:root.theme-field .leaflet-popup-content a.spot-dir { letter-spacing: 0.02em; }
+:root.theme-field .shop-npc-box .dialog-name { letter-spacing: 0.04em; }
+:root.theme-field .shop-tab { letter-spacing: -0.01em; }
+:root.theme-field .dcard-name { letter-spacing: 0.0em; }
+:root.theme-field .feeder-name { letter-spacing: 0.0em; }
+:root.theme-field .shop-hub-title { letter-spacing: 0.04em; }
+:root.theme-field .shop-hub-tile b { letter-spacing: 0.0em; }
+@media (max-width: 380px) { :root.theme-field .shop-npc-box .dialog-name { letter-spacing: 0.0em; } }
+:root.theme-field .trials-entry-title, :root.theme-field .shop-hub-title, :root.theme-field .feeder-name { letter-spacing: 0.04em; }
+@media (max-width: 360px) { :root.theme-field .tcmd-b { letter-spacing: 0.0em; } }
+:root.theme-field .tuses { letter-spacing: -0.01em; }
+:root.theme-field .tticket-tally { letter-spacing: -0.01em; }
+:root.theme-field .tg-sec h4 { letter-spacing: 0.0em; }
+:root.theme-field .thelp { letter-spacing: 0.01em; }

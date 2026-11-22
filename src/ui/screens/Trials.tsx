@@ -414,7 +414,7 @@ const TUT = (b: Battle) => {
     { id: 'guard', info: false, text: `${foe.c.sp.common} is powering up a Big Move! FIGHT, then Guard. Guard always goes first and blocks most of it.` },
     { id: 'snack', info: true, text: 'Nicely blocked! BAG feeds your bird snacks from your pantry, and BIRDS swaps in another bird from your party. Both happen before the rival moves.' },
     { id: 'super', info: false, text: `Your Super meter is full! Tap it to unleash ${me.superName}.` },
-    { id: 'done', info: true, text: `Last tips: the faster bird moves first, and styles have matchups: ${(Object.keys(BEATS) as Contest[]).map((c) => `${CONTESTS[c].name} beats ${CONTESTS[BEATS[c]].name}`).join(', ')}. Look for ▲ Strong. Tap ? at the top any time to see all the rules. Now finish the trial!` },
+    { id: 'done', info: true, text: `Last tips: the faster bird moves first, and styles have matchups: ${(Object.keys(BEATS) as Contest[]).map((c) => `${CONTESTS[c].name} beats ${CONTESTS[BEATS[c]].name}`).join(', ')}. Look for ▲ Strong. Tap How battles work, under the menu buttons, any time to see all the rules. Now finish the trial!` },
   ];
 };
 
@@ -631,7 +631,6 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
         <canvas ref={canvas} className="tb-bg pix" aria-hidden />
         <div className={`tb-flash ${flash ? 'on' : ''}`} aria-hidden />
 
-        <button className="thelp" onClick={(e) => { e.stopPropagation(); sfx.select(); setGuide(true); }} aria-label="How battles work">?</button>
         <div className={`thud ${tutId === 'hud' ? 'tut-focus' : ''}`}>
           {card('you', me, you, bat.you, bat.yi)}
           <div className="tvs-dot" aria-hidden>VS</div>
@@ -708,6 +707,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
             <button className="tcmd-b" disabled={lock('bag') || !snacks} onClick={() => { sfx.select(); setPanel('snack'); }} aria-label={`Bag: ${snacks} snacks`}><PixelEmoji name="bag" /><span className="tcmd-l">Bag</span><small>×{snacks}</small></button>
             <button className="tcmd-b" disabled={lock('birds') || !bench.length} onClick={() => { sfx.select(); setPanel('swap'); }} aria-label={`Birds: ${bench.length} to swap in`}><PixelEmoji name="birds" /><span className="tcmd-l">Birds</span><small>×{bench.length}</small></button>
             <button className="tcmd-b run" disabled={!live || !!step} onClick={() => { sfx.back(); act({ kind: 'run' }); }} aria-label="Run: leave the battle"><PixelEmoji name="run" /><span className="tcmd-l">Run</span></button>
+            <button className="thelp" onClick={() => { sfx.select(); setGuide(true); }}><span className="thelp-q" aria-hidden>?</span><span className="thelp-l">How battles work</span></button>
           </div>
         )}
         {panel === 'fight' && (
