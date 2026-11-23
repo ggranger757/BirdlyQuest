@@ -1,4 +1,5 @@
 import { FeatherIcon } from './FeatherIcon';
+import { openShop } from './screens/Shop';
 import { useNav } from './nav';
 // Shared layout pieces so every tab looks and behaves the same.
 import { ReactNode } from 'react';
@@ -11,7 +12,7 @@ export function FeatherChip({ label = true }: { label?: boolean }) {
   const f = useGame((s) => s.feathers);
   const nav = useNav();
   return (
-    <button className="chip feather-chip" aria-label={`You have ${f} Feather Coins, the in-game money. Open Woods' Shop`} onClick={() => nav.open({ name: 'shop' })}>
+    <button className="chip feather-chip" aria-label={`You have ${f} Feather Coins, the in-game money. Open Woods' Shop`} onClick={() => openShop(nav)}>
       <FeatherIcon size={14} /><span className="num">{f}</span>{label && <span className="feather-word">Feather Coins</span>}
     </button>
   );
