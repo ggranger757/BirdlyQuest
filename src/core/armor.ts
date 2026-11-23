@@ -66,13 +66,35 @@ export const DYES: Record<string, { label: string; metal?: [string, string, stri
   theme: { label: 'Original' },
   gold: { label: 'Gold', metal: ['#D9A520', '#FFE27A', '#7A5208'], trim: '#FFF4C2' },
   silver: { label: 'Silver', metal: ['#A8B0BC', '#EEF2F6', '#5A6270'], trim: '#3A4250' },
+  bronze: { label: 'Bronze', metal: ['#A8683A', '#E0A070', '#552C14'], trim: '#F2D29A' },
+  copper: { label: 'Copper', metal: ['#C8603A', '#F4A07A', '#5E2414'], trim: '#5ED0B0' },
+  platinum: { label: 'Platinum', metal: ['#D4D8E0', '#FFFFFF', '#8A90A0'], trim: '#7AA8FF' },
   obsidian: { label: 'Obsidian', metal: ['#2A2430', '#544A60', '#0E0A12'], trim: '#B79BFF' },
+  onyx: { label: 'Onyx', metal: ['#3A3A3E', '#6E6E76', '#141416'], trim: '#E8E8EC' },
   crimson: { label: 'Crimson', metal: ['#B02A30', '#F06A5A', '#520C12'], trim: '#F2C94C' },
-  cobalt: { label: 'Cobalt', metal: ['#2F5BD8', '#7FA4FF', '#122A6A'], trim: '#E8ECF4' },
-  jade: { label: 'Jade', metal: ['#2E9A6A', '#7EE0B0', '#0E4A30'], trim: '#F2E6C2' },
-  rose: { label: 'Rose', metal: ['#D86A9A', '#FFB0D0', '#6A2440'], trim: '#FFFFFF' },
+  ruby: { label: 'Ruby', metal: ['#C8184A', '#FF6A8E', '#5A0620'], trim: '#FFE0EA' },
   sunset: { label: 'Sunset', metal: ['#E8742A', '#FFC07A', '#7A2E0A'], trim: '#5A1A40' },
+  amber: { label: 'Amber', metal: ['#E0A020', '#FFD870', '#7A4A08'], trim: '#3A2A10' },
+  lemon: { label: 'Lemon', metal: ['#E8D22A', '#FFF59A', '#7A6A08'], trim: '#2A2A2A' },
+  lime: { label: 'Lime', metal: ['#8AC83A', '#D0F290', '#3A6014'], trim: '#1A2A10' },
+  jade: { label: 'Jade', metal: ['#2E9A6A', '#7EE0B0', '#0E4A30'], trim: '#F2E6C2' },
+  forest: { label: 'Forest', metal: ['#2E6A3A', '#6EAA6A', '#123018'], trim: '#D8B060' },
+  teal: { label: 'Teal', metal: ['#1E8A94', '#6ED8E0', '#0A3E44'], trim: '#F2F2E0' },
+  sky: { label: 'Sky', metal: ['#4AA8E8', '#A8DCFF', '#1A4E7A'], trim: '#FFFFFF' },
+  cobalt: { label: 'Cobalt', metal: ['#2F5BD8', '#7FA4FF', '#122A6A'], trim: '#E8ECF4' },
+  navy: { label: 'Navy', metal: ['#22305E', '#4E62A0', '#0C1430'], trim: '#E8C860' },
+  violet: { label: 'Violet', metal: ['#7A3AC8', '#BC90F4', '#34125E'], trim: '#F2E0FF' },
+  rose: { label: 'Rose', metal: ['#D86A9A', '#FFB0D0', '#6A2440'], trim: '#FFFFFF' },
+  bubblegum: { label: 'Bubblegum', metal: ['#F088C8', '#FFC8EA', '#8A2A6A'], trim: '#6AE0FF' },
+  ivory: { label: 'Ivory', metal: ['#E8DCC0', '#FFFAEA', '#9A8A66'], trim: '#B08A3A' },
 };
+/** Gem and glow colours (necklace gem, visor, eyes, sparkles), chosen separately from the metal. */
+export const GLOWS: Record<string, { label: string; hex?: string }> = {
+  theme: { label: 'Original' }, cyan: { label: 'Cyan', hex: '#2EF2FF' }, magenta: { label: 'Magenta', hex: '#FF3FD8' }, ember: { label: 'Ember', hex: '#FF7A1A' },
+  sun: { label: 'Sun', hex: '#FFD23F' }, mint: { label: 'Mint', hex: '#5BFF9A' }, violet: { label: 'Violet', hex: '#B79BFF' }, ruby: { label: 'Ruby', hex: '#FF3A5A' },
+  ice: { label: 'Ice', hex: '#D8F4FF' }, blossom: { label: 'Blossom', hex: '#FF8FB8' }, lime: { label: 'Lime', hex: '#C6FF3A' }, azure: { label: 'Azure', hex: '#3A8CFF' },
+};
+export const GLOW_IDS = Object.keys(GLOWS);
 export const DYE_IDS = Object.keys(DYES);
 
 const hash = (s: string) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h; };
@@ -127,5 +149,5 @@ export function armorStats(pieces: number): ArmorStats {
 }
 
 /** What the sprite painter needs. */
-export interface ArmorLook { theme: ArmorTheme; pieces: number; dye?: string }
-export const armorKey = (a?: ArmorLook | null) => (a && a.pieces > 0 ? `${a.theme}.${a.pieces}.${a.dye ?? 'theme'}` : '');
+export interface ArmorLook { theme: ArmorTheme; pieces: number; dye?: string; glow?: string }
+export const armorKey = (a?: ArmorLook | null) => (a && a.pieces > 0 ? `${a.theme}.${a.pieces}.${a.dye ?? 'theme'}.${a.glow ?? 'theme'}` : '');

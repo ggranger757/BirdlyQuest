@@ -3,9 +3,10 @@
 // HP reaching 0 means the bird flies off to rest; nobody gets hurt.
 import { piecesFor, earnedLevelUps, themeFor, type ArmorLook } from '../../core/armor';
 import { setOfSighting } from '../../core/gear';
+import { decodeDuel } from '../../core/duel';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useNav } from '../nav';
-import { useGame, getState, counts, speciesOf, finishTrial, finishWild, noteBattle, spendTrialItem, spendTicket } from '../../app/store';
+import { finishDuel, useGame, getState, counts, speciesOf, finishTrial, finishWild, noteBattle, spendTrialItem, spendTicket } from '../../app/store';
 import { regionEntries, speciesById } from '../../data/provider';
 import { playClip, preloadTrialClips, sfx, haptic, battleMusic } from '../../app/audio';
 import { TopBar, Sprite, Icon, useReducedMotion } from '../components';
@@ -178,16 +179,16 @@ export function Face({ face, merlin, name, size = 56, className, tall }: { face?
 
 /** The player's birds: best photo of each species, plus the partner bird. */
 /** How a contender's armor looks. */
-const lookOf = (c: Contender): ArmorLook => ({ theme: themeFor(c.sp, birdStyle(c.sp)), pieces: c.armor ?? 0, dye: c.dye });
+export const lookOf = (c: Contender): ArmorLook => ({ theme: themeFor(c.sp, birdStyle(c.sp)), pieces: c.armor ?? 0, dye: c.dye, glow: c.glow });
 
-function useTeam(): Contender[] {
+export function useTeam(): Contender[] {
   const sightings = useGame((s) => s.sightings);
   const partner = useGame((s) => s.partner);
   return useMemo(() => {
     const best = new Map<string, Contender>();
     for (const x of sightings) {
       if (!counts(x) || !x.speciesId) continue;
-      const c: Contender = { sp: speciesOf(x), level: Math.min(50, x.level ?? 5), quality: x.fieldcraft?.total ?? 40, parts: x.sprite?.parts, sightingId: x.id, armor: piecesFor(earnedLevelUps(x)), dye: x.armorDye };
+      const c: Contender = { sp: speciesOf(x), level: Math.min(50, x.level ?? 5), quality: x.fieldcraft?.total ?? 40, parts: x.sprite?.parts, sightingId: x.id, armor: piecesFor(earnedLevelUps(x)), dye: x.armorDye, glow: x.armorGlow };
       const prev = best.get(x.speciesId);
       if (!prev || c.level + c.quality / 10 > prev.level + prev.quality / 10) best.set(x.speciesId, c);
     }
@@ -202,7 +203,7 @@ function useTeam(): Contender[] {
 interface Setup { wild?: boolean; foeName: string; title: string; scene: string; foe: Contender[]; time: number; merlin?: boolean; line: string; music: string; face?: string; persona: Persona; win: string; lose: string }
 type Prize = { coins: number; xp: number; first: boolean; levelled: string[] };
 
-export function Trials({ wild }: { wild?: string }) {
+export function Trials({ wild, duel }: { wild?: string; duel?: string }) {
   const nav = useNav();
   const tst = useGame((s) => s.trials);
   const region = useGame((s) => s.region);
@@ -210,12 +211,15 @@ export function Trials({ wild }: { wild?: string }) {
   const sightings = useGame((s) => s.sightings);
   const team = useTeam();
   const pool = useMemo(() => regionEntries(region).map((e) => e.sp), [region]);
-  const [phase, setPhase] = useState<'ladder' | 'party' | 'battle' | 'result'>(wild ? 'battle' : 'ladder');
+  // a friend duel: their team, decoded from the code they shared
+  const duelCard = useMemo(() => (duel ? decodeDuel(duel) : null), [duel]);
+  const duelFoe: Contender[] = useMemo(() => (duelCard?.birds ?? []).map((b) => ({ sp: speciesById(b.id)!, level: b.level, quality: b.quality, parts: b.parts, armor: b.armor, dye: b.dye, glow: b.glow })).filter((c) => c.sp), [duelCard]);
+  const [phase, setPhase] = useState<'ladder' | 'party' | 'battle' | 'result'>(wild ? 'battle' : duel ? 'party' : 'ladder');
   const [ri, setRi] = useState(0);
   const [party, setParty] = useState<Contender[]>(() => {
     if (!wild) return [];
     const x = sightings.find((s) => s.id === wild);
-    const lead: Contender | null = x && x.speciesId ? { sp: speciesOf(x), level: Math.min(50, x.level ?? 5), quality: x.fieldcraft?.total ?? 40, parts: x.sprite?.parts, sightingId: x.id, armor: piecesFor(earnedLevelUps(x)), dye: x.armorDye } : null;
+    const lead: Contender | null = x && x.speciesId ? { sp: speciesOf(x), level: Math.min(50, x.level ?? 5), quality: x.fieldcraft?.total ?? 40, parts: x.sprite?.parts, sightingId: x.id, armor: piecesFor(earnedLevelUps(x)), dye: x.armorDye, glow: x.armorGlow } : null;
     return lead ? [lead, ...team.filter((c) => c.sp.id !== lead.sp.id).slice(0, 2)] : team.slice(0, 3);
   });
   const [outcome, setOutcome] = useState<{ won: boolean; prize: Prize } | null>(null);
@@ -224,6 +228,16 @@ export function Trials({ wild }: { wild?: string }) {
 
   const avg = (list: Contender[]) => list.reduce((n, c) => n + c.level, 0) / Math.max(1, list.length);
   const setup: Setup = useMemo(() => {
+    if (duelCard) {
+      const key = duelCard.name + duelCard.birds.map((b) => b.id).join(''), p = WANDERER_PERSONA[hashName(key)];
+      let s = [...key].reduce((n, ch) => n + ch.charCodeAt(0), 0) + seed;
+      const r = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
+      return {
+        foeName: duelCard.name, title: `Your friend · Trainer Lv${duelCard.trainerLevel}`, scene: WILD.scenes[Math.floor(r() * WILD.scenes.length)], foe: duelFoe, time: WILD.time,
+        face: wandererFace(key), music: WILD.music[Math.floor(r() * WILD.music.length)], line: `${duelCard.name} challenges you to a duel! Show them what your birds can do.`,
+        persona: { ...p, bio: `${duelCard.name} is a fellow BirdlyQuest trainer.`, motive: 'a friendly duel' }, win: 'Good game! Send them your team back for a rematch.', lose: `${duelCard.name}'s birds won this time. Rematch?`, wild: true,
+      } as Setup;
+    }
     if (wild) {
       const name = hashName(wild), lead = party[0];
       let s = [...wild].reduce((n, ch) => n + ch.charCodeAt(0), 0) + seed;
@@ -234,21 +248,23 @@ export function Trials({ wild }: { wild?: string }) {
     }
     const r = RIVALS[ri];
     return { foeName: r.name, title: r.title, scene: r.scene, foe: rivalTeam(r, pool.length ? pool : team.map((t) => t.sp), ri, avg(party.length ? party : team.slice(0, 3))), time: r.time, merlin: r.merlin, line: r.line, music: r.music, face: r.face, persona: r, win: r.win, lose: r.lose };
-  }, [wild, ri, pool, party, team, seed]);
+  }, [wild, duelCard, duelFoe, ri, pool, party, team, seed]);
 
   const choose = (i: number) => { sfx.select(); setRi(i); setParty(team.slice(0, 3)); setPhase('party'); };
-  const back = () => { if (phase === 'ladder' || wild) nav.back(); else { sfx.back(); setPhase('ladder'); } };
+  const back = () => { if (phase === 'ladder' || wild || duel) nav.back(); else { sfx.back(); setPhase('ladder'); } };
+  const friendKey = duelCard ? duelCard.name + ':' + duelCard.birds.map((b) => b.id).join(',') : '';
+  useEffect(() => { if (duel && !party.length) setParty(team.slice(0, 3)); }, [duel, team.length]);
 
   return (
     <div className={`overlay trials ${phase}`}>
-      {phase !== 'battle' && <TopBar title={phase === 'ladder' ? 'Field Trials' : phase === 'party' ? 'Choose your birds' : wild ? 'Challenge' : RIVALS[ri].name} onBack={back} right={<FeatherChip label={false} />} />}
+      {phase !== 'battle' && <TopBar title={phase === 'ladder' ? 'Field Trials' : phase === 'party' ? 'Choose your birds' : duel ? 'Duel' : wild ? 'Challenge' : RIVALS[ri].name} onBack={back} right={<FeatherChip label={false} />} />}
       {phase === 'ladder' && <Ladder team={team} pool={pool} onPick={choose} onCamera={() => nav.open({ name: 'viewfinder' })} cleared={tst?.cleared ?? 0} wins={tst?.wins ?? 0} />}
-      {phase === 'party' && <Party setup={setup} size={RIVALS[ri].size} team={team} party={party} setParty={setParty} bond={bond}
-        onGo={() => { if (!spendTicket()) { sfx.error(); nav.toast('No Trial Tickets left. Log a bird to earn one!'); return; } playClip('tStart'); haptic(14); setSeed((s) => s + 1); setPhase('battle'); }} />}
+      {phase === 'party' && <Party setup={setup} size={duel ? 3 : RIVALS[ri].size} team={team} party={party} setParty={setParty} bond={bond} duel={!!duel}
+        onGo={() => { if (!duel && !spendTicket()) { sfx.error(); nav.toast('No Trial Tickets left. Log a bird to earn one!'); return; } playClip('tStart'); haptic(14); setSeed((s) => s + 1); setPhase('battle'); }} />}
       {phase === 'battle' && party.length > 0 && (
         <BattleView key={seed} setup={setup} party={party} bond={bond}
           onEnd={(won, used) => {
-            const prize = wild ? finishWild(won, used) : finishTrial(ri, won, used);
+            const prize = duel ? finishDuel(won, used, friendKey) : wild ? finishWild(won, used) : finishTrial(ri, won, used);
             setOutcome({ won, prize });
             battleMusic(false);
             if (won) playClip('levelUp', { duck: true }); else playClip('tLose', { duck: true });
@@ -257,8 +273,9 @@ export function Trials({ wild }: { wild?: string }) {
       )}
       {phase === 'battle' && party.length === 0 && <div className="trials-body"><p>You need a photographed bird to battle.</p></div>}
       {phase === 'result' && outcome && (
-        <Result setup={setup} won={outcome.won} prize={outcome.prize} party={party} wild={!!wild}
-          onRematch={wild ? undefined : () => { setSeed((s) => s + 1); setPhase('party'); }} onLadder={() => (wild ? nav.back() : setPhase('ladder'))}
+        <Result setup={setup} won={outcome.won} prize={outcome.prize} party={party} wild={!!wild || !!duel}
+          onRematch={wild ? undefined : () => { setSeed((s) => s + 1); setPhase('party'); }} onLadder={() => (wild || duel ? nav.back() : setPhase('ladder'))}
+          onSendBack={duel ? () => nav.replace({ name: 'duel' }) : undefined}
           onNext={!wild && outcome.won && ri + 1 < RIVALS.length ? () => choose(ri + 1) : undefined} />
       )}
     </div>
@@ -267,6 +284,7 @@ export function Trials({ wild }: { wild?: string }) {
 
 // ─── ladder ───
 function Ladder({ team, pool, cleared, wins, onPick, onCamera }: { team: Contender[]; pool: Species[]; cleared: number; wins: number; onPick: (i: number) => void; onCamera: () => void }) {
+  const nav = useNav();
   const tst = useGame((s) => s.trials);
   const xp = useGame((s) => s.xp);
   const tickets = ticketsOf(tst), free = battleIsFree(tst);
@@ -284,6 +302,7 @@ function Ladder({ team, pool, cleared, wins, onPick, onCamera }: { team: Contend
           <BondChip />
           <button className="btn ghost small" onClick={() => { sfx.select(); setHow((v) => !v); }} aria-expanded={howOpen}>{howOpen ? 'Close rules' : 'How battles work'}</button>
         </div>
+        <button className="btn primary block tduel-btn" onClick={() => { sfx.select(); nav.open({ name: 'duel' }); }} disabled={team.length === 0}>⚔ Duel a friend (QR code)</button>
         {howOpen && <BattleGuide />}
       </div>
       {team.length === 0 && (
@@ -324,7 +343,7 @@ function Ladder({ team, pool, cleared, wins, onPick, onCamera }: { team: Contend
 }
 
 // ─── party ───
-function Party({ setup, size, team, party, setParty, onGo, bond }: { setup: Setup; size: number; team: Contender[]; party: Contender[]; setParty: (p: Contender[]) => void; onGo: () => void; bond: number }) {
+function Party({ setup, size, team, party, setParty, onGo, bond, duel }: { setup: Setup; size: number; team: Contender[]; party: Contender[]; setParty: (p: Contender[]) => void; onGo: () => void; bond: number; duel?: boolean }) {
   const tst = useGame((s) => s.trials);
   const free = battleIsFree(tst), tickets = ticketsOf(tst);
   const foeStyles = setup.foe.map((c) => birdStyle(c.sp));
@@ -370,10 +389,10 @@ function Party({ setup, size, team, party, setParty, onGo, bond }: { setup: Setu
         })}
       </div>
       <div className="trials-cta">
-        <button className="btn primary big block" disabled={!party.length || (!free && tickets < 1)} onClick={onGo}>
-          {free ? 'Start battle · free' : <>Start battle · <TicketIcon /> 1</>}
+        <button className="btn primary big block" disabled={!party.length || (!duel && !free && tickets < 1)} onClick={onGo}>
+          {duel ? 'Start duel · free' : free ? 'Start battle · free' : <>Start battle · <TicketIcon /> 1</>}
         </button>
-        <div className="tcta-note"><TicketInfo tickets={tickets} free={free} /></div>
+        {duel ? <p className="small muted tcta-note">Friend duels never use tickets. Your first win against each friend each day pays a prize and levels your birds.</p> : <div className="tcta-note"><TicketInfo tickets={tickets} free={free} /></div>}
       </div>
     </div>
   );
@@ -772,8 +791,8 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
 }
 
 // ─── result ───
-function Result({ setup, won, prize, party, wild, onRematch, onLadder, onNext }: {
-  setup: Setup; won: boolean; prize: Prize; party: Contender[]; wild: boolean; onRematch?: () => void; onLadder: () => void; onNext?: () => void;
+function Result({ setup, won, prize, party, wild, onRematch, onLadder, onNext, onSendBack }: {
+  setup: Setup; won: boolean; prize: Prize; party: Contender[]; wild: boolean; onRematch?: () => void; onLadder: () => void; onNext?: () => void; onSendBack?: () => void;
 }) {
   const idx = RIVALS.findIndex((x) => x.name === setup.foeName);
   return (
@@ -820,6 +839,7 @@ function Result({ setup, won, prize, party, wild, onRematch, onLadder, onNext }:
       <div className="trials-cta col">
         {onNext && idx >= 0 && idx + 1 < RIVALS.length && <button className="btn primary big block" onClick={onNext}>Next rival: {RIVALS[idx + 1].name}</button>}
         {onRematch && <button className={`btn block ${onNext ? '' : 'primary big'}`} onClick={onRematch}>{won ? 'Rematch' : 'Try again'}</button>}
+        {onSendBack && <button className="btn block" onClick={onSendBack}>⚔ Send them your team</button>}
         <button className="btn ghost block" onClick={onLadder}>{wild ? 'Done' : 'Back to rivals'}</button>
       </div>
     </div>

@@ -2,7 +2,7 @@
 // finds its place on any species and any pose: the helmet covers the head above the eye, the necklace sits on the
 // first row under the head, the chestplate covers the breast, wing guards edge the wings, talons sheathe the legs,
 // the back gear hangs behind the shoulder, the sigil marks the chest and the aura sparkles around the outline.
-import { THEMES, DYES, type ArmorLook } from '../armor';
+import { THEMES, DYES, GLOWS, type ArmorLook } from '../armor';
 import { P } from './archetypes';
 
 type RGB = [number, number, number];
@@ -25,13 +25,14 @@ export function armorize(frames: APx[][], look: ArmorLook, form: { eye: [number,
   if (!look || look.pieces <= 0) return frames;
   const th = THEMES[look.theme], dye = DYES[look.dye ?? 'theme'] ?? DYES.theme, ex = EXTRA[look.theme];
   const [mBase, mLight, mDark] = (dye.metal ?? th.metal).map(hex) as [RGB, RGB, RGB];
-  const trim = hex(dye.trim ?? th.trim), glow = hex(th.glow), cape = dye.metal ? mix(hex(dye.metal[2]), hex(ex.cape), 0.35) : hex(ex.cape);
+  const trim = hex(dye.trim ?? th.trim), glow = hex(GLOWS[look.glow ?? 'theme']?.hex ?? th.glow), cape = dye.metal ? mix(hex(dye.metal[2]), hex(ex.cape), 0.35) : hex(ex.cape);
   const n = look.pieces;
   return frames.map((pxs, fi) => paint(pxs, fi));
 
   function paint(pxs: APx[], fi: number): APx[] {
     const grid = new Map<number, APx>();
     for (const p of pxs) if (p.x >= 0 && p.y >= 0 && p.x < 32 && p.y < 32) grid.set(p.y * 32 + p.x, { ...p });
+    const origRgb = new Map<number, RGB | undefined>([...grid].map(([k, p]) => [k, p.rgb]));
     const at = (x: number, y: number) => (x < 0 || y < 0 || x > 31 || y > 31 ? undefined : grid.get(y * 32 + x));
     const set = (x: number, y: number, c: RGB) => { const p = at(x, y); if (p) p.rgb = c; };
     const add = (x: number, y: number, c: RGB) => { if (x < 0 || y < 0 || x > 31 || y > 31 || grid.has(y * 32 + x)) return; grid.set(y * 32 + x, { x, y, part: ARMOR, lab: [0, 0, 0], rgb: c }); };
@@ -201,6 +202,23 @@ export function armorize(frames: APx[][], look: ArmorLook, form: { eye: [number,
     if (n >= 7 && chest.length) {
       const cx = Math.round(avg(chest, 'x')), cy = Math.round(avg(chest, 'y'));
       set(cx, cy, glow); for (const [u, v] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) { const p = at(cx + u, cy + v); if (p && BODYISH.has(p.part)) p.rgb = trim; }
+    }
+    // outline: a dark edge traced around the armor wherever it meets open sky, so every piece reads at small sizes
+    {
+      const OUT = mix(mDark, hex('#000000'), 0.62);
+      const isArmor = (k: number) => { const p = grid.get(k); return !!p && (p.part === ARMOR || p.rgb !== origRgb.get(k)); };
+      const edge: number[] = [];
+      for (const k of grid.keys()) if (isArmor(k)) {
+        const x = k % 32, y = (k - x) / 32;
+        for (const [u, v] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) { const nx = x + u, ny = y + v; if (nx >= 0 && ny >= 0 && nx < 32 && ny < 32 && !grid.has(ny * 32 + nx)) edge.push(ny * 32 + nx); }
+      }
+      for (const k of edge) { const x = k % 32; add(x, (k - x) / 32, OUT); }
+      // and a dark seam where the big plates meet feathers, so the plate's shape is clear
+      for (const p of [...chest, ...head.filter((q) => HEAD.has(q.part) && q.y <= eye.y)]) {
+        const k = p.y * 32 + p.x; if (!isArmor(k)) continue;
+        const back = grid.get(p.y * 32 + p.x - dir);
+        if (back && !isArmor(p.y * 32 + p.x - dir) && back.part !== P.EYE && back.part !== P.BEAK) p.rgb = mix(mDark, OUT, 0.5);
+      }
     }
     // 8 · aura: three four-point stars twinkling around the bird, in the theme's glow
     if (n >= 8) {

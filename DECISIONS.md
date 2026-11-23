@@ -366,3 +366,22 @@ One line per meaningful choice, with the reason.
     - "To aviary" on a full Aviary swaps instead of refusing.
     - Saves with more than 10 move the extras to the Bird Box, resting.
     - Swaps animate as fly-off and fly-in instead of rebuilding the scene.
+- **v1.38: more armor colours, clearer armor, and friend duels by QR code (owner request).**
+  - **Colours:**
+    - Metals went from 9 to 24 (adding Bronze, Copper, Platinum, Onyx, Ruby, Amber, Lemon, Lime, Forest, Teal, Sky, Navy, Violet, Bubblegum and Ivory).
+    - A separate **Gems & glow** picker has 12 colours (Original, Cyan, Magenta, Ember, Sun, Mint, Violet, Ruby, Ice, Blossom, Lime, Azure). It recolours the necklace gem, visor, mecha eyes, sparkles and other glowing details.
+    - Both are free, saved per bird (`armorDye`, `armorGlow`), included in the sprite cache key, and carried into battles and duels.
+  - **Legibility:** at real display sizes (2× in BirdDex, 3–5× in battle) the armor used to blend into the feathers. Now:
+    - Every piece gets a dark outline traced wherever it meets open sky.
+    - The big plates (helmet, chestplate) get a dark seam where they meet feathers.
+    - Each piece reads as a distinct shape at any size, which is standard game-sprite practice.
+  - **Friend duels** (Field Trials → "⚔ Duel a friend (QR code)"):
+    - **Challenge:** pick up to 3 birds. The app shows a QR code of a duel link, plus Share and Copy link.
+    - **What the link holds:** the team (species, level, fieldcraft, colours, armor pieces, dyes) packed into a ~70-character checksummed code (`core/duel.ts`).
+    - **Accept:** scan in the app where the browser can read QR codes (the BarcodeDetector API). Otherwise scan with the phone's own camera app, which opens BirdlyQuest straight into the duel, or paste the link. The link waits through onboarding if needed.
+    - **The duel:** the friend's team is played by the computer. It never uses tickets.
+    - **Rewards:** the first win against each friend each day pays 20 coins and 40 XP and levels up your birds, so duels can't be farmed. The result screen offers "⚔ Send them your team" for the return match.
+  - **QR encoder:** written in-app from the QR specification (`core/qr.ts`: byte mode, error correction M, versions 1–25, Reed–Solomon, the 8 masks with penalty scoring), because the build uses `npm ci` and new packages can't be added here.
+    - Verified with OpenCV's QR reader on 44 generated codes across versions 1–18: all decoded, none wrong.
+    - The QR shown on screen in the browser test decodes to the exact link.
+  - **End-to-end browser test:** phone A shows its QR. Phone B opens the link, sees "Gaston · Trainer Lv18" and his armored team, and starts a free duel. The battle runs with the friend's custom-coloured armor, no errors and no ticket spent.

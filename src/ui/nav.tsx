@@ -26,7 +26,8 @@ export type Route =
   | { name: 'year' }
   | { name: 'lab' }
   | { name: 'debug' }
-  | { name: 'trials'; wild?: string };
+  | { name: 'trials'; wild?: string; duel?: string }
+  | { name: 'duel'; code?: string };
 
 export interface Nav {
   tab: Tab;

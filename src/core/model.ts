@@ -33,6 +33,7 @@ export interface Sighting {
   analysisMs?: number;
   level?: number;                // collector-style level (5 + fieldcraft/5, +1 per repeat; max 50)
   armorDye?: string;             // armor colour the player picked (v1.37; see core/armor DYES)
+  armorGlow?: string;            // gem / glow colour the player picked (v1.38; core/armor GLOWS)
   dex?: number;                  // regional BirdDex number at time of catch
   pet?: { hp: number; at: string; resting?: boolean }; // health at `at`; drains only while living in the Aviary
 }
@@ -88,7 +89,7 @@ export interface GameState {
   petDay: string | null;           // last day the aviary paid out Feather Coins
   stats: { fills: number; spent: number; quests: number };
   badgeQueue: string[];            // newly earned badges waiting for their pop-up
-  trials?: { cleared: number; wins: number; day?: string; rematches?: number; tutorial?: boolean; battles?: number; wildDay?: string; tickets?: number; ticketsEarned?: number; ticketsUsed?: number }; // Field Trials progress (tickets: Trial Tickets, default 3; earned / used tallies since v1.34)
+  trials?: { cleared: number; wins: number; day?: string; rematches?: number; tutorial?: boolean; battles?: number; wildDay?: string; tickets?: number; ticketsEarned?: number; ticketsUsed?: number; duels?: Record<string, string>; duelWins?: number }; // Field Trials progress (tickets: Trial Tickets, default 3; earned / used tallies since v1.34)
   pendingChallenge?: { sightingId: string; at: string } | null; // a wandering birder wants to see a newly discovered bird
 }
 

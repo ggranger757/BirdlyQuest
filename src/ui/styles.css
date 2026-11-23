@@ -1605,3 +1605,30 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 :root.theme-field .dye.on { outline-color: #000; }
 .tarmor-new { color: var(--accent); }
 @media (max-width: 360px) { .armor-list { grid-template-columns: minmax(0, 1fr); } }
+
+/* v1.38: metal and glow pickers */
+.armor-dyes { flex-direction: column; align-items: stretch; gap: 6px; }
+.armor-dyes .label .muted { text-transform: none; letter-spacing: 0; }
+.armor-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); gap: 6px; }
+.dye { width: 100%; aspect-ratio: 1; height: auto; }
+.dye.glow { background: radial-gradient(circle at 50% 50%, #fff 0 14%, var(--g) 15% 48%, color-mix(in srgb, var(--g) 35%, #000) 49%); }
+
+/* ── v1.38 friend duels ── */
+.tduel-btn { margin-top: 10px; }
+.duel-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+.duel-pick, .duel-foe-team { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 8px 0 12px; }
+.duel-bird { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; padding: 6px 4px; font: inherit; color: var(--text); background: var(--well); border: 2px solid #000; cursor: pointer; text-align: center; }
+.duel-bird.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+:root.theme-field .duel-bird.on { border-color: #000; box-shadow: 0 0 0 3px #000; background: #FFF8E2; }
+.duel-bird-art { display: grid; place-items: center; width: 68px; height: 68px; background: var(--slate); border: 2px solid #000; line-height: 0; }
+.duel-bird-name { width: 100%; font-size: 12px; font-weight: 600; line-height: 1.2; overflow-wrap: break-word; }
+.duel-bird-lv { font-family: var(--lbl); font-size: 10px; color: var(--muted); }
+.duel-qr { display: grid; gap: 10px; justify-items: center; text-align: center; }
+.duel-qr-canvas { width: min(260px, 70vw); height: auto; image-rendering: pixelated; border: 3px solid #000; background: #fff; }
+.duel-link { width: 100%; font-size: 12px; padding: 8px; background: var(--well); color: var(--text); border: 2px solid #000; }
+.duel-paste { display: flex; gap: 8px; margin-top: 10px; }
+.duel-paste input { flex: 1; min-width: 0; padding: 10px; font: inherit; background: var(--well); color: var(--text); border: 2px solid #000; }
+.duel-err { color: var(--danger, #E5484D); }
+.duel-video { width: 100%; aspect-ratio: 1; object-fit: cover; border: 3px solid #000; background: #000; }
+.duel-incoming { display: grid; gap: 8px; }
+.duel-foe { font-size: 18px; }

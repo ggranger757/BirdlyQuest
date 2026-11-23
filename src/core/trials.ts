@@ -172,7 +172,7 @@ export const T = {
 };
 
 // ─── contenders and fighters ───
-export interface Contender { sp: Species; level: number; quality: number; parts?: number[]; sightingId?: string; armor?: number; dye?: string } // armor: pieces worn (v1.37)
+export interface Contender { sp: Species; level: number; quality: number; parts?: number[]; sightingId?: string; armor?: number; dye?: string; glow?: string } // armor: pieces worn (v1.37)
 export interface Fighter {
   c: Contender; style: Contest; skill: Skill; quick: string; quickPow: number;
   tech: Skill | null;  // learned at Lv12
@@ -588,7 +588,7 @@ export function wildTeam(pool: Species[], level: number, rng: () => number, excl
 export const REMATCH = { coins: 5, xp: 15, perDay: 3 };
 /** Trial Tickets: earned by logging birds, spent on rival battles (wandering challenges and your first battle are free). */
 export const TICKETS = { start: 3, max: 5 };
-export interface TrialsState { cleared: number; wins: number; day?: string; rematches?: number; tutorial?: boolean; battles?: number; wildDay?: string; tickets?: number; ticketsEarned?: number; ticketsUsed?: number }
+export interface TrialsState { cleared: number; wins: number; day?: string; rematches?: number; tutorial?: boolean; battles?: number; wildDay?: string; tickets?: number; ticketsEarned?: number; ticketsUsed?: number; duels?: Record<string, string>; duelWins?: number }
 export const ticketsOf = (st?: TrialsState) => st?.tickets ?? TICKETS.start;
 export const battleIsFree = (st?: TrialsState) => !st?.tutorial;
 export function rewardFor(st: TrialsState | undefined, index: number, today: string): { coins: number; xp: number; first: boolean } {

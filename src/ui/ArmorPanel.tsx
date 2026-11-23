@@ -1,6 +1,6 @@
 // A bird's armor: the theme, every piece (worn or still to come) with its ability, and the dye picker (v1.37).
-import { setArmorDye } from '../app/store';
-import { THEMES, DYES, DYE_IDS } from '../core/armor';
+import { setArmorDye, setArmorGlow } from '../app/store';
+import { THEMES, DYES, DYE_IDS, GLOWS, GLOW_IDS } from '../core/armor';
 import { setOfSighting } from '../core/gear';
 import type { Species } from '../data/types';
 import type { Sighting } from '../core/model';
@@ -11,7 +11,8 @@ export function ArmorPanel({ sp, x }: { sp: Species; x: Sighting }) {
   const th = THEMES[set.theme];
   const worn = set.pieces.filter((p) => p.owned).length;
   const next = set.pieces.find((p) => !p.owned);
-  const dye = x.armorDye ?? 'theme';
+  const dye = x.armorDye && DYES[x.armorDye] ? x.armorDye : 'theme';
+  const glow = x.armorGlow && GLOWS[x.armorGlow] ? x.armorGlow : 'theme';
   return (
     <section className="panel armor-panel mt8" aria-label="Armor">
       <div className="armor-head">
@@ -32,22 +33,33 @@ export function ArmorPanel({ sp, x }: { sp: Species; x: Sighting }) {
           </li>
         ))}
       </ul>
-      <div className="armor-dyes">
-        <span className="label">Colour</span>
-        {worn === 0 ? <span className="small muted">Unlocks with the first piece.</span> : (
-          <div className="armor-swatches" role="radiogroup" aria-label="Armor colour">
-            {DYE_IDS.map((id) => {
-              const m = DYES[id].metal ?? th.metal, t = DYES[id].trim ?? th.trim;
-              return (
-                <button key={id} role="radio" aria-checked={dye === id} aria-label={DYES[id].label} title={DYES[id].label} className={`dye ${dye === id ? 'on' : ''}`}
-                  onClick={() => { sfx.select(); setArmorDye(x.id, id); }}
-                  style={{ background: `linear-gradient(180deg, ${m[1]} 0 30%, ${m[0]} 30% 70%, ${m[2]} 70%)`, boxShadow: `inset 0 -3px 0 ${t}` }} />
-              );
-            })}
+      {worn === 0 ? <p className="small muted armor-dyes">Colours unlock with the first piece.</p> : (
+        <>
+          <div className="armor-dyes">
+            <span className="label">Metal <span className="muted">· {DYES[dye].label}</span></span>
+            <div className="armor-swatches" role="radiogroup" aria-label="Armor metal colour">
+              {DYE_IDS.map((id) => {
+                const m = DYES[id].metal ?? th.metal, t = DYES[id].trim ?? th.trim;
+                return (
+                  <button key={id} role="radio" aria-checked={dye === id} aria-label={DYES[id].label} title={DYES[id].label} className={`dye ${dye === id ? 'on' : ''}`}
+                    onClick={() => { sfx.select(); setArmorDye(x.id, id); }}
+                    style={{ background: `linear-gradient(180deg, ${m[1]} 0 30%, ${m[0]} 30% 70%, ${m[2]} 70%)`, boxShadow: `inset 0 -4px 0 ${t}` }} />
+                );
+              })}
+            </div>
           </div>
-        )}
-        {worn > 0 && <span className="small muted armor-dye-name">{DYES[dye].label}</span>}
-      </div>
+          <div className="armor-dyes">
+            <span className="label">Gems &amp; glow <span className="muted">· {GLOWS[glow].label}</span></span>
+            <div className="armor-swatches" role="radiogroup" aria-label="Armor gem and glow colour">
+              {GLOW_IDS.map((id) => (
+                <button key={id} role="radio" aria-checked={glow === id} aria-label={GLOWS[id].label} title={GLOWS[id].label} className={`dye glow ${glow === id ? 'on' : ''}`}
+                  onClick={() => { sfx.select(); setArmorGlow(x.id, id); }}
+                  style={{ ['--g' as string]: GLOWS[id].hex ?? th.glow }} />
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </section>
   );
 }

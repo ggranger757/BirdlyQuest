@@ -358,6 +358,9 @@ export function rotateAviary(now = new Date()): { out: string; in: string } | nu
 }
 
 /** Recolour a bird's armor (any dye from core/armor DYES; 'theme' restores the original colours). */
+export function setArmorGlow(id: string, glow: string) {
+  setState((s) => ({ ...s, sightings: s.sightings.map((x) => (x.id === id ? { ...x, armorGlow: glow === 'theme' ? undefined : glow } : x)) }));
+}
 export function setArmorDye(id: string, dye: string) {
   setState((s) => ({ ...s, sightings: s.sightings.map((x) => (x.id === id ? { ...x, armorDye: dye === 'theme' ? undefined : dye } : x)) }));
 }
@@ -531,6 +534,26 @@ export function finishWild(won: boolean, birds: string[] = []): { coins: number;
   });
   logEvent(won ? 'wild_win' : 'wild_loss', levelled.length);
   return after({ coins: won ? WILD.coins : 0, xp: won ? WILD.xp : 0, first: false, levelled });
+}
+/** A friend duel ended. Prizes and level-ups only for the first win against each friend per day, so duels can't be farmed. */
+export const DUEL = { coins: 20, xp: 40 };
+export function finishDuel(won: boolean, birds: string[], friend: string): { coins: number; xp: number; first: boolean; levelled: string[] } {
+  const today = dayKey(new Date());
+  const seen = state.trials?.duels ?? {};
+  const first = won && seen[friend] !== today;
+  const levelled = first ? birds.filter((id) => state.sightings.some((x) => x.id === id && (x.level ?? 5) < 50)) : [];
+  setState((s) => {
+    const t = s.trials ?? { cleared: 0, wins: 0 };
+    const duels = { ...(t.duels ?? {}) }; if (won) duels[friend] = today;
+    const keep = Object.fromEntries(Object.entries(duels).sort((a, b) => (a[1] < b[1] ? 1 : -1)).slice(0, 40));
+    return {
+      ...s, xp: s.xp + (first ? DUEL.xp : 0), feathers: s.feathers + (first ? DUEL.coins : 0),
+      sightings: levelled.length ? s.sightings.map((x) => (levelled.includes(x.id) ? { ...x, level: (x.level ?? 5) + 1 } : x)) : s.sightings,
+      trials: { ...t, wins: t.wins + (won ? 1 : 0), duels: keep, duelWins: (t.duelWins ?? 0) + (won ? 1 : 0) },
+    };
+  });
+  logEvent(won ? 'duel_win' : 'duel_loss', levelled.length);
+  return after({ coins: first ? DUEL.coins : 0, xp: first ? DUEL.xp : 0, first, levelled });
 }
 /** Count a battle played, and mark the battle tutorial as seen. */
 export function noteBattle(tutorialDone: boolean) {

@@ -37,7 +37,8 @@ function renderRoute(r: Route) {
     case 'year': return <YearScreen />;
     case 'lab': return <Lab />;
     case 'debug': return <Debug />;
-    case 'trials': return <Trials wild={r.wild} />;
+    case 'trials': return <Trials wild={r.wild} duel={r.duel} />;
+    case 'duel': return <Duel code={r.code} />;
   }
 }
 
@@ -54,6 +55,7 @@ import { QuickLog } from './screens/QuickLog';
 import { MerlinTip } from './MerlinTip';
 import { Shop } from './screens/Shop';
 import { Trials } from './screens/Trials';
+import { Duel } from './screens/Duel';
 import { ChallengePrompt } from './ChallengePrompt';
 
 export function App() {
@@ -87,6 +89,25 @@ export function App() {
   }, [dys, motion, theme]);
 
   useEffect(() => { const t = setInterval(() => tickFeeder(), 60000); return () => clearInterval(t); }, []);
+  // friend duels: a duel link (from a QR code) opens the duel once the app is ready
+  const duelRef = useRef<string | null>(null);
+  useEffect(() => {
+    const grab = () => {
+      const m = location.hash.match(/^#duel=([A-Za-z0-9_-]+)/);
+      if (m) { duelRef.current = m[1]; try { sessionStorage.setItem('bq-duel', m[1]); } catch { /* private mode */ } history.replaceState(null, '', `#/${tab}`); }
+    };
+    grab();
+    window.addEventListener('hashchange', grab);
+    return () => window.removeEventListener('hashchange', grab);
+  }, []);
+  useEffect(() => {
+    if (!ready || !onboarded) return;
+    let code = duelRef.current; try { code = code ?? sessionStorage.getItem('bq-duel'); } catch { /* */ }
+    if (!code) return;
+    duelRef.current = null; try { sessionStorage.removeItem('bq-duel'); } catch { /* */ }
+    const t = setTimeout(() => { history.pushState({ o: true }, ''); setStack((s) => [...s, { name: 'duel', code: code! }]); }, 300);
+    return () => clearTimeout(t);
+  });
   // welcome back: Merlin looks after weak birds if you've been away a while
   useEffect(() => {
     if (!ready || !onboarded) return;

@@ -3,11 +3,11 @@ import type { Species } from '../data/types';
 import { birdStyle } from './trials';
 import { armorSet, earnedLevelUps, piecesFor, rivalLevelUps, themeFor, type ArmorLook } from './armor';
 
-type LoggedBird = { level?: number; fieldcraft?: { total?: number }; armorDye?: string };
+type LoggedBird = { level?: number; fieldcraft?: { total?: number }; armorDye?: string; armorGlow?: string };
 
 /** How a logged bird's armor looks right now. */
 export function lookOfSighting(sp: Species, x: LoggedBird): ArmorLook {
-  return { theme: themeFor(sp, birdStyle(sp)), pieces: piecesFor(earnedLevelUps(x)), dye: x.armorDye };
+  return { theme: themeFor(sp, birdStyle(sp)), pieces: piecesFor(earnedLevelUps(x)), dye: x.armorDye, glow: x.armorGlow };
 }
 /** How a rival or wild bird's armor looks at a level. */
 export function lookAtLevel(sp: Species, level: number, dye?: string): ArmorLook {
