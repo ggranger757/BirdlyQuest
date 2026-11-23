@@ -20,6 +20,8 @@ const PART: Record<string, number> = {
   B: P.BODY, Y: P.BELLY, W: P.WING, F: P.FARWING, T: P.TAIL, H: P.HEAD, C: P.CROWN, X: P.CREST, K: P.BEAK,
   L: P.LEG, E: P.EYE, I: P.BIB, M: P.MASK, Q: P.CHEEK,
 };
+/** Shading value meaning 'white highlight' ('*' in a form's dl map). */
+const GLINT = 999;
 const HEADISH = new Set<number>([P.HEAD, P.CROWN, P.CREST, P.BEAK, P.EYE, P.MASK, P.CHEEK, P.NAPE]);
 
 // ─── which shape each species uses ───
@@ -117,7 +119,7 @@ export function birdPixels(sp: Species, parts: number[], defaults: number[]): Px
     if (ch === '.') continue;
     if (ch === 'X' && !look.crest && !direct) continue;          // crest only on crested species
     part.set(y * 32 + x, PART[ch] ?? P.BODY);
-    dl.set(y * 32 + x, (f.dl[y].charCodeAt(x) - 65) * 2 - 26);
+    dl.set(y * 32 + x, f.dl[y][x] === '*' ? GLINT : (f.dl[y].charCodeAt(x) - 65) * 2 - 26);
   }
   if (!direct) {
     const mark = (k: string, p: number, only?: Set<number>) => { for (const [x, y] of zone(f, k)) { const i = y * 32 + x; if (part.has(i) && (!only || only.has(part.get(i)!))) part.set(i, p); } };
@@ -147,6 +149,7 @@ export function birdPixels(sp: Species, parts: number[], defaults: number[]): Px
     } else if (ringAt.has(i)) lab = ring!;
     else {
       const base = col(p), d = dl.get(i) ?? 0;
+      if (d === GLINT) { out.push({ x, y, part: p, lab: [97, 0, 0] }); continue; } // a white catch-light (owl eyes)
       const k = p === P.EYE || p === P.BEAK || p === P.LEG ? 0.5 : base[0] < 22 ? 0.7 : 1;
       lab = [Math.max(3, Math.min(98, base[0] + d * k)), base[1] * (d > 8 ? 0.85 : 1), base[2] * (d > 8 ? 0.85 : 1)];
       if (sp.pattern && sp.pattern !== 'solid' && p !== P.EYE && p !== P.BEAK && p !== P.LEG) lab = patternLab(sp.pattern, p, x, y, lab);
