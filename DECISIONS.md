@@ -393,4 +393,5 @@ One line per meaningful choice, with the reason.
   - **Breastplate:** layered lames (2-pixel bands lit along their top edges, a bright gorget along the top, a lit front edge) that overlap down the breast like feathers. This replaces the single plate. Scale-mail was tried first but was too busy at small sizes.
   - **Battle claws:** greaved legs. The front foot carries a long hooked metal blade reaching forward, and the back foot a short spur. In flight the claws are held forward under the body.
   - The dark outline from v1.38 keeps every piece legible at BirdDex and battle sizes.
-- **v1.38.2: war-owl armor style reverted (owner didn't like it, owls included).** The armor is back to the v1.38 design: theme helmets, the single chestplate, shoulder pauldrons, sheathed talons, back gear, sigil and aura. The dark outlines and the 24 metal + 12 glow colour options from v1.38 are kept.
+- **v1.38.2–1.38.3: war-owl armor style reverted (owner didn't like it, owls included).** The armor is back to the v1.38 design: theme helmets, the single chestplate, shoulder pauldrons, sheathed talons, back gear, sigil and aura. The dark outlines and the 24 metal + 12 glow colour options from v1.38 are kept.
+  - (v1.38.2 accidentally reverted the automatic docs build commit instead of the armor change. v1.38.3 restores `src/core/pixel/armor.ts` to its v1.38.0 state.)
