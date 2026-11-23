@@ -325,3 +325,44 @@ One line per meaningful choice, with the reason.
   - the 50-card strips
 
   All entry points (coin chip, Aviary Shop button, hungry alert, old `shop` route) open this page on the right category. Browser-audited at 390px and 320px in both themes: no overflow in chips, tiles, swatches or buttons, and the in-use tile's art stays clear of its border. Pour (1 tap), buy in the sheet (−50 coins, feeder hung, button flips to ✓) and closing by tapping outside all work.
+- **v1.37: birds earn armor as they level up, level cap 50, Aviary holds 10 and birds take turns (owner request).**
+  - **Earned, not evolved:** armor counts level-ups *earned since the bird was logged* (`earnedLevelUps` = level − (5 + fieldcraft/5)), so every bird gets the whole journey even though catch levels vary. There are 8 pieces, each with a battle ability:
+
+    | Level-up | Piece | Ability |
+    |---|---|---|
+    | 2 | Necklace | +1 signature skill use |
+    | 3 | Helmet | −10% damage taken |
+    | 5 | Chestplate | +12% HP |
+    | 8 | Wing guards | +12% speed |
+    | 12 | Talons | +10% power |
+    | 17 | Back gear | Super fills 25% faster |
+    | 23 | Sigil | start with 25% Super |
+    | 30 | Aura | +6% HP and power |
+
+  - **8 themes, chosen per species:** Fantasy, Cyberpunk, Dystopian, Mecha, Steampunk, Samurai, Celestial and Druid. Family comes first (hawks are Samurai/Mecha, corvids Dystopian/Cyberpunk, hummingbirds Cyberpunk/Celestial, owls Fantasy/Steampunk…), then battle style, with the species hash picking within the list.
+    - Piece names are unique per species ("Cardinal’s Plumed Helm").
+    - Ability names follow the bird's battle style (a Song bird's necklace is "Encore", a Sky bird's "Second Wind").
+  - **Pixel art:** `core/pixel/armor.ts` paints onto the part-labelled pixels of every frame before packing. Armor fits every species and moves with idle, peck, hop and the 8-frame wingbeat. Clean shapes with a lit top edge and shaded bottom edge:
+    - Helmet: bevelled, with a trim rim and glint above the eye, plus a theme crest:
+      - plume (Fantasy), visor and antenna (Cyberpunk), goggles and filter (Dystopian), V-fin and green eyes (Mecha)
+      - brass goggles (Steampunk), crescent horns and neck guard (Samurai), halo (Celestial), leaf crown (Druid)
+    - Necklace: a chain under the head with a gem pendant.
+    - Chestplate: one plate with a seam.
+    - Wing guards: a solid shoulder pauldron.
+    - Talons: sheathed claws.
+    - Back gear on the outline:
+      - draped cape, jet pack or thruster with flicker
+      - hazard fuel tank, brass boiler with steam, war banner, orbiting star
+    - Sigil: an emblem on the chest.
+    - Aura: three twinkling four-point stars.
+    - Sprites are cached by armor key.
+  - **Colours:** once a bird has a piece, its card's new Armor panel lets you pick any of 9 dyes (Original, Gold, Silver, Obsidian, Crimson, Cobalt, Jade, Rose, Sunset), free. The panel also lists every piece with its ability and how many level-ups the locked ones need.
+  - **Rivals:** their birds wear armor by level (as if caught at Lv10), in each rival's signature colour (Wren jade, Gale cobalt, Mara rose, Hawkins silver, Professor Woods gold). Wild challengers wear armor too.
+  - **Where armor shows:** battle sprites on both sides, the Aviary, BirdDex, the Bird Box, the journal spread and challenge pop-ups. After a winning battle the level-up line announces a new piece ("🛡 New armor: …"), or how many level-ups until the next one. The battle rulebook has an Armor section.
+  - **Level cap 50:** birds can no longer be stored above Lv50 (new sightings were allowed up to 100; existing saves are clamped). Trainer level also caps at 50 and shows "Max level!".
+  - **Aviary holds 10:**
+    - With more birds waiting in the Bird Box, every 3 hours the bird that's been in longest flies off to rest and the one that's rested longest flies in (`rotateAviary`, checked every minute while the Aviary is open), with a toast.
+    - New catches always fly in and swap out the longest resident.
+    - "To aviary" on a full Aviary swaps instead of refusing.
+    - Saves with more than 10 move the extras to the Bird Box, resting.
+    - Swaps animate as fly-off and fly-in instead of rebuilding the scene.

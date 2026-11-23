@@ -9,6 +9,7 @@ import { drawFrame, onTick } from '../ui/components';
 import { feederOf, perchOf } from '../core/decor';
 import { paintFeederDef, paintPerchDef, mixKey, type FeederMix } from './decor';
 import type { Food } from '../core/pets';
+import type { ArmorLook } from '../core/armor';
 
 const C = (n: keyof typeof IDX) => HEX[IDX[n]];
 
@@ -430,7 +431,7 @@ export class Diorama {
     return this.L.perches.filter((q) => !taken.has(q) && q.kind !== 'water');
   }
 
-  add(key: string, sp: Species, parts: number[], opts: { arrive?: boolean; stay?: number; seed?: number; hp?: number } = {}): Bird | null {
+  add(key: string, sp: Species, parts: number[], opts: { arrive?: boolean; stay?: number; seed?: number; hp?: number; armor?: ArmorLook | null } = {}): Bird | null {
     let free = this.freePerches(sp);
     const seed = opts.seed ?? 0;
     if (!free.length) { // every perch taken: make room on the ground
@@ -443,7 +444,7 @@ export class Diorama {
     const from: [number, number] = [fromLeft ? -40 : this.W + 8, Math.max(10, perch.y - 90)];
     const placed = opts.arrive === false;
     const b: Bird = {
-      key, sp, frames: renderFrames(sp, parts), perch, x: placed ? perch.x : from[0], y: placed ? perch.y : from[1],
+      key, sp, frames: renderFrames(sp, parts, { armor: opts.armor }), perch, x: placed ? perch.x : from[0], y: placed ? perch.y : from[1],
       state: placed ? 'perched' : 'arriving', t0: now, from, leaveAt: opts.stay ? now + opts.stay : Infinity,
       flip: placed ? seed % 2 === 1 : !fromLeft, settledAt: placed ? now : 0, seed,
       blinkAt: now + 2000 + (seed % 5000), actionAt: now + 4000 + (seed % 7000), hp: opts.hp,
@@ -452,6 +453,11 @@ export class Diorama {
     this.onChange?.();
     return b;
   }
+
+  /** Keys of the birds still in the scene (not flown off). */
+  keys(): string[] { return this.birds.filter((b) => b.state !== 'gone' && b.state !== 'leaving').map((b) => b.key); }
+  /** Send one bird flying off (Aviary swaps). */
+  dismiss(key: string) { const b = this.birds.find((x) => x.key === key && x.state !== 'gone'); if (b) this.leave(b); }
 
   leave(b: Bird) { if (b.state === 'gone' || b.state === 'leaving') return; b.state = 'leaving'; b.t0 = performance.now(); b.flip = b.perch.x < this.W / 2; this.onChange?.(); }
 

@@ -1,7 +1,7 @@
 import { FoodIcon } from '../FoodIcon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNav } from '../nav';
-import { useGame, getState, counts, speciesOf, speciesCount, setBiome, setHome, ownsHome, buyHome, toggleHabitatBird, setState, claimChallenge, refreshChallenges, buyFood, buyLens, equipLens, collectAviary, petBird, partnerPet, birdName, nameBird, fillFeeder, tickFeeder } from '../../app/store';
+import { useGame, getState, counts, speciesOf, speciesCount, setBiome, setHome, ownsHome, buyHome, toggleHabitatBird, rotateAviary, setState, claimChallenge, refreshChallenges, buyFood, buyLens, equipLens, collectAviary, petBird, partnerPet, birdName, nameBird, fillFeeder, tickFeeder } from '../../app/store';
 import { FOODS, Food, hpNow, mood, MOOD_LINE, FEEDER_CAP, AVIARY_MAX, Meal, layersOf, type FeederState } from '../../core/pets';
 import type { FeederMix } from '../../render/decor';
 import { getRegion, regionLabel } from '../../data/geo';
@@ -13,6 +13,8 @@ import { LensList } from '../LensList';
 import { factsFor } from '../../data/facts';
 import { PageHeader, Segmented, Alert, FeatherChip } from '../kit';
 import { MerlinSays } from '../MerlinSays';
+import { lookOfSighting } from '../../core/gear';
+import { armorKey } from '../../core/armor';
 import { FeederShop, useShopRequest, type ShopTab } from './Shop';
 import { Diorama, SCENES, paintHomeThumb, homePrice } from '../../render/diorama';
 import { FeatherIcon } from '../FeatherIcon';
@@ -71,6 +73,8 @@ export function HabitatTab() {
   const now = new Date();
   const phase = dayPhase(now, sunTimes(now, region.lat, region.lng));
   const aviary = st.diorama.birds.map((id) => st.sightings.find((s) => s.id === id)).filter(Boolean) as typeof st.sightings;
+  // rebuild the scene when anyone's armor changes (a level-up or a new dye)
+  const armorSig = aviary.map((x) => `${x.id}:${armorKey(lookOfSighting(speciesOf(x), x))}`).join();
   const box = st.sightings.filter((s) => !st.diorama.birds.includes(s.id));
   const fill = st.feeder.level / FEEDER_CAP;
   const mixOf = (f: FeederState): FeederMix => layersOf(f).map((l) => ({ food: l.food, k: l.pts / FEEDER_CAP }));
@@ -107,10 +111,23 @@ export function HabitatTab() {
     setSceneLabel(d.scene.label);
     const partner = st.partner ? allKnownSpecies().find((x) => x.id === st.partner!.speciesId) : null;
     if (partner && st.partner) d.add('partner', partner, st.partner.parts, { arrive: false, seed: 1, hp: hpNow(partnerPet(st)!) });
-    aviary.forEach((s, i) => d.add(s.id, speciesOf(s), s.sprite.parts, { arrive: false, seed: i * 7 + 3, hp: hpNow(s) }));
+    aviary.forEach((s, i) => d.add(s.id, speciesOf(s), s.sprite.parts, { arrive: false, seed: i * 7 + 3, hp: hpNow(s), armor: lookOfSighting(speciesOf(s), s) }));
     d.start();
     return () => { d.dispose(); dio.current = null; };
-  }, [st.diorama.biome, st.diorama.home, st.diorama.feeder, st.diorama.perch, aviary.map((p) => p.id).join(), reduced, dims]);
+  }, [st.diorama.biome, st.diorama.home, st.diorama.feeder, st.diorama.perch, armorSig, reduced, dims]);
+  // birds that swap in and out fly in and off, instead of the whole scene being rebuilt
+  useEffect(() => {
+    const d = dio.current; if (!d) return;
+    const have = new Set(d.keys());
+    aviary.forEach((s, i) => { if (!have.has(s.id)) d.add(s.id, speciesOf(s), s.sprite.parts, { arrive: true, seed: i * 7 + 3, hp: hpNow(s), armor: lookOfSighting(speciesOf(s), s) }); });
+    for (const k of have) if (k !== 'partner' && !aviary.some((s) => s.id === k)) d.dismiss(k);
+  }, [aviary.map((p) => p.id).join()]);
+  // every so often, if more birds are waiting in the Bird Box, one swaps in
+  useEffect(() => {
+    const go = () => { const r = rotateAviary(); if (r) { const a = st.sightings.find((x) => x.id === r.in), b = st.sightings.find((x) => x.id === r.out); if (a && b) nav.toast(`${speciesOf(b).common} flew off to rest. ${speciesOf(a).common} flew in!`); } };
+    const t0 = setTimeout(go, 2500), t = setInterval(go, 60000);
+    return () => { clearTimeout(t0); clearInterval(t); };
+  }, []);
   useEffect(() => { dio.current?.setFeeder(mix); }, [mixSig]);
 
   const hungry = aviary.filter((x) => hpNow(x) < 30).length;
@@ -265,14 +282,14 @@ export function HabitatTab() {
       {sheet === 'box' && (
         <Sheet onClose={() => setSheet(null)} label="Bird Box">
           <h3 className="mb8">Bird Box · {box.length}</h3>
-          <p className="small muted" style={{ marginTop: 0 }}>Birds resting here don't get hungry. Up to {AVIARY_MAX} birds can live in the Aviary, where they eat from the feeder and earn you Feather Coins.</p>
+          <p className="small muted" style={{ marginTop: 0 }}>Birds resting here don't get hungry. Up to {AVIARY_MAX} birds live in the Aviary at a time, eating from the feeder and earning you Feather Coins. With more birds than that, they take turns: every few hours the one that’s been in longest flies off to rest and another flies in.</p>
           {[...aviary, ...box].map((s) => {
             const here = st.diorama.birds.includes(s.id);
             return (
               <div key={s.id} className="srow">
-                <Sprite species={speciesOf(s)} parts={s.sprite.parts} scale={1} mode="static" />
+                <Sprite species={speciesOf(s)} parts={s.sprite.parts} armor={lookOfSighting(speciesOf(s), s)} scale={1} mode="static" />
                 <span className="grow"><span className="name">{birdName(s.id, st)}</span>{s.nickname ? <span className="small muted"> · {speciesOf(s).common}</span> : null}<br /><span style={{ display: 'block', width: 120 }}><HpBar hp={hpNow(s)} compact /></span></span>
-                <button className="btn small" onClick={() => { if (!toggleHabitatBird(s.id)) nav.toast(`The Aviary holds ${AVIARY_MAX} birds. Move one to the Bird Box first.`); }}>{here ? 'To box' : 'To aviary'}</button>
+                <button className="btn small" onClick={() => { const full = !here && st.diorama.birds.length >= AVIARY_MAX; const out = full ? st.sightings.find((x) => x.id === st.diorama.birds[0]) : null; toggleHabitatBird(s.id); if (out) nav.toast(`${speciesOf(out).common} flew off to the Bird Box to make room.`); }}>{here ? 'To box' : 'To aviary'}</button>
               </div>
             );
           })}
@@ -324,7 +341,7 @@ export function YouTab() {
           </div>
         </div>
         <div className="mt16"><Meter value={trainerLevel(st.xp).progress * 100} tone="sun" label="Progress to next level" /></div>
-        <div className="row between small mt8"><span className="num">{st.xp} XP</span><span className="muted">{trainerLevel(st.xp).nextXp - st.xp} XP to Lv {trainerLevel(st.xp).level + 1}</span></div>
+        <div className="row between small mt8"><span className="num">{st.xp} XP</span><span className="muted">{trainerLevel(st.xp).max ? 'Max level!' : `${trainerLevel(st.xp).nextXp - st.xp} XP to Lv ${trainerLevel(st.xp).level + 1}`}</span></div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', textAlign: 'center', marginTop: 12, borderTop: '2px solid #000', paddingTop: 10 }}>
           <div><div className="num" style={{ fontSize: 16 }}>{life.length}</div><div className="label" style={{ fontSize: 10 }}>Species</div></div>
           <div><div className="num" style={{ fontSize: 16 }}>{st.sightings.length}</div><div className="label" style={{ fontSize: 10 }}>Sightings</div></div>

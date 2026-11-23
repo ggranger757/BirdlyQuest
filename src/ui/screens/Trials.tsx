@@ -1,6 +1,8 @@
 // Field Trials v3: fast, Step Quest-style bird battles with a modern HUD. One tap a turn:
 // Quick move · Signature skill (a real-life talent) · Guard · Snack, plus a Super gauge and Run.
 // HP reaching 0 means the bird flies off to rest; nobody gets hurt.
+import { piecesFor, earnedLevelUps, themeFor, type ArmorLook } from '../../core/armor';
+import { setOfSighting } from '../../core/gear';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useNav } from '../nav';
 import { useGame, getState, counts, speciesOf, finishTrial, finishWild, noteBattle, spendTrialItem, spendTicket } from '../../app/store';
@@ -151,6 +153,7 @@ function BattleGuide() {
       {sec(5, 'Super meter', <p>The <b>Super</b> bar fills when you attack, Guard or take a hit. When it says <b>Ready!</b>, tap it for a huge hit.</p>)}
       {sec(6, 'Watch for “!”', <p>A rival bird showing a red <b>!</b> is powering up a <b>Big Move</b>. Choose <b>Guard</b> that turn.</p>)}
       {sec(7, 'Bond', <p>Your trainer level makes every bird you bring stronger: +1% HP and power per level after Lv1, up to +30%. You’re Lv{tlv}, so your birds get <b>+{pct}%</b>. Log birds to level up.</p>)}
+      {sec(9, 'Armor', <p>Birds don’t evolve, they gear up. Every few level-ups a bird earns a new piece of armor in its own theme: a necklace, then a helmet, a chestplate and more, up to a glowing aura. Each piece adds an ability, like an extra skill use or less damage taken. Rival birds wear armor too, more the higher their level. See and recolour a bird’s armor on its card.</p>)}
       {sec(8, 'Trial Tickets', <p>Each rival battle uses 1 ticket; your very first battle is free. Every bird you log earns 1 (you can hold {TICKETS.max}). Challenges that appear after a new find are free.</p>)}
     </div>
   );
@@ -174,6 +177,9 @@ export function Face({ face, merlin, name, size = 56, className, tall }: { face?
 }
 
 /** The player's birds: best photo of each species, plus the partner bird. */
+/** How a contender's armor looks. */
+const lookOf = (c: Contender): ArmorLook => ({ theme: themeFor(c.sp, birdStyle(c.sp)), pieces: c.armor ?? 0, dye: c.dye });
+
 function useTeam(): Contender[] {
   const sightings = useGame((s) => s.sightings);
   const partner = useGame((s) => s.partner);
@@ -181,7 +187,7 @@ function useTeam(): Contender[] {
     const best = new Map<string, Contender>();
     for (const x of sightings) {
       if (!counts(x) || !x.speciesId) continue;
-      const c: Contender = { sp: speciesOf(x), level: x.level ?? 5, quality: x.fieldcraft?.total ?? 40, parts: x.sprite?.parts, sightingId: x.id };
+      const c: Contender = { sp: speciesOf(x), level: Math.min(50, x.level ?? 5), quality: x.fieldcraft?.total ?? 40, parts: x.sprite?.parts, sightingId: x.id, armor: piecesFor(earnedLevelUps(x)), dye: x.armorDye };
       const prev = best.get(x.speciesId);
       if (!prev || c.level + c.quality / 10 > prev.level + prev.quality / 10) best.set(x.speciesId, c);
     }
@@ -209,7 +215,7 @@ export function Trials({ wild }: { wild?: string }) {
   const [party, setParty] = useState<Contender[]>(() => {
     if (!wild) return [];
     const x = sightings.find((s) => s.id === wild);
-    const lead: Contender | null = x && x.speciesId ? { sp: speciesOf(x), level: x.level ?? 5, quality: x.fieldcraft?.total ?? 40, parts: x.sprite?.parts, sightingId: x.id } : null;
+    const lead: Contender | null = x && x.speciesId ? { sp: speciesOf(x), level: Math.min(50, x.level ?? 5), quality: x.fieldcraft?.total ?? 40, parts: x.sprite?.parts, sightingId: x.id, armor: piecesFor(earnedLevelUps(x)), dye: x.armorDye } : null;
     return lead ? [lead, ...team.filter((c) => c.sp.id !== lead.sp.id).slice(0, 2)] : team.slice(0, 3);
   });
   const [outcome, setOutcome] = useState<{ won: boolean; prize: Prize } | null>(null);
@@ -352,7 +358,7 @@ function Party({ setup, size, team, party, setParty, onGo, bond }: { setup: Setu
             <button key={c.sp.id} role="listitem" className={`tpick ${at >= 0 ? 'on' : ''}`} onClick={() => toggle(c)} aria-pressed={at >= 0}
               aria-label={`${c.sp.common}, level ${f.c.level}, ${f.max} HP. Signature skill: ${f.skill.name}, ${f.skill.tag}.`}>
               {at >= 0 && <span className="tpick-tag">{at === 0 ? 'Lead' : at + 1}</span>}
-              <Sprite species={c.sp} parts={c.parts} scale={2} mode="static" />
+              <Sprite species={c.sp} parts={c.parts} armor={lookOf(c)} scale={2} mode="static" />
               <span className="tpick-name">{c.sp.common}</span>
               <span className="tpick-lv">Lv{f.c.level} · {f.max} HP</span>
               <span className="tpick-skill" style={{ ['--c' as string]: CONTESTS[f.skill.style].color }}>{f.skill.name}</span>
@@ -641,7 +647,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
           <span className="tplat" aria-hidden />
           <div className={`tbird ${foe.anim} ${charging ? 'charging' : ''}`}>
             {charging && <span className="twarn" aria-hidden>!</span>}
-            <span className="tbody"><Sprite species={them.c.sp} scale={3} mode="fly" flapMs={foe.anim === 'lunge' ? 38 : 92} flip /></span>
+            <span className="tbody"><Sprite species={them.c.sp} armor={lookOf(them.c)} scale={3} mode="fly" flapMs={foe.anim === 'lunge' ? 38 : 92} flip /></span>
             {fx?.side === 'foe' && <Fx key={fx.key} sheet={fx.sheet} scale={fx.scale} ms={480} className="tboom" />}
             {pops.filter((p) => p.side === 'foe').map((p) => <span key={p.id} className={`tpop ${p.kind}`}>{p.text}</span>)}
           </div>
@@ -649,7 +655,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
         <div className={`tspot you ${you.hidden ? 'gone' : ''}`}>
           <span className="tplat" aria-hidden />
           <div className={`tbird ${you.anim}`}>
-            <span className="tbody"><Sprite species={me.c.sp} parts={me.c.parts} scale={5} mode="fly" flapMs={you.anim === 'lunge' ? 38 : 92} /></span>
+            <span className="tbody"><Sprite species={me.c.sp} parts={me.c.parts} armor={lookOf(me.c)} scale={5} mode="fly" flapMs={you.anim === 'lunge' ? 38 : 92} /></span>
             {fx?.side === 'you' && <Fx key={fx.key} sheet={fx.sheet} scale={fx.scale} ms={480} className="tboom" />}
             {pops.filter((p) => p.side === 'you').map((p) => <span key={p.id} className={`tpop ${p.kind}`}>{p.text}</span>)}
           </div>
@@ -739,7 +745,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
             {bench.map(({ f, i }) => (
               <button key={i} className="tact snackrow" onClick={() => pick({ kind: 'swap', to: i })}
                 aria-label={`Swap in ${f.c.sp.common}, level ${f.c.level}, ${f.hp} of ${f.max} HP`}>
-                <span className="tact-ic" aria-hidden><Sprite species={f.c.sp} parts={f.c.parts} scale={1} mode="static" /></span>
+                <span className="tact-ic" aria-hidden><Sprite species={f.c.sp} parts={f.c.parts} armor={lookOf(f.c)} scale={1} mode="static" /></span>
                 <span className="tact-txt"><b>{f.c.sp.common}</b><small>Lv{f.c.level} · {f.hp}/{f.max} HP · {CONTESTS[f.style].name}</small></span>
                 <Edge move={f.style} vs={them.style} />
               </button>
@@ -789,13 +795,21 @@ function Result({ setup, won, prize, party, wild, onRematch, onLadder, onNext }:
         <div className="tlevels">
           {party.filter((c) => c.sightingId && prize.levelled.includes(c.sightingId)).map((c) => {
             const learned = learnedBetween(c.sp, c.level, c.level + 1), next = nextUnlock(c.sp, c.level + 1);
+            // armor: did this level-up bring a new piece?
+            const x = getState().sightings.find((s) => s.id === c.sightingId);
+            const set = x ? setOfSighting(c.sp, x) : null;
+            const nowPieces = set ? set.pieces.filter((p) => p.owned).length : c.armor ?? 0;
+            const gained = set && nowPieces > (c.armor ?? 0) ? set.pieces[nowPieces - 1] : null;
+            const nextPiece = set?.pieces.find((p) => !p.owned);
             return (
-              <div key={c.sp.id} className={`tlevel ${learned.length ? 'learned' : ''}`}>
-                <Sprite species={c.sp} parts={c.parts} scale={2} mode="idle" />
+              <div key={c.sp.id} className={`tlevel ${learned.length || gained ? 'learned' : ''}`}>
+                <Sprite species={c.sp} parts={c.parts} armor={{ ...lookOf(c), pieces: nowPieces }} scale={2} mode="idle" />
                 <span>
                   <b>{c.sp.common}</b> grew to Lv{c.level + 1}!
                   {learned.map((u) => <span key={u.kind} className="tlearn">★ {u.text}!</span>)}
-                  {!learned.length && next && <small className="muted"> Next: {next.name} at Lv{next.level}</small>}
+                  {gained && <span className="tlearn tarmor-new">🛡 New armor: {gained.name}: <b>{gained.abilityName}</b> ({gained.ability})</span>}
+                  {!learned.length && !gained && nextPiece && set && <small className="muted"> Next armor: {nextPiece.label} in {nextPiece.at - set.ups} level-up{nextPiece.at - set.ups === 1 ? '' : 's'}</small>}
+                  {!learned.length && !gained && !nextPiece && next && <small className="muted"> Next: {next.name} at Lv{next.level}</small>}
                 </span>
               </div>
             );

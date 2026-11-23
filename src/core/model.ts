@@ -31,7 +31,8 @@ export interface Sighting {
   timesSeen: number;
   note: string;
   analysisMs?: number;
-  level?: number;                // collector-style level (5 + fieldcraft/5, +1 per repeat)
+  level?: number;                // collector-style level (5 + fieldcraft/5, +1 per repeat; max 50)
+  armorDye?: string;             // armor colour the player picked (v1.37; see core/armor DYES)
   dex?: number;                  // regional BirdDex number at time of catch
   pet?: { hp: number; at: string; resting?: boolean }; // health at `at`; drains only while living in the Aviary
 }
@@ -58,7 +59,7 @@ export interface GameState {
   badges: Record<string, string>;       // id → earned ISO
   challenges: { day: string; daily: ChallengeSlot[]; week: string; weekly: ChallengeSlot | null; seasonal: ChallengeSlot | null; history: Record<string, string[]> };
   events: { sitSpots: string[]; shares: string[] };
-  diorama: { biome: Habitat; home?: string /* chosen Bird Home scene id; unset = follows time of day */; birds: string[]; decor: Record<string, string>; feeder?: string /* feeder design in use */; perch?: string /* perch in use */ }; // `decor` is legacy
+  diorama: { biome: Habitat; home?: string /* chosen Bird Home scene id; unset = follows time of day */; birds: string[]; decor: Record<string, string>; feeder?: string /* feeder design in use */; perch?: string /* perch in use */; rotatedAt?: string /* last Aviary swap (v1.37) */ }; // `decor` is legacy
   ownedDecor: string[];                // feeders and perches bought in Woods' Shop (v1.28)
   ownedHomes?: string[];               // Bird Homes bought in Woods' Shop (v1.28)
   settings: Settings;

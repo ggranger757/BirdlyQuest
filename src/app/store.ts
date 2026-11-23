@@ -18,7 +18,7 @@ import { sunTimes, dayPhase } from '../core/sun';
 import { deltaE2000 } from '../core/color';
 import { PAL_LAB } from '../core/color';
 import { P } from '../core/pixel/archetypes';
-import { FOODS, Food, hpNow, visitFeeder, rest, wake, Meal, AVIARY_MAX, FEEDER_CAP, layersOf, pourLayers, eatLayers } from '../core/pets';
+import { FOODS, Food, hpNow, visitFeeder, rest, wake, Meal, AVIARY_MAX, ROTATE_MS, FEEDER_CAP, layersOf, pourLayers, eatLayers } from '../core/pets';
 import { RIVALS, rewardFor, WILD, TICKETS, ticketsOf, battleIsFree } from '../core/trials';
 import { loadState, saveState, putPhoto, getPhoto, photoKeys, deletePhoto as dbDeletePhoto, forgetPhotoURL } from './db';
 
@@ -69,6 +69,12 @@ export function logEvent(e: string, d?: unknown) {
 
 function adopt(saved: GameState | undefined) {
   if (saved && saved.version) state = { ...freshState(), ...saved, settings: { ...freshState().settings, ...saved.settings }, items: { ...freshState().items, ...(saved.items ?? {}) }, feeder: saved.feeder ?? freshState().feeder, stats: { ...freshState().stats, ...(saved.stats ?? {}) }, badgeQueue: saved.badgeQueue ?? [], lenses: saved.lenses?.length ? saved.lenses : ['ripple'], lens: saved.lens ?? 'ripple' };
+  // v1.37: birds cap at Lv50; the Aviary holds 10 (extra residents go back to the Bird Box, in arrival order)
+  if (state.sightings.some((x) => (x.level ?? 0) > 50)) state = { ...state, sightings: state.sightings.map((x) => ((x.level ?? 0) > 50 ? { ...x, level: 50 } : x)) };
+  if (state.diorama.birds.length > AVIARY_MAX) {
+    const out = new Set(state.diorama.birds.slice(0, -AVIARY_MAX)), now = new Date();
+    state = { ...state, diorama: { ...state.diorama, birds: state.diorama.birds.slice(-AVIARY_MAX) }, sightings: state.sightings.map((x) => (out.has(x.id) ? rest(x, now) : x)) };
+  }
   // The Legendary lens tier was retired (v1.25): refund what each one cost and fall back to a lens still owned.
   // v1.28: Bird Homes are bought now. Whatever home a player already uses stays theirs; High Street was retired.
   if (!state.ownedHomes) state = { ...state, ownedHomes: state.diorama.home && state.diorama.home !== 'c2' ? [state.diorama.home] : [] };
@@ -222,7 +228,7 @@ export async function fileCatch(input: CatchInput): Promise<CatchResult> {
     fieldcraft: fc ? { total: fc.total, sharpness: fc.sharpness, exposure: fc.exposure, size: fc.size, framing: fc.framing, separation: fc.separation } : null,
     coaching: fc?.coaching ?? [], rarity, xp, feathers, sprite, palette, photoId, firstRecord, newPlumage,
     timesSeen: prior.length + 1, note: '',
-    level: Math.min(100, 5 + Math.round((fc?.total ?? 40) / 5) + prior.length),
+    level: Math.min(50, 5 + Math.round((fc?.total ?? 40) / 5) + prior.length), // level cap 50
     dex: regionEntries(state.region).find((e) => e.sp.id === sp.id)?.dex,
     pet: { hp: 80, at: at.toISOString() },
   };
@@ -242,7 +248,11 @@ export async function fileCatch(input: CatchInput): Promise<CatchResult> {
   // new catches move into the Aviary while there is room; otherwise they rest in the Bird Box
   if (seen) { /* seen-only logs stay in your journal, not the Aviary */ }
   else if (next.diorama.birds.length < AVIARY_MAX) next.diorama = { ...next.diorama, birds: [...next.diorama.birds, id] };
-  else next.sightings = next.sightings.map((x) => (x.id === id ? rest(x, at) : x));
+  else { // full: the new bird flies in and the one that's been there longest flies off to the Bird Box
+    const out = next.diorama.birds[0];
+    next.diorama = { ...next.diorama, birds: [...next.diorama.birds.slice(1), id] };
+    next.sightings = next.sightings.map((x) => (x.id === out ? rest(x, at) : x));
+  }
   const earned = newlyEarned(next);
   if (earned.length) {
     const badges = { ...next.badges };
@@ -326,14 +336,41 @@ export function claimChallenge(slot: ChallengeSlot) {
 export function recordSitSpot() { setState((s) => ({ ...s, events: { ...s.events, sitSpots: [...s.events.sitSpots.slice(-30), dayKey(new Date())] } })); }
 export function recordShare() { setState((s) => ({ ...s, events: { ...s.events, shares: [...s.events.shares.slice(-30), dayKey(new Date())] } })); logEvent('share_created'); after(0); }
 
-export function toggleHabitatBird(id: string): boolean {
-  const has = state.diorama.birds.includes(id);
-  if (!has && state.diorama.birds.length >= AVIARY_MAX) return false;
-  const now = new Date();
+/** Move a bird between the Aviary and the Bird Box. When the Aviary is full, the bird that's been there longest swaps out.
+ *  Returns false only if nothing changed; otherwise true (and `swappedOut` names the sighting that flew off, if any). */
+export let swappedOut: string | null = null;
+/** Birds take turns in the Aviary: when it's full and others wait in the Bird Box, every few hours the bird that's
+ *  been in longest flies off and the one that's rested longest flies in. Returns who swapped, or null. */
+export function rotateAviary(now = new Date()): { out: string; in: string } | null {
+  const ids = state.diorama.birds;
+  if (!state.diorama.rotatedAt) { setState((s) => ({ ...s, diorama: { ...s.diorama, rotatedAt: now.toISOString() } })); return null; }
+  if (ids.length < AVIARY_MAX || now.getTime() - Date.parse(state.diorama.rotatedAt) < ROTATE_MS) return null;
+  const box = state.sightings.filter((x) => counts(x) && x.pet?.resting && !ids.includes(x.id))
+    .sort((a, b) => Date.parse(a.pet!.at) - Date.parse(b.pet!.at));
+  if (!box.length) return null;
+  const out = ids[0], inn = box[0].id;
   setState((s) => ({
     ...s,
-    diorama: { ...s.diorama, birds: has ? s.diorama.birds.filter((b) => b !== id) : [...s.diorama.birds, id] },
-    sightings: s.sightings.map((x) => (x.id === id ? (has ? rest(x, now) : wake(x, now)) : x)),
+    diorama: { ...s.diorama, birds: [...s.diorama.birds.filter((b) => b !== out), inn], rotatedAt: now.toISOString() },
+    sightings: s.sightings.map((x) => (x.id === out ? rest(x, now) : x.id === inn ? wake(x, now) : x)),
+  }));
+  return { out, in: inn };
+}
+
+/** Recolour a bird's armor (any dye from core/armor DYES; 'theme' restores the original colours). */
+export function setArmorDye(id: string, dye: string) {
+  setState((s) => ({ ...s, sightings: s.sightings.map((x) => (x.id === id ? { ...x, armorDye: dye === 'theme' ? undefined : dye } : x)) }));
+}
+
+export function toggleHabitatBird(id: string): boolean {
+  const has = state.diorama.birds.includes(id);
+  const now = new Date();
+  const out = !has && state.diorama.birds.length >= AVIARY_MAX ? state.diorama.birds[0] : null;
+  swappedOut = out;
+  setState((s) => ({
+    ...s,
+    diorama: { ...s.diorama, birds: has ? s.diorama.birds.filter((b) => b !== id) : [...s.diorama.birds.filter((b) => b !== out), id] },
+    sightings: s.sightings.map((x) => (x.id === id ? (has ? rest(x, now) : wake(x, now)) : x.id === out ? rest(x, now) : x)),
   }));
   after(0);
   return true;

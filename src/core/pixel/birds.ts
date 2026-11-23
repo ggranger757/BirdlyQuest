@@ -7,6 +7,8 @@ import { P } from './archetypes';
 import { IDX } from '../palette';
 import { PAL_LAB, rgbToLab, type Lab } from '../color';
 import type { Species } from '../../data/types';
+import type { ArmorLook } from '../armor';
+import { armorize } from './armor';
 
 /** A 32×32 frame: indices into its own colour table (`pal`); 255 = clear. */
 export type Frame = Uint8Array & { pal: [number, number, number][] };
@@ -215,7 +217,7 @@ const shift = (pxs: Px[], dx: number, dy: number, which: (p: Px) => boolean, kee
   return [...(keep ? pxs : pxs.filter((p) => !which(p))), ...moved];
 };
 
-export function birdFrames(sp: Species, parts: number[], defaults: number[]): Frame[] {
+export function birdFrames(sp: Species, parts: number[], defaults: number[], armor?: ArmorLook | null): Frame[] {
   const fname = formFor(sp), f = FORMS[fname] ?? FORMS.song, family = fname.split('-')[0];
   const base = birdPixels(sp, parts, defaults);
   const isHead = (p: Px) => HEADISH.has(p.part) || (p.part === P.BIB && f.eye != null && p.y <= f.eye[1] + 3);
@@ -250,5 +252,5 @@ export function birdFrames(sp: Species, parts: number[], defaults: number[]): Fr
       frames.push([...farW.filter((p) => !occupied.has(p.y * 32 + p.x)), ...b, ...wingPixels(sx, sy + dy, ang, len, 1, wingCols, false)]);
     }
   }
-  return pack(frames);
+  return pack(armor && armor.pieces > 0 ? (armorize(frames, armor, f) as Px[][]) : frames);
 }

@@ -7,7 +7,8 @@ export const MIN_HP = 10;
 export const DRAIN_PER_HOUR = 0.7;   // full → hungry (<30) in about 4 days without food
 export const EAT_BELOW = 80;         // birds visit the feeder once they drop below this
 export const FEEDER_CAP = 200;       // feeder holds this many food points
-export const AVIARY_MAX = 12;
+export const AVIARY_MAX = 10; // v1.37: 10 at a time; with more birds, they take turns (see rotateAviary)
+export const ROTATE_MS = 3 * 3600_000; // a swap every 3 hours
 
 export type Food = 'seeds' | 'berries' | 'worms';
 /** Bags you buy with Feather Coins and pour into the feeder. Bigger bags are better value. */

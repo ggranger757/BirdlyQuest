@@ -47,10 +47,12 @@ export function rankFor(xp: number) {
 }
 
 /** Trainer level: finer-grained than ranks, so there is always a next level in reach. */
+export const TRAINER_MAX = 50; // level cap (v1.37)
 export function trainerLevel(xp: number) {
-  const lv = 1 + Math.floor(Math.sqrt(Math.max(0, xp) / 30));
+  const lv = Math.min(TRAINER_MAX, 1 + Math.floor(Math.sqrt(Math.max(0, xp) / 30)));
   const at = (l: number) => (l - 1) * (l - 1) * 30;
-  return { level: lv, progress: (xp - at(lv)) / (at(lv + 1) - at(lv)), nextXp: at(lv + 1) };
+  if (lv >= TRAINER_MAX) return { level: lv, progress: 1, nextXp: at(lv), max: true };
+  return { level: lv, progress: (xp - at(lv)) / (at(lv + 1) - at(lv)), nextXp: at(lv + 1), max: false };
 }
 
 /** Snap Power as a letter grade players read at a glance. */
