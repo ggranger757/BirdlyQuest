@@ -13,7 +13,7 @@ import { LensList } from '../LensList';
 import { factsFor } from '../../data/facts';
 import { PageHeader, Segmented, Alert, FeatherChip } from '../kit';
 import { MerlinSays } from '../MerlinSays';
-import { ShopPanel, useShopRequest, openShop } from './Shop';
+import { FeederShop, useShopRequest, type ShopTab } from './Shop';
 import { Diorama, SCENES, paintHomeThumb, homePrice } from '../../render/diorama';
 import { FeatherIcon } from '../FeatherIcon';
 import { FEEDERS, PERCHES, feederOf, perchOf, type DecorDef } from '../../core/decor';
@@ -39,12 +39,12 @@ export function HabitatTab() {
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
   const [sheet, setSheet] = useState<'box' | null>(null);
   const [section, setSection] = useState<'birds' | 'feeder'>('birds');
-  const [shopTab, setShopTab] = useState<'feeders' | 'perches' | 'homes' | 'lenses'>('feeders');
-  const feederRef = useRef<HTMLDivElement>(null), shopRef = useRef<HTMLDivElement>(null);
-  /** Show the feeder (food) or the shop, in the Feeder & Shop section, scrolled into view. */
-  const goShop = (tab?: 'food' | 'feeders' | 'perches' | 'homes' | 'lenses') => {
-    setSection('feeder'); if (tab && tab !== 'food') setShopTab(tab);
-    setTimeout(() => (tab === 'food' ? feederRef : shopRef).current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+  const [shopCat, setShopCat] = useState<ShopTab>('food');
+  const sectionRef = useRef<HTMLElement>(null);
+  /** Show the Feeder & Shop page (on a category), scrolled into view. */
+  const goShop = (tab?: ShopTab) => {
+    setSection('feeder'); if (tab) setShopCat(tab);
+    setTimeout(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
   };
   useShopRequest(goShop);
   const [sceneLabel, setSceneLabel] = useState('');
@@ -116,7 +116,6 @@ export function HabitatTab() {
   const hungry = aviary.filter((x) => hpNow(x) < 30).length;
   const bags = (Object.keys(FOODS) as Food[]).reduce((n, f) => n + st.items[f], 0);
   const fillOrShop = () => goShop('food');
-  const pour = (f: Food) => { const n = fillFeeder(f); if (n) { sfx.page(); haptic(12); nav.toast(`Poured ${FOODS[f].name} into the feeder (+${n})`); setTimeout(runFeeder, 600); } };
   return (
     <div className="screen with-tabs">
       <PageHeader title="Aviary" sub={`${aviary.length}/${AVIARY_MAX} birds · feeder ${Math.round(fill * 100)}% full`}
@@ -243,46 +242,10 @@ export function HabitatTab() {
       )}
 
       {section === 'feeder' && (
-        <section aria-label="Feeder and shop">
-          {/* the feeder: how full it is, and every food with Pour and Buy, one tap each */}
-          <div ref={feederRef} className={`panel feeder-card ${fill <= 0.25 ? 'low' : ''}`}>
-            <div className="feeder-top">
-              <span className="feeder-frame"><DecorThumb def={feederOf(st.diorama.feeder)} size={80} /></span>
-              <div className="grow" style={{ minWidth: 0 }}>
-                <div className="row between"><b className="feeder-name">{feederOf(st.diorama.feeder).name}</b><span className="num small">{st.feeder.level}/{FEEDER_CAP}</span></div>
-                <div className="feeder-meter" role="meter" aria-label="Feeder level" aria-valuemin={0} aria-valuemax={FEEDER_CAP} aria-valuenow={st.feeder.level}>
-                  <i style={{ width: `${fill * 100}%`, background: fill > 0.25 ? 'var(--warbler)' : 'var(--oriole)' }} />
-                </div>
-                <p className="small feeder-status">
-                  {st.feeder.level === 0 ? 'Empty! Your birds go hungry until you pour some food in.'
-                    : st.feeder.level >= FEEDER_CAP ? 'Full to the brim.'
-                    : `About ${Math.max(1, Math.round(st.feeder.level / Math.max(1, aviary.length * 17)))} day(s) of food for ${aviary.length || 1} bird${aviary.length === 1 ? '' : 's'}.`}
-                </p>
-              </div>
-            </div>
-            <div className="food-rows">
-              {(Object.keys(FOODS) as Food[]).map((f) => {
-                const have = st.items[f] ?? 0, price = FOODS[f].price;
-                return (
-                  <div key={f} className="food-row">
-                    <FoodIcon food={f} size={34} />
-                    <span className="food-info"><b>{FOODS[f].name}</b><span className="small muted">{have ? `${have} in your bag` : 'None in your bag'}</span></span>
-                    <button className="btn small primary food-pour" disabled={!have || st.feeder.level >= FEEDER_CAP} onClick={() => pour(f)} aria-label={`Pour ${FOODS[f].name} into the feeder${have ? `, ${have} left` : ', none left'}`}>Pour</button>
-                    <button className="btn small food-buy" disabled={st.feathers < price} aria-label={`Buy ${FOODS[f].name} for ${price} Feather Coins`}
-                      onClick={() => { if (buyFood(f)) { playClip('buy'); nav.toast(`Bought ${FOODS[f].name}`); } else sfx.error(); }}>
-                      <span aria-hidden>+</span><FeatherIcon size={13} /><span className="num">{price}</span>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          {/* Woods' Shop, right here: feeders, perches, homes and lenses, one tap to buy or use */}
-          <div ref={shopRef} className="shop-anchor"><ShopPanel tab={shopTab} onTab={setShopTab} /></div>
-          <p className="small muted mt8">Earn Feather Coins by photographing real birds: +20 for a new species, +12 for a repeat, more for rare birds.</p>
+        <section ref={sectionRef} className="fshop-section" aria-label="Feeder and shop">
+          <FeederShop cat={shopCat} onCat={setShopCat} onPoured={runFeeder} birds={aviary.length} />
         </section>
       )}
-
 
       {naming && (
         <Sheet onClose={() => setNaming(null)} label="Name your bird">

@@ -301,3 +301,27 @@ One line per meaningful choice, with the reason.
   - **Shop tabs:** Feeders, Perches, Homes, Lenses. Feeders and perches show one sideways row per design (5 colourways each) instead of a 50-card grid, so the page is much shorter. Each row scrolls to the item you're using.
   - **Selected item:** card pictures now sit inside their own frame, with a margin from the card's border, so the in-use outline is never covered. The in-use card gets an outer ring, a tinted background and a solid "✓ In use" label in place of a disabled button. The feeder card's picture also has its own frame.
   - Browser-audited at 390px and 320px in both themes: no overflow in food rows, cards, tabs or wallet. The in-use picture is at least 6px from its card's border. Pour, buy (correct coins deducted) and the coin-chip jump all work.
+- **v1.36: Feeder & Shop redesigned from scratch (owner: "too many sub-sections, consolidate, look at other RPGs").** Patterns borrowed:
+  - Neko Atsume's two-step loop: put food out, birds come.
+  - Stardew's popular Better Shop Menu mod: a grid plus category filters.
+  - Animal Crossing's colour variations: one item, many colours.
+  - Shop detail views: a preview and one contextual action button.
+
+  The page is now two parts and one sheet (`FeederShop` in Shop.tsx):
+  1. **Feeder bar:** feeder picture, name, level meter, and one chip per food (icon ×bags). Tapping a chip pours a bag in (1 tap). With none left, the chip shows "+" and opens that food to buy. A one-line hint says how many days of food are left.
+  2. **Shop grid:** five category chips that always fit the width (Food, Feeders, Perches, Homes, Lenses), and a 3-column grid of tiles.
+     - Each feeder and perch **design** is one tile; its 5 colourways become swatches in the sheet. Feeders went from 50 cards to 10 tiles.
+     - Each tile shows art, name and one status: ✓ In use / n/5 owned / from 🪶price / 🔒 Lv. Tiles are sorted in use → owned → for sale → locked.
+  3. **Item sheet:**
+     - Professor Woods (small portrait) describes the item and reacts when you buy or use it.
+     - A big preview, colour swatches with their own price and owned state, and **one primary button** that matches the state: Buy & hang it · 🪶50 / Hang it / ✓ In your Aviary / Move in / Use this lens / 🔒 Unlocks at Lv N.
+     - Food gets "Buy a bag" plus "Pour one in", and a perch in use gets "Take it down".
+     - Your coin balance is shown under the buttons.
+
+  Removed:
+  - the separate shop panel title block and the big speech box on the page (Woods now speaks in the sheet)
+  - the five food rows
+  - per-design section headers and descriptions
+  - the 50-card strips
+
+  All entry points (coin chip, Aviary Shop button, hungry alert, old `shop` route) open this page on the right category. Browser-audited at 390px and 320px in both themes: no overflow in chips, tiles, swatches or buttons, and the in-use tile's art stays clear of its border. Pour (1 tap), buy in the sheet (−50 coins, feeder hung, button flips to ✓) and closing by tapping outside all work.
