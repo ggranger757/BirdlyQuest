@@ -385,3 +385,11 @@ One line per meaningful choice, with the reason.
     - Verified with OpenCV's QR reader on 44 generated codes across versions 1–18: all decoded, none wrong.
     - The QR shown on screen in the browser test decodes to the exact link.
   - **End-to-end browser test:** phone A shows its QR. Phone B opens the link, sees "Gaston · Trainer Lv18" and his armored team, and starts a free duel. The battle runs with the friend's custom-coloured armor, no errors and no ticket spent.
+- **v1.38.1: war-owl armor style (owner: "like the owl armors in Rise of the Guardians"; they meant *Legend of the Guardians: The Owls of Ga'Hoole*).** The style is inspired by that film's look, with no character copied: forged war armor built into the bird, a dark, operatic feel, and iconic metal battle claws over the talons. Applied to every theme, keeping each theme's colours and crests:
+  - **War helm:**
+    - It now covers the crown and the face down past the eye, with a face guard in front of the eye.
+    - A near-black **eye slit** frames the eye, with a trim band across the brow.
+    - A metal **beak guard** covers the top of the beak where it meets the face.
+  - **Breastplate:** layered lames (2-pixel bands lit along their top edges, a bright gorget along the top, a lit front edge) that overlap down the breast like feathers. This replaces the single plate. Scale-mail was tried first but was too busy at small sizes.
+  - **Battle claws:** greaved legs. The front foot carries a long hooked metal blade reaching forward, and the back foot a short spur. In flight the claws are held forward under the body.
+  - The dark outline from v1.38 keeps every piece legible at BirdDex and battle sizes.

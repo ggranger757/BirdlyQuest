@@ -55,11 +55,14 @@ export function armorize(frames: APx[][], look: ArmorLook, form: { eye: [number,
     if (n >= 3) {
       const frontEdge = new Map<number, number>();
       for (const p of chest) frontEdge.set(p.y, Math.max(frontEdge.get(p.y) ?? -99, p.x * dir));
-      // one clean plate: lit top edge and front edge, a single seam across the middle, shaded bottom edge
-      const top = Math.min(...chest.map((p) => p.y)), bot = Math.max(...chest.map((p) => p.y)), seam = Math.round((top + bot) / 2);
+      // overlapping feather-scale mail, like a war owl's breastplate: rows of 3×2 scales, each lit on top and shadowed
+      // underneath, every other row offset by half a scale; a bright gorget along the top and a lit front edge
+      const top = Math.min(...chest.map((p) => p.y));
       for (const p of chest) {
+        // layered lames: 2-pixel bands, each lit along its top edge, overlapping down the breast like feathers
+        const v = (p.y - top - 1) % 2;
         const front = p.x * dir === frontEdge.get(p.y);
-        p.rgb = p.y === top ? mLight : p.y === bot ? mDark : p.y === seam ? (front ? mBase : mDark) : front ? mLight : mBase;
+        p.rgb = p.y === top ? trim : v === 0 ? (front ? mix(mLight, hex('#FFFFFF'), 0.3) : mLight) : front ? mBase : mix(mBase, mDark, 0.45);
       }
     }
     // 4 · wing guards: a solid pauldron over the shoulder: lit top edge, metal body, trim rim along the bottom
@@ -74,19 +77,50 @@ export function armorize(frames: APx[][], look: ArmorLook, form: { eye: [number,
       }
       if (pad.length) { const c = pad.reduce((a, b) => (b.y < a.y || (b.y === a.y && b.x * dir > a.x * dir) ? b : a)); c.rgb = mix(mLight, hex('#FFFFFF'), 0.6); }
     }
-    // 5 · talons: sheathed legs with bright claws
-    if (n >= 5) for (const p of all) if (p.part === P.LEG) {
-      const below = at(p.x, p.y + 1);
-      p.rgb = !below || below.part !== P.LEG ? trim : p.y % 2 ? mLight : mDark;
+    // 5 · battle claws: plated greaves down the leg and long hooked metal blades over the toes
+    if (n >= 5) {
+      const legs = all.filter((p) => p.part === P.LEG);
+      const blade = mix(mLight, hex('#FFFFFF'), 0.35);
+      if (legs.length) {
+        for (const p of legs) { const b = at(p.x, p.y + 1); p.rgb = !b || b.part !== P.LEG ? mDark : p.y % 2 ? mLight : mBase; }
+        // one set of blades per foot: from the front-most foot pixel, two blades reach forward and hook down, one spur goes back
+        const feet = legs.filter((p) => { const b = at(p.x, p.y + 1); return !b || b.part !== P.LEG; }).sort((a, b) => a.x - b.x);
+        const groups: APx[][] = [];
+        for (const f of feet) { const g = groups[groups.length - 1]; if (g && Math.abs(g[g.length - 1].x - f.x) <= 1) g.push(f); else groups.push([f]); }
+        // the front foot carries a long hooked blade; the back foot a short spur
+        const front = groups.reduce((a, b) => (b[0].x * dir > a[0].x * dir ? b : a));
+        const f = front.reduce((a, b) => (b.x * dir > a.x * dir ? b : a));
+        add(f.x + dir, f.y, blade); add(f.x + 2 * dir, f.y, blade); add(f.x + 3 * dir, f.y, mLight); add(f.x + 4 * dir, f.y + 1, mBase);
+        const rear = groups.length > 1 ? groups.reduce((a, b) => (b[0].x * dir < a[0].x * dir ? b : a)) : front;
+        const r0 = rear.reduce((a, b) => (b.x * dir < a.x * dir ? b : a));
+        add(r0.x - dir, r0.y, mLight); add(r0.x - 2 * dir, r0.y + 1, mBase);
+      } else if (fi >= 8 && d) {
+        // in flight the claws are held forward under the body, ready to strike
+        const low = body.filter((p) => (p.x - sx) * dir >= 0);
+        if (low.length) {
+          const by = Math.max(...low.map((p) => p.y)), bx = low.filter((p) => p.y === by).reduce((a, b) => (b.x * dir > a.x * dir ? b : a)).x - dir;
+          add(bx, by + 1, mDark); add(bx + dir, by + 1, mBase); add(bx + 2 * dir, by + 1, blade); add(bx + 3 * dir, by + 2, blade); add(bx + 3 * dir, by + 3, mBase);
+          add(bx + dir, by + 2, blade); add(bx + 2 * dir, by + 3, mBase);
+        }
+      }
     }
     // 2 · helmet: the head above the eye line, lit on top, plus the theme's crest
     if (n >= 2) {
-      const helm = head.filter((p) => HEAD.has(p.part) && p.y <= eye.y);
+      // a war helm: the whole crown and face down to just below the eye, a face guard in front of the eye,
+      // a dark eye slit, a trim band, and a metal guard over the base of the beak
+      const helm = head.filter((p) => HEAD.has(p.part) && (p.y <= eye.y || (p.y <= eye.y + 2 && (d ? (p.x - eye.x) * dir >= 0 : Math.abs(p.x - eye.x) <= 1))));
       const cheek = head.filter((p) => HEAD.has(p.part) && p.y === eye.y + 1 && (p.x - eye.x) * dir < 0);
       const topAt = new Map<number, number>();
       for (const p of helm) topAt.set(p.x, Math.min(topAt.get(p.x) ?? 99, p.y));
-      for (const p of helm) p.rgb = p.y === topAt.get(p.x) ? mLight : p.y === eye.y ? mDark : p.y === eye.y - 1 ? trim : mBase;
+      const SLIT = mix(mDark, hex('#000000'), 0.7);
+      for (const p of helm) p.rgb = p.y === topAt.get(p.x) ? mLight : p.y === eye.y - 1 ? trim : p.y > eye.y ? mDark : mBase;
       for (const p of cheek) p.rgb = mDark;
+      // eye slit: the eye shows through a dark visor opening
+      for (const u of d ? [-dir, dir] : [-1, 1]) { const q = at(eye.x + u, eye.y); if (q && HEAD.has(q.part)) q.rgb = SLIT; }
+      // beak guard: metal over the top of the beak where it meets the face
+      const bk = beak.filter((q) => q.y === Math.min(...beak.map((b) => b.y)));
+      const nearest = bk.sort((a, b) => (a.x - b.x) * dir).slice(0, d ? 2 : 1);
+      for (const q of nearest) q.rgb = mLight;
       if (helm.length) { const g = helm.filter((p) => p.y === Math.min(...helm.map((q) => q.y))).reduce((a, b) => (b.x * dir > a.x * dir ? b : a)); g.rgb = mix(mLight, hex('#FFFFFF'), 0.65); }
       if (helm.length) {
         const top = Math.min(...helm.map((p) => p.y));
