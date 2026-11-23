@@ -29,6 +29,7 @@ const HEADISH = new Set<number>([P.HEAD, P.CROWN, P.CREST, P.BEAK, P.EYE, P.MASK
 export const DIRECT: Record<string, number> = {
   amegfi: 22, amerob: 23, balori: 24, cedwax: 26, daejun: 27, houspa: 29, norcar: 30, rewbla: 31, tuftit: 33,
   mallar: 3, cangoo: 7, ribgul: 10, rthhum: 18,
+  grhowl: 34, snoowl: 35,   // the owner's owl sprites (tufted and round-headed)
 };
 const FORM_OF: Record<string, string> = {
   blujay: 'song-heavy', amecro: 'song-heavy', carcro: 'song-heavy', hoocro: 'song-heavy', eurjay: 'song-heavy', houcro: 'song-heavy', labcro: 'song-heavy',
@@ -62,7 +63,8 @@ export function formFor(sp: Species): string {
   if (DIRECT[sp.id] != null) return SHEET[DIRECT[sp.id]].base;
   if (FORM_OF[sp.id]) return FORM_OF[sp.id];
   if (sp.family === 'Anatidae') return (sp.sizeCm ?? 0) >= 55 ? 'goose' : 'duck';
-  return BY_FAMILY[sp.family] ?? BY_ARCH[sp.archetype] ?? 'song';
+  const f = BY_FAMILY[sp.family] ?? BY_ARCH[sp.archetype] ?? 'song';
+  return f === 'owl' && !sp.look?.crest ? 'owl-round' : f;     // owls without ear tufts get the round-headed shape
 }
 
 // ─── colour helpers ───
@@ -215,6 +217,13 @@ function nearest(pal: [number, number, number][], c: [number, number, number]) {
   pal.forEach((p, i) => { const d = (p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2 + (p[2] - c[2]) ** 2; if (d < bd) { bd = d; best = i; } });
   return best;
 }
+/** An owl's eyelid takes the colour of the face around the eyes (the sheet colour on hand-drawn owls). */
+function lidColour(base: Px[], fallback: Lab): Lab {
+  const face = base.filter((p) => p.part === P.HEAD && p.lab[0] > 12);
+  if (!face.length) return fallback;
+  const m = [0, 1, 2].map((k) => face.reduce((n, p) => n + p.lab[k], 0) / face.length) as Lab;
+  return [Math.max(4, m[0] - 6), m[1], m[2]];
+}
 const shift = (pxs: Px[], dx: number, dy: number, which: (p: Px) => boolean, keep = true): Px[] => {
   const moved = pxs.filter(which).map((p) => ({ ...p, x: p.x + dx, y: p.y + dy }));
   return [...(keep ? pxs : pxs.filter((p) => !which(p))), ...moved];
@@ -227,7 +236,10 @@ export function birdFrames(sp: Species, parts: number[], defaults: number[], arm
   const headLab = PAL_LAB[parts[P.HEAD]];
   const frames: Px[][] = [];
   frames.push(base, base, shift(base, 0, -1, isHead), shift(base, 0, -1, isHead));            // idle: head bob
-  frames.push(base.map((p) => (p.part === P.EYE ? { ...p, lab: headLab, rgb: undefined } : p)));                   // blink
+  // blink: the eye closes to the face colour (on owls the coloured iris closes too, the pale ring stays)
+  const lid = (p: Px) => p.part === P.EYE || (family === 'owl' && p.part === P.MASK);
+  const lidLab = family === 'owl' ? lidColour(base, headLab) : headLab;
+  frames.push(base.map((p) => (lid(p) ? { ...p, lab: lidLab, rgb: undefined } : p)));
   frames.push(shift(base, 0, -1, (p) => p.part === P.TAIL, false));                                // tail flick
   frames.push(shift(base, 1, 1, isHead));                                                           // peck
   frames.push(base.filter((p) => p.part !== P.LEG).map((p) => ({ ...p, y: p.y - 2 })));             // hop

@@ -333,7 +333,7 @@ export const SPECIES: Species[] = [
     occ: { 'JP-13': [0.5, 'R', 1], GB: [0.5, 'R'], 'DE-BE': [0.4, 'R'] } },
   { id: 'tawowl', common: 'Tawny Owl', sci: 'Strix aluco', family: 'Strigidae', familyName: 'Owls', order: 'Strigiformes',
     archetype: 'owl', pattern: 'mottled', habitats: ['woodland', 'urban'], sizeCm: 39, wingspanCm: 95, activity: 'nocturnal', sensitive: true,
-    look: { head: 'bark', back: 'bark', wing: 'umber', belly: 'belly', beak: 'stone', legs: 'belly', cheek: 'stone', mask: ['bold', 'umber'] },
+    look: { head: 'bark', back: 'bark', wing: 'umber', belly: 'belly', beak: 'stone', legs: 'belly', cheek: 'paper', mask: ['bold', 'umber'] },
     fact: '"Twit-twoo" is usually two owls: a female\'s "ke-wick" answered by a male\'s hoot.',
     occ: { GB: [0.25, 'R'], 'DE-BE': [0.2, 'R'] } },
   { id: 'eurwre', common: 'Eurasian Wren', sci: 'Troglodytes troglodytes', family: 'Troglodytidae', familyName: 'Wrens', order: PASS,
