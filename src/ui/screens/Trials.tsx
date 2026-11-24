@@ -128,34 +128,26 @@ function BattleGuide() {
   const sec = (n: number, title: string, body: ReactNode) => <section className="tg-sec"><h4><span className="tg-n">{n}</span>{title}</h4>{body}</section>;
   return (
     <div className="tguide">
-      {sec(1, 'The goal', <p>Bring the rival’s birds to <b>0 HP</b>. A bird at 0 flies off to rest (nobody gets hurt) and the next one flies in. Beat all their birds to win.</p>)}
-      {sec(2, 'Taking turns', <>
-        <p>Each turn you choose <b>one</b> action, then the rival chooses one.</p>
-        <ul className="tg-acts">
-          <li><b>Fight</b><span>use a move</span></li><li><b>Bag</b><span>feed a snack</span></li>
-          <li><b>Birds</b><span>swap birds</span></li><li><b>Run</b><span>leave</span></li>
-        </ul>
-        <p>⚡ The faster bird attacks first. Guard, Bag and Birds always happen before any attack.</p>
-      </>)}
-      {sec(3, 'Moves and uses', <>
+      {sec(1, 'Goal', <p>Knock out every rival bird (0 HP).</p>)}
+      {sec(2, 'Your turn', <p>Pick one: <b>Fight</b>, <b>Bag</b> (snack), <b>Birds</b> (swap) or <b>Run</b>. Faster bird hits first.</p>)}
+      {sec(3, 'Moves', <>
         <div className="tg-moves">
-          <span><b>Quick move</b><small>A steady hit</small></span><Uses />
-          <span><b>Signature skill</b><small>Stronger, based on a real bird fact</small></span><Uses left={T.skillPP} max={T.skillPP} />
-          <span><b>Technique</b><small>Learned at Lv{GROW.tech}</small></span><Uses left={T.techPP} max={T.techPP} />
-          <span><b>Guard</b><small>Goes first, blocks 60% of the next hit</small></span><Uses />
+          <span><b>Quick move</b></span><Uses />
+          <span><b>Signature skill</b></span><Uses left={T.skillPP} max={T.skillPP} />
+          <span><b>Technique</b><small>Lv{GROW.tech}+</small></span><Uses left={T.techPP} max={T.techPP} />
+          <span><b>Guard</b><small>blocks 60%</small></span><Uses />
         </div>
-        <p>The dots are <b>uses left</b>. Every battle starts with all of them refilled.</p>
+        <p>Dots = uses left. Refilled every battle.</p>
       </>)}
       {sec(4, 'Styles', <>
-        <p>Every bird has a style. Each style beats the next one along:</p>
         <div className="tg-loop">{loop.map((c, i) => <Fragment key={i}>{i > 0 && <b aria-hidden>▶</b>}<i style={{ ['--c' as string]: CONTESTS[c].color }}>{CONTESTS[c].name}</i></Fragment>)}</div>
-        <p><span className="tedge up">▲ Strong</span> hits 30% harder. <span className="tedge down">▼ Weak</span> hits about 25% softer. Losing the matchup? Use <b>Birds</b> to swap in a better style.</p>
+        <p><span className="tedge up">▲ Strong</span> +30% · <span className="tedge down">▼ Weak</span> −25%</p>
       </>)}
-      {sec(5, 'Super meter', <p>The <b>Super</b> bar fills when you attack, Guard or take a hit. When it says <b>Ready!</b>, tap it for a huge hit.</p>)}
-      {sec(6, 'Watch for “!”', <p>A rival bird showing a red <b>!</b> is powering up a <b>Big Move</b>. Choose <b>Guard</b> that turn.</p>)}
-      {sec(7, 'Bond', <p>Your trainer level makes every bird you bring stronger: +1% HP and power per level after Lv1, up to +30%. You’re Lv{tlv}, so your birds get <b>+{pct}%</b>. Log birds to level up.</p>)}
-      {sec(9, 'Armor', <p>Birds don’t evolve, they gear up. Every few level-ups a bird earns a new piece of armor in its own theme: a necklace, then a helmet, a chestplate and more, up to a glowing aura. Each piece adds an ability, like an extra skill use or less damage taken. Rival birds wear armor too, more the higher their level. See and recolour a bird’s armor on its card.</p>)}
-      {sec(8, 'Trial Tickets', <p>Each rival battle uses 1 ticket; your very first battle is free. Every bird you log earns 1 (you can hold {TICKETS.max}). Challenges that appear after a new find are free.</p>)}
+      {sec(5, 'Super', <p>Fills as you fight. Tap it at <b>Ready!</b> for a big hit.</p>)}
+      {sec(6, 'Red “!”', <p>A big move is coming. <b>Guard</b>.</p>)}
+      {sec(7, 'Bond', <p>Your Lv{tlv} gives your birds <b>+{pct}%</b>.</p>)}
+      {sec(8, 'Armor', <p>Earned on level-ups. Each piece adds an ability.</p>)}
+      {sec(9, 'Tickets', <p>1 per battle. +1 per bird you log (max {TICKETS.max}).</p>)}
     </div>
   );
 }
@@ -433,13 +425,13 @@ function HpBar({ hp, max }: { hp: number; max: number }) {
 const TUT = (b: Battle) => {
   const me = active(b, 'you'), foe = active(b, 'foe');
   return [
-    { id: 'hud', info: true, text: `Welcome to your first Field Trial! Birds compete with their real-life talents. Bring ${foe.c.sp.common}'s HP to 0 and it flies off to rest. Nobody gets hurt. Tap the text box any time to read faster.` },
+    { id: 'hud', info: true, text: `Your first Field Trial! Knock ${foe.c.sp.common} to 0 HP. It just flies off to rest.` },
     { id: 'quick', info: false, text: `Tap FIGHT, then ${me.quick}. Quick moves never run out.` },
-    { id: 'skill', info: false, text: `Now FIGHT, then ${me.skill.name}: your ${me.c.sp.common}'s signature skill. Real fact: ${me.skill.fact} It's stronger, but you can only use it ${me.ppMax} times per battle. The dots on the button show how many uses are left.` },
-    { id: 'guard', info: false, text: `${foe.c.sp.common} is powering up a Big Move! FIGHT, then Guard. Guard always goes first and blocks most of it.` },
-    { id: 'snack', info: true, text: 'Nicely blocked! BAG feeds your bird snacks from your pantry, and BIRDS swaps in another bird from your party. Both happen before the rival moves.' },
-    { id: 'super', info: false, text: `Your Super meter is full! Tap it to unleash ${me.superName}.` },
-    { id: 'done', info: true, text: `Last tips: the faster bird moves first, and styles have matchups: ${(Object.keys(BEATS) as Contest[]).map((c) => `${CONTESTS[c].name} beats ${CONTESTS[BEATS[c]].name}`).join(', ')}. Look for ▲ Strong. Tap How battles work, under the menu buttons, any time to see all the rules. Now finish the trial!` },
+    { id: 'skill', info: false, text: `Now FIGHT, then ${me.skill.name}. Stronger, but only ${me.ppMax} uses (the dots).` },
+    { id: 'guard', info: false, text: `${foe.c.sp.common} is charging a big move! FIGHT, then Guard.` },
+    { id: 'snack', info: true, text: 'Blocked! BAG feeds a snack. BIRDS swaps in another bird.' },
+    { id: 'super', info: false, text: `Super is full! Tap it for ${me.superName}.` },
+    { id: 'done', info: true, text: 'Look for ▲ Strong moves. All rules are under How battles work. Finish it!' },
   ];
 };
 
