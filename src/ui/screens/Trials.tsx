@@ -691,7 +691,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
         <span className="thud-pips">{list.map((x, i) => <i key={i} className={x.out ? 'out' : i === at ? 'on' : ''} />)}</span>
         <span className="thud-status">{!v.hidden && statusOf(f).map((x) => <i key={x.t} className={x.good ? 'good' : 'bad'}>{x.t}</i>)}</span>
       </span>
-      {(side === 'you' || (v.atk ?? 0) + (v.def ?? 0) > 0) && <Gauges atk={v.atk ?? 0} def={v.def ?? 0} />}
+      <Gauges atk={v.atk ?? 0} def={v.def ?? 0} />
     </div>
   );
 

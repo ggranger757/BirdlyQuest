@@ -417,3 +417,4 @@ One line per meaningful choice, with the reason.
     - Everyone gets one Attack Vial and one Defense Vial to try. Only 11 of the 27 supplied bottles are used, so the shop stays simple.
   - **Classes:** battle text says "class" instead of "style".
   - **Timer:** when the turn timer runs out, your bird loses its turn and the rival moves ("Time's up!"), as the owner asked. Before, the bird auto-used its quick move.
+- **v1.43.1: battle HP cards match.** The rival's card now shows its ATK/DEF gauges too (empty until filled), and both cards stretch to the same height (owner: the opponent's HP box was shorter).
