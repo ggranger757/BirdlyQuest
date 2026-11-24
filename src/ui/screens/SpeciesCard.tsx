@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { PhotoViewer } from '../PhotoViewer';
 import { useNav } from '../nav';
-import { ArmorPanel } from '../ArmorPanel';
-import { lookOfSighting } from '../../core/gear';
 import { useGame, plumagesOf, deletePhotoKeepSprite, toggleHabitatBird, identifySighting, deleteSighting, counts } from '../../app/store';
 import { speciesById, allKnownSpecies, regionEntries, taxonSummary } from '../../data/provider';
 import { getRegion, regionLabel } from '../../data/geo';
@@ -43,7 +41,7 @@ export function SpeciesCard({ id, sightingId }: { id: string; sightingId?: strin
         right={cur && <button className="icon-btn" aria-label="Open journal spread" onClick={() => nav.open({ name: 'spread', sightingId: cur.id })}><Icon name="journal" size={20} /></button>} />
       <div className="screen">
         <div style={{ ...(cur ? SKY_PLATE : { background: 'var(--plum)' }), border: '2px solid var(--ink)', boxShadow: '4px 4px 0 #000', display: 'flex', justifyContent: 'center', padding: 8 }}>
-          {cur ? <Sprite species={sp} parts={cur.sprite.parts} armor={lookOfSighting(sp, cur)} scale={6} mode={cur.sprite.pose === 'flight' ? 'fly' : 'idle'} />
+          {cur ? <Sprite species={sp} parts={cur.sprite.parts} scale={6} mode={cur.sprite.pose === 'flight' ? 'fly' : 'idle'} />
             : <Sprite species={sp} scale={6} mode="silhouette" label={`${sp.common} silhouette — not yet seen`} />}
         </div>
         {cur && (
@@ -55,7 +53,6 @@ export function SpeciesCard({ id, sightingId }: { id: string; sightingId?: strin
             </div>
           </div>
         )}
-        {cur && counts(cur) && <ArmorPanel sp={sp} x={cur} />}
         {plumages.length > 1 && (
           <div className="row mt8" role="radiogroup" aria-label="Plumage records">
             <span className="label">Plumages</span>

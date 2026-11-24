@@ -12,7 +12,6 @@
 // Matchups:            Song beats Display beats Forage beats Sky beats Song (×1.3, or ×0.77 the other way).
 import type { Species } from '../data/types';
 import { potionById, drink, potionTag, GAUGE_STEP } from './potions';
-import { armorStats, piecesFor, rivalLevelUps, type ArmorStats } from './armor';
 
 // ─── styles: a bird's best talent (sets its quick move, super move, colours and sounds) ───
 export type Contest = 'song' | 'display' | 'sky' | 'forage';
@@ -187,7 +186,7 @@ export const T = {
 };
 
 // ─── contenders and fighters ───
-export interface Contender { sp: Species; level: number; quality: number; parts?: number[]; sightingId?: string; armor?: number; dye?: string; glow?: string } // armor: pieces worn (v1.37)
+export interface Contender { sp: Species; level: number; quality: number; parts?: number[]; sightingId?: string }
 export interface Fighter {
   c: Contender; style: Contest; skill: Skill; quick: string; quickPow: number;
   tech: Skill | null;  // learned at Lv12
@@ -202,24 +201,22 @@ export interface Fighter {
   focus: boolean;      // next attacking move ×2.2 (Patient Stalk)
   fed: number;         // turns of +40% power (Mealworms)
   shelter: boolean;    // next hit blocked 60% (Waterproof)
-  gear: ArmorStats;    // armor bonuses (v1.37)
   atkG: number; defG: number; // Attack / Defense gauges, 0–5 pips, filled by potions (v1.43)
   out: boolean;
 }
 const avgStat = (sp: StatSp) => CONTEST_IDS.reduce((n, c) => n + contestStat(sp, c), 0) / 4;
 export function fighter(c: Contender, hpScale = 1, bond = 0): Fighter {
   const lv = clamp(Math.round(c.level), 1, 50), style = birdStyle(c.sp);
-  const gear = armorStats(c.armor ?? 0);
-  const max = Math.round((30 + lv * 4 + avgStat(c.sp) * 0.25) * hpScale * (1 + bond) * (1 + gear.hp));
-  const atk = (6 + lv * 1.1 + clamp(c.quality, 0, 100) / 10) * (contestStat(c.sp, style) / 75) * (1 + bond) * (1 + gear.atk);
+  const max = Math.round((30 + lv * 4 + avgStat(c.sp) * 0.25) * hpScale * (1 + bond));
+  const atk = (6 + lv * 1.1 + clamp(c.quality, 0, 100) / 10) * (contestStat(c.sp, style) / 75) * (1 + bond);
   const base = skillFor(c.sp), mastered = lv >= GROW.master;
   return {
     c: { ...c, level: lv }, style, hp: max, max, atk,
     // a mastered skill hits 30% harder
     skill: mastered ? { ...base, name: `${base.name}+`, power: base.power * 1.3, tag: base.kind === 'shelter' ? 'Heals 35% · blocks next hit' : base.kind === 'focus' ? 'Next move does ×2.6' : `${base.tag} · +30%` } : base,
-    mastered, gear, pp: T.skillPP + gear.pp, ppMax: T.skillPP + gear.pp, pp2: lv >= GROW.tech ? T.techPP : 0, pp2Max: lv >= GROW.tech ? T.techPP : 0,
+    mastered, pp: T.skillPP, ppMax: T.skillPP, pp2: lv >= GROW.tech ? T.techPP : 0, pp2Max: lv >= GROW.tech ? T.techPP : 0,
     // speed comes from flying ability (fast fliers act first), plus level
-    spd: Math.round((contestStat(c.sp, 'sky') * 0.6 + lv * 1.5 + clamp(c.quality, 0, 100) / 20) * (1 + gear.spd)),
+    spd: Math.round((contestStat(c.sp, 'sky') * 0.6 + lv * 1.5 + clamp(c.quality, 0, 100) / 20)),
     quick: lv >= GROW.quick ? QUICK_PLUS[style] : CONTESTS[style].quick, quickPow: lv >= GROW.quick ? 1.3 : 1,
     tech: lv >= GROW.tech ? TECHNIQUES[style] : null,
     superName: lv >= GROW.ultra ? ULTRA[style] : CONTESTS[style].super, superPow: lv >= GROW.ultra ? T.superPower * 1.2 : T.superPower,
@@ -264,7 +261,7 @@ export interface Battle {
 export function startBattle(you: Contender[], foe: Contender[], foeName: string, opts: { foeHp?: number; bond?: number } = {}): Battle {
   const mine = you.map((c) => fighter(c, 1, opts.bond ?? 0));
   // a sigil starts the battle with some Super already charged
-  return { you: mine, foe: foe.map((c) => fighter(c, opts.foeHp ?? 1)), yi: 0, fi: 0, turn: 0, over: null, foeName, gauge: mine[0]?.gear.start ?? 0, guarding: false, foeCharging: false, foeGuard: false };
+  return { you: mine, foe: foe.map((c) => fighter(c, opts.foeHp ?? 1)), yi: 0, fi: 0, turn: 0, over: null, foeName, gauge: 0, guarding: false, foeCharging: false, foeGuard: false };
 }
 const clone = (b: Battle): Battle => ({ ...b, you: b.you.map((f) => ({ ...f })), foe: b.foe.map((f) => ({ ...f })) });
 export const active = (b: Battle, s: Side) => (s === 'you' ? b.you[b.yi] : b.foe[b.fi]);
@@ -283,7 +280,6 @@ function strike(b: Battle, side: Side, mult: number, style: Contest, rng: () => 
   a.focus = false;
   const guarded = !o.pierce && ((side === 'foe' && b.guarding) || (side === 'you' && b.foeGuard) || d.shelter);
   if (guarded) { dmg *= 1 - T.guardBlock; d.shelter = false; }
-  dmg *= 1 - (d.gear?.dr ?? 0); // helmet
   dmg *= (1 + GAUGE_STEP * (a.atkG ?? 0)) * (1 - GAUGE_STEP * (d.defG ?? 0)); // potion gauges
   const amount = Math.max(1, Math.round(dmg));
   d.hp = Math.max(0, d.hp - amount);
@@ -385,8 +381,8 @@ export function youFirst(b: Battle, a: Action, rng: () => number): boolean {
   return me.spd > foe.spd || (me.spd === foe.spd && rng() < 0.5);
 }
 export const superReady = (b: Battle) => b.gauge >= 100;
-/** Your Super meter goes up; back gear makes it fill faster. */
-function gainGauge(b: Battle, n: number) { return Math.min(100, b.gauge + n * (active(b, 'you').gear?.gauge ?? 1)); }
+/** Your Super meter goes up. */
+function gainGauge(b: Battle, n: number) { return Math.min(100, b.gauge + n); }
 
 /** Resolve one turn. Priority actions and the faster bird go first. Returns what happened, in order, for the screen to play. */
 export function takeTurn(b0: Battle, mine: Action, rng: () => number, opts: { forceCharge?: boolean } = {}): { b: Battle; ev: Ev[] } {
@@ -585,8 +581,6 @@ export const WILD = { coins: 15, xp: 30, time: 10, chance: 0.4, scenes: ['valley
 export function rivalLevel(r: Pick<RivalDef, 'level'>, tier: number, yourAvg: number): number {
   return Math.max(r.level, Math.round(yourAvg * (0.78 + tier * 0.05)));
 }
-/** Each rival's team wears their signature armor colour. */
-const RIVAL_DYE: Record<string, string> = { pip: 'theme', wren: 'jade', gale: 'cobalt', mara: 'rose', hawkins: 'silver', merlin: 'gold' };
 /** Rival birds come from your region: strong local specialists in the rival's styles, no repeats. */
 export function rivalTeam(r: RivalDef, pool: Species[], tier: number, yourAvg = 5): Contender[] {
   const used = new Set<string>();
@@ -598,14 +592,14 @@ export function rivalTeam(r: RivalDef, pool: Species[], tier: number, yourAvg = 
     const ranked = options.filter((s) => !used.has(s.id)).sort((a, b) => contestStat(b, c) - contestStat(a, c));
     const sp = ranked[Math.min(ranked.length - 1, Math.max(0, 2 - tier) + (i % 2))] ?? ranked[0] ?? pool[0];
     used.add(sp.id);
-    { const level = lv + (i === r.size - 1 ? 1 : 0); return { sp, level, quality: r.quality, armor: piecesFor(rivalLevelUps(level)), dye: RIVAL_DYE[r.id] }; }
+    { const level = lv + (i === r.size - 1 ? 1 : 0); return { sp, level, quality: r.quality }; }
   });
 }
 /** A wandering birder's bird: a random local bird at about your new bird's level. */
 export function wildTeam(pool: Species[], level: number, rng: () => number, exclude?: string): Contender[] {
   const options = pool.slice(0, Math.max(10, Math.round(pool.length * 0.6))).filter((s) => s.id !== exclude);
   const sp = options[Math.floor(rng() * options.length)] ?? pool[0];
-  { const lv = Math.max(2, level - 1); return [{ sp, level: lv, quality: 40, armor: piecesFor(rivalLevelUps(lv)) }]; }
+  { const lv = Math.max(2, level - 1); return [{ sp, level: lv, quality: 40 }]; }
 }
 
 // ─── rewards ───

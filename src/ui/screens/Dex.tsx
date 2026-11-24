@@ -1,4 +1,3 @@
-import { lookOfSighting } from '../../core/gear';
 import { useEffect, useMemo, useState } from 'react';
 import { useNav } from '../nav';
 import { useGame, counts, speciesOf, logEvent, claimChapter } from '../../app/store';
@@ -115,7 +114,7 @@ export function Dex() {
           style={{ background: `linear-gradient(${HEX[s.sprite.bg]}55, var(--plum) 70%)` }}
           onClick={() => nav.open({ name: 'species', id: e.sp.id })} aria-label={`${dexNo(e.dex)} ${e.sp.common}, found ${formatDate(s.capturedAt)}`}>
           <span className="dexno" style={{ color: 'var(--accent)' }}>{dexNo(e.dex)} ✓</span>
-          <span className="jcell-art"><Sprite species={e.sp} parts={s.sprite.parts} armor={lookOfSighting(e.sp, s)} scale={2} mode={nav.highlight === s.id ? 'idle' : 'static'} /></span>
+          <span className="jcell-art"><Sprite species={e.sp} parts={s.sprite.parts} scale={2} mode={nav.highlight === s.id ? 'idle' : 'static'} /></span>
           <span className="cap">{e.sp.common}</span>
           <span className="jcell-foot"><HpBar hp={hpNow(s)} compact /></span>
         </button>
@@ -211,7 +210,7 @@ export function Dex() {
               <button key={s.id} className="jcell" style={{ width: 92, flex: 'none' }} onClick={() => nav.open({ name: 'species', id: s.speciesId ?? '_unknown', sightingId: s.id })}
                 aria-label={`${s.speciesId ? speciesOf(s).common : 'Unidentified bird'}, ${VERIFY_META[s.verification].label}, ${formatDate(s.capturedAt)}`}>
                 <span className="dexno">New</span>
-                <span className="jcell-art"><Sprite species={speciesOf(s)} parts={s.sprite.parts} armor={lookOfSighting(speciesOf(s), s)} scale={2} mode="static" /></span>
+                <span className="jcell-art"><Sprite species={speciesOf(s)} parts={s.sprite.parts} scale={2} mode="static" /></span>
                 <span className="cap">{s.speciesId ? speciesOf(s).common : 'Unknown'}</span>
                 <span className="jcell-foot small" style={{ color: 'var(--accent)' }}>Name it</span>
               </button>

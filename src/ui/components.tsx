@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, ReactNode, useSyncExternalStore } from 're
 import type { Species } from '../data/types';
 import { renderFrames, defaultParts, silhouette, type Frame } from '../core/pixel/sprite';
 import { FLY_FRAMES, FLY_MS } from '../core/pixel/birds';
-import { armorKey, type ArmorLook } from '../core/armor';
 import { RGB, CLEAR } from '../core/palette';
 import { RARITY_META, Rarity } from '../core/rarity';
 import type { Verification } from '../core/model';
@@ -68,8 +67,8 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Uint8Array, x: numbe
 export type SpriteMode = 'idle' | 'fly' | 'static' | 'silhouette';
 
 /** Animated sprite: idle head-bob, blink every 4–7s, tail flick / peck now and then; flight is an 8-frame wingbeat (`flapMs` per frame). */
-export function Sprite({ species, parts, mode = 'idle', scale = 4, bg, label, flip, className, flapMs = FLY_MS, armor }: {
-  species: Species; parts?: number[]; mode?: SpriteMode; armor?: ArmorLook | null; scale?: number; bg?: string; label?: string; flip?: boolean; className?: string; flapMs?: number;
+export function Sprite({ species, parts, mode = 'idle', scale = 4, bg, label, flip, className, flapMs = FLY_MS }: {
+  species: Species; parts?: number[]; mode?: SpriteMode; scale?: number; bg?: string; label?: string; flip?: boolean; className?: string; flapMs?: number;
 }) {
   const flapRef = useRef(flapMs); flapRef.current = flapMs;
   const ref = useRef<HTMLCanvasElement>(null);
@@ -77,7 +76,7 @@ export function Sprite({ species, parts, mode = 'idle', scale = 4, bg, label, fl
   useEffect(() => {
     const c = ref.current; if (!c) return;
     const ctx = c.getContext('2d')!;
-    const frames = mode === 'silhouette' ? [silhouette(species)] : renderFrames(species, parts ?? defaultParts(species), { armor });
+    const frames = mode === 'silhouette' ? [silhouette(species)] : renderFrames(species, parts ?? defaultParts(species));
     const paint = (i: number) => {
       ctx.clearRect(0, 0, 32, 32);
       if (bg) { ctx.fillStyle = bg; ctx.fillRect(0, 0, 32, 32); }
@@ -104,7 +103,7 @@ export function Sprite({ species, parts, mode = 'idle', scale = 4, bg, label, fl
       if (i !== last) { paint(i); last = i; }
     });
     return stop;
-  }, [species, parts?.join(','), mode, reduced, bg, armorKey(armor)]);
+  }, [species, parts?.join(','), mode, reduced, bg]);
   return (
     <canvas ref={ref} width={32} height={32} className={`pix ${className ?? ''}`} role="img" aria-label={label ?? species.common}
       style={{ width: 32 * scale, height: 32 * scale, transform: flip ? 'scaleX(-1)' : undefined }} />

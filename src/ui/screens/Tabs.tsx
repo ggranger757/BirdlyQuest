@@ -13,8 +13,6 @@ import { LensList } from '../LensList';
 import { factsFor } from '../../data/facts';
 import { PageHeader, Segmented, Alert, FeatherChip } from '../kit';
 import { MerlinSays } from '../MerlinSays';
-import { lookOfSighting } from '../../core/gear';
-import { armorKey } from '../../core/armor';
 import { FeederShop, useShopRequest, type ShopTab } from './Shop';
 import { Diorama, SCENES, paintHomeThumb, homePrice } from '../../render/diorama';
 import { FeatherIcon } from '../FeatherIcon';
@@ -73,8 +71,6 @@ export function HabitatTab() {
   const now = new Date();
   const phase = dayPhase(now, sunTimes(now, region.lat, region.lng));
   const aviary = st.diorama.birds.map((id) => st.sightings.find((s) => s.id === id)).filter(Boolean) as typeof st.sightings;
-  // rebuild the scene when anyone's armor changes (a level-up or a new dye)
-  const armorSig = aviary.map((x) => `${x.id}:${armorKey(lookOfSighting(speciesOf(x), x))}`).join();
   const box = st.sightings.filter((s) => !st.diorama.birds.includes(s.id));
   const fill = st.feeder.level / FEEDER_CAP;
   const mixOf = (f: FeederState): FeederMix => layersOf(f).map((l) => ({ food: l.food, k: l.pts / FEEDER_CAP }));
@@ -111,15 +107,15 @@ export function HabitatTab() {
     setSceneLabel(d.scene.label);
     const partner = st.partner ? allKnownSpecies().find((x) => x.id === st.partner!.speciesId) : null;
     if (partner && st.partner) d.add('partner', partner, st.partner.parts, { arrive: false, seed: 1, hp: hpNow(partnerPet(st)!) });
-    aviary.forEach((s, i) => d.add(s.id, speciesOf(s), s.sprite.parts, { arrive: false, seed: i * 7 + 3, hp: hpNow(s), armor: lookOfSighting(speciesOf(s), s) }));
+    aviary.forEach((s, i) => d.add(s.id, speciesOf(s), s.sprite.parts, { arrive: false, seed: i * 7 + 3, hp: hpNow(s) }));
     d.start();
     return () => { d.dispose(); dio.current = null; };
-  }, [st.diorama.biome, st.diorama.home, st.diorama.feeder, st.diorama.perch, armorSig, reduced, dims]);
+  }, [st.diorama.biome, st.diorama.home, st.diorama.feeder, st.diorama.perch, reduced, dims]);
   // birds that swap in and out fly in and off, instead of the whole scene being rebuilt
   useEffect(() => {
     const d = dio.current; if (!d) return;
     const have = new Set(d.keys());
-    aviary.forEach((s, i) => { if (!have.has(s.id)) d.add(s.id, speciesOf(s), s.sprite.parts, { arrive: true, seed: i * 7 + 3, hp: hpNow(s), armor: lookOfSighting(speciesOf(s), s) }); });
+    aviary.forEach((s, i) => { if (!have.has(s.id)) d.add(s.id, speciesOf(s), s.sprite.parts, { arrive: true, seed: i * 7 + 3, hp: hpNow(s) }); });
     for (const k of have) if (k !== 'partner' && !aviary.some((s) => s.id === k)) d.dismiss(k);
   }, [aviary.map((p) => p.id).join()]);
   // every so often, if more birds are waiting in the Bird Box, one swaps in
@@ -287,7 +283,7 @@ export function HabitatTab() {
             const here = st.diorama.birds.includes(s.id);
             return (
               <div key={s.id} className="srow">
-                <Sprite species={speciesOf(s)} parts={s.sprite.parts} armor={lookOfSighting(speciesOf(s), s)} scale={1} mode="static" />
+                <Sprite species={speciesOf(s)} parts={s.sprite.parts} scale={1} mode="static" />
                 <span className="grow"><span className="name">{birdName(s.id, st)}</span>{s.nickname ? <span className="small muted"> · {speciesOf(s).common}</span> : null}<br /><span style={{ display: 'block', width: 120 }}><HpBar hp={hpNow(s)} compact /></span></span>
                 <button className="btn small" onClick={() => { const full = !here && st.diorama.birds.length >= AVIARY_MAX; const out = full ? st.sightings.find((x) => x.id === st.diorama.birds[0]) : null; toggleHabitatBird(s.id); if (out) nav.toast(`${speciesOf(out).common} flew off to the Bird Box to make room.`); }}>{here ? 'To box' : 'To aviary'}</button>
               </div>

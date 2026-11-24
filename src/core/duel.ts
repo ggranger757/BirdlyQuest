@@ -1,9 +1,9 @@
 // Friend duels (v1.38): your team packed into a short code that fits in a QR code or a link. No server: your friend's
 // phone reads the code and battles your birds (played by the computer), exactly as they are: species, level,
-// fieldcraft, colours and armor.
-import { DYE_IDS, GLOW_IDS } from './armor';
+// fieldcraft and colours. (Three bytes per bird once held armor; v1.45 writes them as 0 and ignores them,
+// so codes shared before then still read.)
 
-export interface DuelBird { id: string; level: number; quality: number; armor: number; dye?: string; glow?: string; parts?: number[] }
+export interface DuelBird { id: string; level: number; quality: number; parts?: number[] }
 export interface DuelCard { name: string; trainerLevel: number; birds: DuelBird[] }
 const VERSION = 1;
 
@@ -19,8 +19,7 @@ export function encodeDuel(card: DuelCard): string {
   for (const b of card.birds.slice(0, 3)) {
     const id = new TextEncoder().encode(b.id).slice(0, 32);
     const parts = (b.parts ?? []).slice(0, 24);
-    out.push(id.length, ...id, clampByte(b.level), clampByte(b.quality), clampByte(b.armor),
-      Math.max(0, DYE_IDS.indexOf(b.dye ?? 'theme')), Math.max(0, GLOW_IDS.indexOf(b.glow ?? 'theme')), parts.length, ...parts.map(clampByte));
+    out.push(id.length, ...id, clampByte(b.level), clampByte(b.quality), 0, 0, 0, parts.length, ...parts.map(clampByte));
   }
   out.push(out.reduce((a, n) => (a + n) & 0xff, 0)); // checksum
   return b64url(Uint8Array.from(out));
@@ -42,10 +41,10 @@ export function decodeDuel(input: string): DuelCard | null {
     const birds: DuelBird[] = [];
     for (let k = 0; k < n; k++) {
       const id = new TextDecoder().decode(take(byte()));
-      const level = Math.max(1, Math.min(50, byte())), quality = Math.min(100, byte()), armor = Math.min(8, byte());
-      const dye = DYE_IDS[byte()] ?? 'theme', glow = GLOW_IDS[byte()] ?? 'theme';
+      const level = Math.max(1, Math.min(50, byte())), quality = Math.min(100, byte());
+      byte(); byte(); byte();   // retired armor bytes
       const parts = Array.from(take(byte()));
-      birds.push({ id, level, quality, armor, dye, glow, parts: parts.length ? parts : undefined });
+      birds.push({ id, level, quality, parts: parts.length ? parts : undefined });
     }
     return birds.length ? { name, trainerLevel, birds } : null;
   } catch { return null; }

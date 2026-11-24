@@ -1593,36 +1593,6 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 @media (max-width: 400px) { .fcat { font-size: 9.5px; letter-spacing: 0; } :root.theme-field .fcat { font-size: 12px; letter-spacing: -0.02em; } }
 @media (max-width: 340px) { .fcat { font-size: 8.5px; } :root.theme-field .fcat { font-size: 11px; } }
 
-/* ── v1.37 armor panel ── */
-.armor-panel { padding: 10px; }
-.armor-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.armor-title { display: flex; align-items: center; gap: 8px; margin: 0; }
-.armor-theme { font-family: var(--lbl); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; padding: 2px 6px; border: 2px solid; color: var(--text); }
-:root.theme-field .armor-theme { font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; }
-.armor-blurb { margin: 6px 0 8px; }
-.armor-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
-.armor-piece { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 6px 8px; background: var(--well); border: 2px solid #000; }
-.armor-piece.own { box-shadow: inset 3px 0 0 var(--accent); }
-.armor-piece.locked { opacity: .6; border-style: dashed; }
-.armor-slot { font-family: var(--lbl); font-size: 9px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
-:root.theme-field .armor-slot { font-size: 11px; text-transform: none; letter-spacing: 0; font-weight: 600; }
-.armor-name { font-size: 12.5px; font-weight: 600; line-height: 1.25; overflow-wrap: break-word; }
-.armor-ability { font-size: 11.5px; line-height: 1.3; color: var(--muted); }
-.armor-ability b { color: var(--text); font-weight: 600; }
-.armor-dyes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
-.armor-swatches { display: flex; flex-wrap: wrap; gap: 6px; }
-.dye { width: 30px; height: 30px; padding: 0; border: 2px solid #000; cursor: pointer; image-rendering: pixelated; }
-.dye.on { outline: 3px solid var(--accent); outline-offset: 2px; }
-:root.theme-field .dye.on { outline-color: #000; }
-.tarmor-new { color: var(--accent); }
-@media (max-width: 360px) { .armor-list { grid-template-columns: minmax(0, 1fr); } }
-
-/* v1.38: metal and glow pickers */
-.armor-dyes { flex-direction: column; align-items: stretch; gap: 6px; }
-.armor-dyes .label .muted { text-transform: none; letter-spacing: 0; }
-.armor-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); gap: 6px; }
-.dye { width: 100%; aspect-ratio: 1; height: auto; }
-.dye.glow { background: radial-gradient(circle at 50% 50%, #fff 0 14%, var(--g) 15% 48%, color-mix(in srgb, var(--g) 35%, #000) 49%); }
 
 /* ── v1.38 friend duels ── */
 .tduel-btn { margin-top: 10px; }

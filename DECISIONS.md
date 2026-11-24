@@ -424,3 +424,7 @@ One line per meaningful choice, with the reason.
   - Sketch-mode photos stay pixel-crisp.
   - The viewer sits above every app layer (the species card overlay is z-index 2000).
 - **v1.44.1: the real-bird reference photo can be enlarged too** (owner: "I meant the real photo"). Tapping the iNaturalist photo on a species card opens the same full-screen zoom viewer. It loads iNaturalist's large size (falling back to medium), and the photographer credit and license stay on screen.
+- **v1.45.0: armor removed** (owner's request).
+  - **What went:** the armor catalogue, painter and gear modules; the armor panel and metal/glow pickers on species cards; armor drawn on sprites in every screen; armor HP/attack/speed/uses/damage-reduction/Super bonuses in battle; rival armor and signature dyes; "New armor" lines after level-ups; the Armor rule; the armor CSS.
+  - **Friend duels:** codes keep their format. The three per-bird bytes that held armor, dye and glow are now written as 0 and skipped when read, so codes shared before this still work (tested).
+  - **Old saves:** they may still hold `armorDye`/`armorGlow` on sightings; these are ignored.

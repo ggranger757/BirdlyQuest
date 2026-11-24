@@ -358,13 +358,6 @@ export function rotateAviary(now = new Date()): { out: string; in: string } | nu
   return { out, in: inn };
 }
 
-/** Recolour a bird's armor (any dye from core/armor DYES; 'theme' restores the original colours). */
-export function setArmorGlow(id: string, glow: string) {
-  setState((s) => ({ ...s, sightings: s.sightings.map((x) => (x.id === id ? { ...x, armorGlow: glow === 'theme' ? undefined : glow } : x)) }));
-}
-export function setArmorDye(id: string, dye: string) {
-  setState((s) => ({ ...s, sightings: s.sightings.map((x) => (x.id === id ? { ...x, armorDye: dye === 'theme' ? undefined : dye } : x)) }));
-}
 
 export function toggleHabitatBird(id: string): boolean {
   const has = state.diorama.birds.includes(id);

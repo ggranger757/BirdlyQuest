@@ -1,8 +1,6 @@
 // Field Trials v3: fast, Step Quest-style bird battles with a modern HUD. One tap a turn:
 // Quick move · Signature skill (a real-life talent) · Guard · Snack, plus a Super gauge and Run.
 // HP reaching 0 means the bird flies off to rest; nobody gets hurt.
-import { piecesFor, earnedLevelUps, themeFor, type ArmorLook } from '../../core/armor';
-import { setOfSighting } from '../../core/gear';
 import { decodeDuel } from '../../core/duel';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useNav } from '../nav';
@@ -162,8 +160,7 @@ function BattleGuide() {
       {sec(6, 'Super meter', <p>The purple bar fills a little each time you hit, block or get hit. When it says <b>Ready!</b>, tap it for your biggest move.</p>)}
       {sec(7, 'Red “!”', <p>A rival bird with a red <b>!</b> is getting ready for a giant move. Tap <b>Guard</b> to block it.</p>)}
       {sec(8, 'Bond', <p>As you level up as a birder, all your birds get stronger. Right now they get <b>+{pct}%</b>.</p>)}
-      {sec(9, 'Armor', <p>Birds earn armor pieces as they level up. Each piece adds a small power, like an extra use or taking less damage.</p>)}
-      {sec(10, 'Tickets', <p>Each battle uses 1 ticket. Every bird you log gives you 1 more (you can hold {TICKETS.max}).</p>)}
+      {sec(9, 'Tickets', <p>Each battle uses 1 ticket. Every bird you log gives you 1 more (you can hold {TICKETS.max}).</p>)}
     </div>
   );
 }
@@ -186,8 +183,6 @@ export function Face({ face, merlin, name, size = 56, className, tall }: { face?
 }
 
 /** The player's birds: best photo of each species, plus the partner bird. */
-/** How a contender's armor looks. */
-export const lookOf = (c: Contender): ArmorLook => ({ theme: themeFor(c.sp, birdStyle(c.sp)), pieces: c.armor ?? 0, dye: c.dye, glow: c.glow });
 
 export function useTeam(): Contender[] {
   const sightings = useGame((s) => s.sightings);
@@ -196,7 +191,7 @@ export function useTeam(): Contender[] {
     const best = new Map<string, Contender>();
     for (const x of sightings) {
       if (!counts(x) || !x.speciesId) continue;
-      const c: Contender = { sp: speciesOf(x), level: Math.min(50, x.level ?? 5), quality: x.fieldcraft?.total ?? 40, parts: x.sprite?.parts, sightingId: x.id, armor: piecesFor(earnedLevelUps(x)), dye: x.armorDye, glow: x.armorGlow };
+      const c: Contender = { sp: speciesOf(x), level: Math.min(50, x.level ?? 5), quality: x.fieldcraft?.total ?? 40, parts: x.sprite?.parts, sightingId: x.id };
       const prev = best.get(x.speciesId);
       if (!prev || c.level + c.quality / 10 > prev.level + prev.quality / 10) best.set(x.speciesId, c);
     }
@@ -221,13 +216,13 @@ export function Trials({ wild, duel }: { wild?: string; duel?: string }) {
   const pool = useMemo(() => regionEntries(region).map((e) => e.sp), [region]);
   // a friend duel: their team, decoded from the code they shared
   const duelCard = useMemo(() => (duel ? decodeDuel(duel) : null), [duel]);
-  const duelFoe: Contender[] = useMemo(() => (duelCard?.birds ?? []).map((b) => ({ sp: speciesById(b.id)!, level: b.level, quality: b.quality, parts: b.parts, armor: b.armor, dye: b.dye, glow: b.glow })).filter((c) => c.sp), [duelCard]);
+  const duelFoe: Contender[] = useMemo(() => (duelCard?.birds ?? []).map((b) => ({ sp: speciesById(b.id)!, level: b.level, quality: b.quality, parts: b.parts })).filter((c) => c.sp), [duelCard]);
   const [phase, setPhase] = useState<'ladder' | 'party' | 'battle' | 'result'>(wild ? 'battle' : duel ? 'party' : 'ladder');
   const [ri, setRi] = useState(0);
   const [party, setParty] = useState<Contender[]>(() => {
     if (!wild) return [];
     const x = sightings.find((s) => s.id === wild);
-    const lead: Contender | null = x && x.speciesId ? { sp: speciesOf(x), level: Math.min(50, x.level ?? 5), quality: x.fieldcraft?.total ?? 40, parts: x.sprite?.parts, sightingId: x.id, armor: piecesFor(earnedLevelUps(x)), dye: x.armorDye, glow: x.armorGlow } : null;
+    const lead: Contender | null = x && x.speciesId ? { sp: speciesOf(x), level: Math.min(50, x.level ?? 5), quality: x.fieldcraft?.total ?? 40, parts: x.sprite?.parts, sightingId: x.id } : null;
     return lead ? [lead, ...team.filter((c) => c.sp.id !== lead.sp.id).slice(0, 2)] : team.slice(0, 3);
   });
   const [outcome, setOutcome] = useState<{ won: boolean; prize: Prize } | null>(null);
@@ -385,7 +380,7 @@ function Party({ setup, size, team, party, setParty, onGo, bond, duel }: { setup
             <button key={c.sp.id} role="listitem" className={`tpick ${at >= 0 ? 'on' : ''}`} onClick={() => toggle(c)} aria-pressed={at >= 0}
               aria-label={`${c.sp.common}, level ${f.c.level}, ${f.max} HP. Signature skill: ${f.skill.name}, ${f.skill.tag}.`}>
               {at >= 0 && <span className="tpick-tag">{at === 0 ? 'Lead' : at + 1}</span>}
-              <Sprite species={c.sp} parts={c.parts} armor={lookOf(c)} scale={2} mode="static" />
+              <Sprite species={c.sp} parts={c.parts} scale={2} mode="static" />
               <span className="tpick-name">{c.sp.common}</span>
               <span className="tpick-lv">Lv{f.c.level} · {f.max} HP</span>
               <span className="tpick-skill" style={{ ['--c' as string]: CONTESTS[f.skill.style].color }}>{f.skill.name}</span>
@@ -711,7 +706,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
           <span className="tplat" aria-hidden />
           <div className={`tbird ${foe.anim} ${charging ? 'charging' : ''}`}>
             {charging && <span className="twarn" aria-hidden>!</span>}
-            <span className="tbody"><Sprite species={them.c.sp} armor={lookOf(them.c)} scale={3} mode="fly" flapMs={foe.anim === 'lunge' ? 38 : 92} flip /></span>
+            <span className="tbody"><Sprite species={them.c.sp} scale={3} mode="fly" flapMs={foe.anim === 'lunge' ? 38 : 92} flip /></span>
             {fx?.side === 'foe' && <Fx key={fx.key} sheet={fx.sheet} scale={fx.scale} ms={Math.max(480, fx.sheet.frames * 60)} className="tboom" />}
             {pops.filter((p) => p.side === 'foe').map((p) => <span key={p.id} className={`tpop ${p.kind}`}>{p.text}</span>)}
           </div>
@@ -719,7 +714,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
         <div className={`tspot you ${you.hidden ? 'gone' : ''}`}>
           <span className="tplat" aria-hidden />
           <div className={`tbird ${you.anim}`}>
-            <span className="tbody"><Sprite species={me.c.sp} parts={me.c.parts} armor={lookOf(me.c)} scale={5} mode="fly" flapMs={you.anim === 'lunge' ? 38 : 92} /></span>
+            <span className="tbody"><Sprite species={me.c.sp} parts={me.c.parts} scale={5} mode="fly" flapMs={you.anim === 'lunge' ? 38 : 92} /></span>
             {fx?.side === 'you' && <Fx key={fx.key} sheet={fx.sheet} scale={fx.scale} ms={Math.max(480, fx.sheet.frames * 60)} className="tboom" />}
             {pops.filter((p) => p.side === 'you').map((p) => <span key={p.id} className={`tpop ${p.kind}`}>{p.text}</span>)}
           </div>
@@ -815,7 +810,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
             {bench.map(({ f, i }) => (
               <button key={i} className="tact snackrow" onClick={() => pick({ kind: 'swap', to: i })}
                 aria-label={`Swap in ${f.c.sp.common}, level ${f.c.level}, ${f.hp} of ${f.max} HP`}>
-                <span className="tact-ic" aria-hidden><Sprite species={f.c.sp} parts={f.c.parts} armor={lookOf(f.c)} scale={1} mode="static" /></span>
+                <span className="tact-ic" aria-hidden><Sprite species={f.c.sp} parts={f.c.parts} scale={1} mode="static" /></span>
                 <span className="tact-txt"><b>{f.c.sp.common}</b><small>Lv{f.c.level} · {f.hp}/{f.max} HP · {CONTESTS[f.style].name}</small></span>
                 <Edge move={f.style} vs={them.style} />
               </button>
@@ -873,21 +868,13 @@ function Result({ setup, won, prize, party, wild, onRematch, onLadder, onNext, o
         <div className="tlevels">
           {party.filter((c) => c.sightingId && prize.levelled.includes(c.sightingId)).map((c) => {
             const learned = learnedBetween(c.sp, c.level, c.level + 1), next = nextUnlock(c.sp, c.level + 1);
-            // armor: did this level-up bring a new piece?
-            const x = getState().sightings.find((s) => s.id === c.sightingId);
-            const set = x ? setOfSighting(c.sp, x) : null;
-            const nowPieces = set ? set.pieces.filter((p) => p.owned).length : c.armor ?? 0;
-            const gained = set && nowPieces > (c.armor ?? 0) ? set.pieces[nowPieces - 1] : null;
-            const nextPiece = set?.pieces.find((p) => !p.owned);
             return (
-              <div key={c.sp.id} className={`tlevel ${learned.length || gained ? 'learned' : ''}`}>
-                <Sprite species={c.sp} parts={c.parts} armor={{ ...lookOf(c), pieces: nowPieces }} scale={2} mode="idle" />
+              <div key={c.sp.id} className={`tlevel ${learned.length ? 'learned' : ''}`}>
+                <Sprite species={c.sp} parts={c.parts} scale={2} mode="idle" />
                 <span>
                   <b>{c.sp.common}</b> grew to Lv{c.level + 1}!
                   {learned.map((u) => <span key={u.kind} className="tlearn">★ {u.text}!</span>)}
-                  {gained && <span className="tlearn tarmor-new">🛡 New armor: {gained.name}: <b>{gained.abilityName}</b> ({gained.ability})</span>}
-                  {!learned.length && !gained && nextPiece && set && <small className="muted"> Next armor: {nextPiece.label} in {nextPiece.at - set.ups} level-up{nextPiece.at - set.ups === 1 ? '' : 's'}</small>}
-                  {!learned.length && !gained && !nextPiece && next && <small className="muted"> Next: {next.name} at Lv{next.level}</small>}
+                  {!learned.length && next && <small className="muted"> Next: {next.name} at Lv{next.level}</small>}
                 </span>
               </div>
             );

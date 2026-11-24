@@ -8,9 +8,8 @@ import { trainerLevel } from '../../core/xp';
 import { encodeDuel, decodeDuel, duelLink, type DuelCard } from '../../core/duel';
 import { qrEncode, drawQr } from '../../core/qr';
 import { speciesById } from '../../data/provider';
-import { themeFor } from '../../core/armor';
 import { birdStyle } from '../../core/trials';
-import { useTeam, lookOf } from './Trials';
+import { useTeam } from './Trials';
 import { Sprite, TopBar } from '../components';
 import { sfx, haptic } from '../../app/audio';
 
@@ -31,7 +30,7 @@ export function Duel({ code: incoming }: { code?: string }) {
   const mine = team.filter((c) => picked.includes(c.sp.id)).slice(0, 3);
   const myCode = useMemo(() => encodeDuel({
     name: st.trainerName || 'Birder', trainerLevel: trainerLevel(st.xp).level,
-    birds: mine.map((c) => ({ id: c.sp.id, level: c.level, quality: c.quality, armor: c.armor ?? 0, dye: c.dye, glow: c.glow, parts: c.parts })),
+    birds: mine.map((c) => ({ id: c.sp.id, level: c.level, quality: c.quality, parts: c.parts })),
   }), [mine.map((c) => c.sp.id).join(), st.trainerName, st.xp]);
   const link = duelLink(myCode, location.href);
   const qrRef = useRef<HTMLCanvasElement>(null);
@@ -61,11 +60,11 @@ export function Duel({ code: incoming }: { code?: string }) {
         {tab === 'challenge' && (
           team.length === 0 ? <p className="panel">Photograph a bird first. Then you can challenge your friends.</p> : (
             <>
-              <p className="small muted">Pick up to 3 birds. Your friend scans your code and battles them, armor and all.</p>
+              <p className="small muted">Pick up to 3 birds. Your friend scans your code and battles them.</p>
               <div className="duel-pick">
                 {team.slice(0, 12).map((c) => (
                   <button key={c.sp.id} className={`duel-bird ${picked.includes(c.sp.id) ? 'on' : ''}`} aria-pressed={picked.includes(c.sp.id)} onClick={() => toggle(c.sp.id)}>
-                    <span className="duel-bird-art"><Sprite species={c.sp} parts={c.parts} armor={lookOf(c)} scale={2} mode="static" /></span>
+                    <span className="duel-bird-art"><Sprite species={c.sp} parts={c.parts} scale={2} mode="static" /></span>
                     <span className="duel-bird-name">{c.sp.common}</span><span className="duel-bird-lv">Lv{c.level}</span>
                   </button>
                 ))}
@@ -113,7 +112,7 @@ function Incoming({ card, onDuel, onCancel }: { card: DuelCard; onDuel: () => vo
       <div className="duel-foe-team">
         {birds.map(({ b, sp }) => (
           <span key={b.id} className="duel-bird on">
-            <span className="duel-bird-art"><Sprite species={sp!} parts={b.parts} armor={{ theme: themeFor(sp!, birdStyle(sp!)), pieces: b.armor, dye: b.dye, glow: b.glow }} scale={2} mode="idle" /></span>
+            <span className="duel-bird-art"><Sprite species={sp!} parts={b.parts} scale={2} mode="idle" /></span>
             <span className="duel-bird-name">{sp!.common}</span><span className="duel-bird-lv">Lv{b.level}</span>
           </span>
         ))}

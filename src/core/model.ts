@@ -32,8 +32,6 @@ export interface Sighting {
   note: string;
   analysisMs?: number;
   level?: number;                // collector-style level (5 + fieldcraft/5, +1 per repeat; max 50)
-  armorDye?: string;             // armor colour the player picked (v1.37; see core/armor DYES)
-  armorGlow?: string;            // gem / glow colour the player picked (v1.38; core/armor GLOWS)
   dex?: number;                  // regional BirdDex number at time of catch
   pet?: { hp: number; at: string; resting?: boolean }; // health at `at`; drains only while living in the Aviary
 }

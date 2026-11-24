@@ -1,4 +1,3 @@
-import { lookOfSighting } from '../core/gear';
 // After you discover a new bird, a wandering birder sometimes asks for a quick Field Trial with it.
 import { useGame, clearChallenge, speciesOf } from '../app/store';
 import { useNav } from './nav';
@@ -21,7 +20,7 @@ export function ChallengePrompt() {
         <div className="tchallenge-vs">
           <img className="tchallenge-face" src={wandererFace(sighting.id)} alt={who} width={88} height={88} draggable={false} />
           <span className="tchallenge-x" aria-hidden>VS</span>
-          <div className="tchallenge-bird"><Sprite species={sp} parts={sighting.sprite?.parts} armor={lookOfSighting(sp, sighting)} scale={2} mode="idle" /></div>
+          <div className="tchallenge-bird"><Sprite species={sp} parts={sighting.sprite?.parts} scale={2} mode="idle" /></div>
         </div>
         <b className="tchallenge-title">{who} wants a Field Trial</b>
         <span className="small muted">{WANDERER_PERSONA[who]?.title}</span>

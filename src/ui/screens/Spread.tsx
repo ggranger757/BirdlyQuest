@@ -1,4 +1,3 @@
-import { lookOfSighting } from '../../core/gear';
 import { PhotoViewer } from '../PhotoViewer';
 import { useEffect, useState } from 'react';
 import { useNav } from '../nav';
@@ -50,7 +49,7 @@ export function Spread({ sightingId }: { sightingId: string }) {
             </div>
           </div>
           <div className="paper" style={{ padding: 12, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ ...SKY_PLATE, border: '2px solid var(--ink)' }}><Sprite species={sp} parts={s.sprite.parts} armor={lookOfSighting(sp, s)} scale={4} /></div>
+            <div style={{ ...SKY_PLATE, border: '2px solid var(--ink)' }}><Sprite species={sp} parts={s.sprite.parts} scale={4} /></div>
             <h3 className="mt8" style={{ fontSize: 12, textAlign: 'center' }}>{name}</h3>
             {sp.sci && <div className="sci" style={{ fontSize: 12, textAlign: 'center' }}>{sp.sci}</div>}
             <div className="small mt8" style={{ color: 'var(--ink)' }}><span aria-hidden>{RARITY_META[s.rarity].glyph}</span> {RARITY_META[s.rarity].label} · {VERIFY_META[s.verification].label}</div>

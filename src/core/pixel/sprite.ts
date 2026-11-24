@@ -148,18 +148,17 @@ export function rollVariant(hash: string): Variant {
   return 'normal';
 }
 
-import { armorKey, type ArmorLook } from '../armor';
-export interface RenderOpts { silhouette?: boolean; armor?: ArmorLook | null }
+export interface RenderOpts { silhouette?: boolean }
 
 const cache = new Map<string, Frame[]>();
 
 /** Render all FRAMES for a species + part palette (v1.27: built from the owner's sprite sheet). Deterministic. */
 export function renderFrames(sp: Species, parts0: number[] | undefined, opts: RenderOpts = {}): Frame[] {
   const parts = parts0?.length ? parts0 : defaultParts(sp); // older or partial records fall back to field-guide colours
-  const key = `${sp.id}|${parts.join(',')}|${opts.silhouette ? 1 : 0}|${armorKey(opts.armor)}`;
+  const key = `${sp.id}|${parts.join(',')}|${opts.silhouette ? 1 : 0}`;
   const hit = cache.get(key);
   if (hit) return hit;
-  let frames = birdFrames(sp, parts, defaultParts(sp), opts.silhouette ? null : opts.armor);
+  let frames = birdFrames(sp, parts, defaultParts(sp));
   if (opts.silhouette) {
     const [r, g, b] = RGB[IDX.slate];
     frames = frames.map((f) => { const o = f.map((v) => (v === CLEAR ? CLEAR : 0)) as Frame; o.pal = [[r, g, b]]; return o; });
