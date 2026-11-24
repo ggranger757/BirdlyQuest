@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 
 /** Full-screen view of a captured photo. Tap the photo, Escape or ✕ to close.
  *  Double-tap (or double-click) zooms 2.5× at that spot; pinch or the wheel zooms freely; drag to pan when zoomed. */
-export function PhotoViewer({ src, alt, pixelated, onClose }: { src: string; alt: string; pixelated?: boolean; onClose: () => void }) {
+export function PhotoViewer({ src, fallback, alt, credit, pixelated, onClose }: { src: string; fallback?: string; alt: string; credit?: string; pixelated?: boolean; onClose: () => void }) {
+  const [url, setUrl] = useState(src);
   const [z, setZ] = useState({ s: 1, x: 0, y: 0 });
   const pts = useRef(new Map<number, { x: number; y: number }>());
   const start = useRef<{ s: number; x: number; y: number; d: number; px: number; py: number } | null>(null);
@@ -33,7 +34,7 @@ export function PhotoViewer({ src, alt, pixelated, onClose }: { src: string; alt
     <div className="pview" role="dialog" aria-modal="true" aria-label={alt}
       onClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) onClose(); }}
       onWheel={(e) => zoomAt(z.s * (e.deltaY < 0 ? 1.2 : 1 / 1.2), e.clientX, e.clientY)}>
-      <img src={src} alt={alt} draggable={false}
+      <img src={url} alt={alt} draggable={false} onError={() => { if (fallback && url !== fallback) setUrl(fallback); }}
         className={pixelated ? 'pix' : ''}
         style={{ transform: `translate(${z.x}px, ${z.y}px) scale(${z.s})`, cursor: z.s > 1 ? 'grab' : 'zoom-in' }}
         onPointerDown={(e) => { (e.target as Element).setPointerCapture(e.pointerId); pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY }); moved.current = false; snap(); }}
@@ -60,6 +61,7 @@ export function PhotoViewer({ src, alt, pixelated, onClose }: { src: string; alt
         }}
         onPointerCancel={(e) => { pts.current.delete(e.pointerId); snap(); }} />
       <button className="pview-x" onClick={onClose} aria-label="Close photo">✕</button>
+      {credit && <p className="pview-credit">Photo: {credit}</p>}
       <p className="pview-hint" aria-hidden>{z.s > 1 ? 'Drag to look around · double-tap to reset' : 'Pinch or double-tap to zoom'}</p>
     </div>,
     document.body,

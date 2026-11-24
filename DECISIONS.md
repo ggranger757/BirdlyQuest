@@ -423,3 +423,4 @@ One line per meaningful choice, with the reason.
   - Close with ✕, Escape, or a tap outside the photo.
   - Sketch-mode photos stay pixel-crisp.
   - The viewer sits above every app layer (the species card overlay is z-index 2000).
+- **v1.44.1: the real-bird reference photo can be enlarged too** (owner: "I meant the real photo"). Tapping the iNaturalist photo on a species card opens the same full-screen zoom viewer. It loads iNaturalist's large size (falling back to medium), and the photographer credit and license stay on screen.

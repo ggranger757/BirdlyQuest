@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom';
+import { PhotoViewer } from './PhotoViewer';
 import { useEffect, useRef, useState, ReactNode, useSyncExternalStore } from 'react';
 import type { Species } from '../data/types';
 import { renderFrames, defaultParts, silhouette, type Frame } from '../core/pixel/sprite';
@@ -237,14 +238,17 @@ export function useRefPhoto(sp: Species | null): RefPhoto | null | undefined {
 export function RefPhotoCard({ sp, compact }: { sp: Species; compact?: boolean }) {
   const r = useRefPhoto(sp);
   const enabled = useGame((s) => s.settings.refPhotos);
+  const [big, setBig] = useState(false);
   if (!enabled) return null;
   if (r === undefined) return <div className="small muted">Loading a reference photo…</div>;
   if (r === null) return <div className="small muted">{navigator.onLine ? 'No openly licensed reference photo found for this species.' : 'Reference photo needs a connection once; then it is kept offline.'}</div>;
   return (
     <figure style={{ margin: 0 }}>
-      <div className={`taped tilt-r`} style={{ width: compact ? 120 : '72%', maxWidth: 300 }}>
+      <button className="taped tilt-r photo-zoom" style={{ width: compact ? 120 : '72%', maxWidth: 300 }} onClick={() => setBig(true)} aria-label={`Enlarge the reference photo of a ${sp.common}`}>
         <img src={r.url} alt={`Reference photo of a ${sp.common}`} loading="lazy" style={{ aspectRatio: '1 / 1', objectFit: 'cover' }} />
-      </div>
+        <span className="photo-zoom-ic" aria-hidden>⤢</span>
+      </button>
+      {big && <PhotoViewer src={r.url.replace('/medium.', '/large.')} fallback={r.url} alt={`Reference photo of a ${sp.common}`} credit={`${r.attribution.replace(/\(c\)/i, '©')} · ${r.license}`} onClose={() => setBig(false)} />}
       <figcaption className="small muted mt8">
         Reference photo: {r.attribution.replace(/\(c\)/i, '©')} · {r.license} · <a href={r.taxonUrl} target="_blank" rel="noopener">iNaturalist</a>
       </figcaption>
