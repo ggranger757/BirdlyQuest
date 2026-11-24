@@ -26,7 +26,7 @@ const STEPS: Step[] = [
   { tab: 'aviary', target: '.home-strip', text: 'BIRD HOMES. New homes unlock as you level up, then you buy them with Feather Coins. You can also hang new feeders and set out perches from my shop.' },
   { tab: 'aviary', target: '.trials-entry', text: 'FIELD TRIALS! Battle rival birders with your birds’ real-life talents: songs, displays, flight and foraging. Win to level your birds up so they learn new moves.' },
   { tab: 'aviary', target: '.trials-entry', text: 'Each rival battle costs a TRIAL TICKET. You earn one for every bird you log (up to 5). Wandering birders sometimes challenge you after a new find, and those battles are free.' },
-  { tab: 'aviary', target: '.trials-entry', text: 'In battle: FIGHT to pick a move, BAG for snacks, BIRDS to swap. The faster bird moves first, and styles have matchups. Song beats Display, Display beats Forage, Forage beats Sky, Sky beats Song.' },
+  { tab: 'aviary', target: '.trials-entry', text: 'In battle: FIGHT to pick a move, BAG for snacks and potions, BIRDS to swap. The faster bird moves first, and every bird has a class. Song beats Display, Display beats Forage, Forage beats Sky, Sky beats Song.' },
   // Trainer
   { tab: 'you', section: 'lenses', target: '[aria-label="Your Snap Lenses"]', text: 'SNAP LENSES add Snap Power to every photo, and each records your bird with its own effect. Better lenses unlock as you level up.' },
   { tab: 'you', section: 'quests', target: '[role="tablist"][aria-label="Trainer sections"]', text: 'QUESTS and BADGES earn XP and Feather Coins. Each trainer level also adds BOND: +1% HP and power for every bird you bring to battle.' },

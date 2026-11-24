@@ -6,23 +6,24 @@ import { FeatherIcon } from '../FeatherIcon';
 //     Professor Woods, a big preview and ONE button that fits the item's state: Buy, Hang it, Move in, Use…
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNav, type Nav } from '../nav';
-import { useGame, buyHome, ownsHome, setHome, buyDecor, ownsDecor, equipDecor, buyFood, fillFeeder, buyLens, equipLens } from '../../app/store';
+import { useGame, buyPotion, buyHome, ownsHome, setHome, buyDecor, ownsDecor, equipDecor, buyFood, fillFeeder, buyLens, equipLens } from '../../app/store';
 import { FOODS, FEEDER_CAP, type Food } from '../../core/pets';
 import { LENSES, LENS_ORDER, TIER_META, type LensId } from '../../core/lenses';
 import { FEEDERS, PERCHES, feederOf, type DecorDef } from '../../core/decor';
 import { SCENES, homePrice, paintHomeThumb } from '../../render/diorama';
 import { paintDecorThumb } from '../../render/decor';
 import { trainerLevel } from '../../core/xp';
+import { POTIONS, potionById, potionTag, potionSays, KIND_META, type Potion } from '../../core/potions';
 import { Professor, type WoodsMood } from '../Characters';
 import { Capsule } from '../game';
 import { FoodIcon } from '../FoodIcon';
 import { Sheet } from '../components';
 import { sfx, haptic, playClip } from '../../app/audio';
 
-export type ShopTab = 'food' | 'lenses' | 'homes' | 'feeders' | 'perches';
+export type ShopTab = 'food' | 'potions' | 'lenses' | 'homes' | 'feeders' | 'perches';
 type Cat = ShopTab;
 const CATS: { id: Cat; label: string }[] = [
-  { id: 'food', label: 'Food' }, { id: 'feeders', label: 'Feeders' }, { id: 'perches', label: 'Perches' }, { id: 'homes', label: 'Homes' }, { id: 'lenses', label: 'Lenses' },
+  { id: 'food', label: 'Food' }, { id: 'potions', label: 'Potions' }, { id: 'feeders', label: 'Feeders' }, { id: 'perches', label: 'Perches' }, { id: 'homes', label: 'Homes' }, { id: 'lenses', label: 'Lenses' },
 ];
 
 /* ── opening the shop from anywhere: jump to the Aviary's Feeder & Shop page ── */
@@ -56,6 +57,8 @@ function Thumb({ paint, w, h, k }: { paint: (c: HTMLCanvasElement) => void; w: n
   return <canvas ref={ref} className="pix shop-thumb" style={{ width: w, height: h }} aria-hidden />;
 }
 const decorArt = (d: DecorDef, size: number) => <Thumb k={d.id} w={size} h={size} paint={(c) => paintDecorThumb(c, d)} />;
+/** A potion bottle (the owner's 32×32 pixel art). */
+export const PotionArt = ({ p, size }: { p: Potion; size: number }) => <img src={p.img} width={size} height={size} className="pix potion-art" alt="" draggable={false} />;
 const homeArt = (id: string, w: number) => <Thumb k={id} w={w} h={Math.round(w * 0.56)} paint={(c) => { void paintHomeThumb(c, id, w); }} />;
 
 type State = 'inuse' | 'owned' | 'buy' | 'locked';
@@ -98,6 +101,13 @@ export function FeederShop({ cat, onCat, onPoured, birds }: { cat: Cat; onCat: (
         key: `food:${f}`, name: FOODS[f].name, art: (s: number) => <FoodIcon food={f} size={Math.round(s * 0.62)} />, state: 'buy' as State, order: i,
         tag: <>{st.items[f] ? `×${st.items[f]} · ` : ''}{price(FOODS[f].price)}</>,
       }));
+      case 'potions': return POTIONS.map((p, i) => {
+        const have = st.potions?.[p.id] ?? 0, state: State = lv < p.level ? 'locked' : 'buy';
+        const amt = p.fill >= 5 ? 'Full' : `+${p.fill}`;
+        return { key: `potion:${p.id}`, name: p.name, state, order: i,
+          art: (s: number) => <span className="potion-tile"><PotionArt p={p} size={Math.round(s * 0.75)} />{have > 0 && <b className="potion-have">×{have}</b>}</span>,
+          tag: state === 'locked' ? `🔒 Lv ${p.level}` : <><span className="ptag" style={{ color: KIND_META[p.kind].color }}>{amt}</span> · {price(p.price)}</> };
+      });
       case 'feeders': return decorTiles(FEEDERS);
       case 'perches': return decorTiles(PERCHES);
       case 'homes': return [
@@ -115,7 +125,7 @@ export function FeederShop({ cat, onCat, onPoured, birds }: { cat: Cat; onCat: (
       });
     }
   }, [cat, st, lv]);
-  const sorted = cat === 'food' ? tiles : [...tiles].sort((a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state] || a.order - b.order);
+  const sorted = cat === 'food' || cat === 'potions' ? tiles : [...tiles].sort((a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state] || a.order - b.order);
 
   return (
     <div className="fshop">
@@ -188,6 +198,12 @@ function ItemSheet({ itemKey, onClose, onPoured }: { itemKey: string; onClose: (
     meta = <>You have <b>{have}</b> · feeder {st.feeder.level}/{FEEDER_CAP}</>;
     primary = <button className="btn primary block" disabled={st.feathers < FOODS[f].price} onClick={() => { if (buyFood(f)) { happy('Into your bag it goes! Pour it in whenever you like.'); nav.toast(`Bought ${FOODS[f].name}`); } else broke(FOODS[f].price); }}>Buy a bag · {coins(FOODS[f].price)}</button>;
     secondary = <button className="btn block" disabled={!have || st.feeder.level >= FEEDER_CAP} onClick={() => { const n = fillFeeder(f); if (n) { sfx.page(); haptic(12); happy(`Poured in! +${n}. Your birds will be thrilled.`); setTimeout(onPoured, 600); } }}>{st.feeder.level >= FEEDER_CAP ? 'Feeder is full' : have ? `Pour one in (${have} left)` : 'Pour one in (none yet)'}</button>;
+  } else if (kind === 'potion') {
+    const p = potionById(id)!, have = st.potions?.[p.id] ?? 0, locked = lv < p.level;
+    art = <PotionArt p={p} size={112} />; title = p.name; line = potionSays(p);
+    meta = <><b style={{ color: KIND_META[p.kind].color }}>{potionTag(p)}</b> · you have <b>{have}</b></>;
+    primary = locked ? <button className="btn block" disabled>🔒 Unlocks at Lv {p.level}</button>
+      : <button className="btn primary block" disabled={st.feathers < p.price} onClick={() => { if (buyPotion(p.id)) { happy(`Into your bag! In a battle, tap Bag to drink it.`); nav.toast(`Bought ${p.name}`); } else broke(p.price); }}>Buy one · {coins(p.price)}</button>;
   } else if (kind === 'feeder' || kind === 'perch') {
     const d = variants.find((v) => v.id === pick) ?? variants[0];
     const owned = ownsDecor(st, d.id), using = st.diorama[d.kind] === d.id || (d.kind === 'feeder' && !st.diorama.feeder && d.price === 0), locked = !owned && lv < d.level;

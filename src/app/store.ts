@@ -1,5 +1,6 @@
 // Game state: one local store, persisted to IndexedDB on every change.
 import { SCENES, FREE_HOMES, homePrice } from '../render/diorama';
+import { potionById } from '../core/potions';
 import { DECOR, DEFAULT_FEEDER, migratePerchId } from '../core/decor';
 import { LENSES, RETIRED_LENSES, boostedPower, type LensId } from '../core/lenses';
 import { useSyncExternalStore } from 'react';
@@ -35,7 +36,7 @@ export function freshState(): GameState {
     settings: { sound: true, music: true, gameMusic: false, haptics: true, grid: true, motion: 'system', dyslexiaFont: false, refPhotos: true, theme: 'neon' },
     sessions: 0, lastSession: null, backupPromptAfter: null, firstCatchSeconds: null, installStartedAt: now, log: [],
     trainerName: '', partner: null, speciesDefs: {},
-    items: { seeds: 0, berries: 0, worms: 0 }, lenses: ['ripple'], lens: 'ripple', feeder: { level: 60 }, petDay: null,
+    items: { seeds: 0, berries: 0, worms: 0 }, potions: { atk1: 1, def1: 1 }, lenses: ['ripple'], lens: 'ripple', feeder: { level: 60 }, petDay: null,
     stats: { fills: 0, spent: 0, quests: 0 }, badgeQueue: [],
   };
 }
@@ -68,7 +69,7 @@ export function logEvent(e: string, d?: unknown) {
 }
 
 function adopt(saved: GameState | undefined) {
-  if (saved && saved.version) state = { ...freshState(), ...saved, settings: { ...freshState().settings, ...saved.settings }, items: { ...freshState().items, ...(saved.items ?? {}) }, feeder: saved.feeder ?? freshState().feeder, stats: { ...freshState().stats, ...(saved.stats ?? {}) }, badgeQueue: saved.badgeQueue ?? [], lenses: saved.lenses?.length ? saved.lenses : ['ripple'], lens: saved.lens ?? 'ripple' };
+  if (saved && saved.version) state = { ...freshState(), ...saved, settings: { ...freshState().settings, ...saved.settings }, items: { ...freshState().items, ...(saved.items ?? {}) }, feeder: saved.feeder ?? freshState().feeder, stats: { ...freshState().stats, ...(saved.stats ?? {}) }, badgeQueue: saved.badgeQueue ?? [], potions: saved.potions ?? { atk1: 1, def1: 1 }, lenses: saved.lenses?.length ? saved.lenses : ['ripple'], lens: saved.lens ?? 'ripple' };
   // v1.37: birds cap at Lv50; the Aviary holds 10 (extra residents go back to the Bird Box, in arrival order)
   if (state.sightings.some((x) => (x.level ?? 0) > 50)) state = { ...state, sightings: state.sightings.map((x) => ((x.level ?? 0) > 50 ? { ...x, level: 50 } : x)) };
   if (state.diorama.birds.length > AVIARY_MAX) {
@@ -569,6 +570,22 @@ export function spendTicket(): boolean {
   return true;
 }
 export function clearChallenge() { setState((s) => ({ ...s, pendingChallenge: null })); }
+
+/** Buy a battle potion. Needs the birder level it unlocks at and enough Feather Coins. */
+export function buyPotion(id: string): boolean {
+  const p = potionById(id);
+  if (!p || state.feathers < p.price || trainerLevel(state.xp).level < p.level) return false;
+  setState((s) => ({ ...s, feathers: s.feathers - p.price, potions: { ...(s.potions ?? {}), [id]: (s.potions?.[id] ?? 0) + 1 }, stats: { ...s.stats, spent: s.stats.spent + p.price } }));
+  logEvent('buy_potion', id);
+  return after(true);
+}
+/** Drink one potion in a battle. */
+export function spendPotion(id: string): boolean {
+  if ((state.potions?.[id] ?? 0) < 1) return false;
+  setState((s) => ({ ...s, potions: { ...(s.potions ?? {}), [id]: (s.potions?.[id] ?? 0) - 1 } }));
+  logEvent('trial_potion', id);
+  return true;
+}
 
 /** Use one bag of pantry food during a Field Trial. */
 export function spendTrialItem(item: Food): boolean {

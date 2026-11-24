@@ -74,6 +74,7 @@ export interface GameState {
   partner: { speciesId: string; parts: number[]; nickname?: string; pet?: { hp: number; at: string } } | null;
   speciesDefs: Record<string, Species>; // live species the player has caught, kept for offline use
   items: { seeds: number; berries: number; worms: number }; // food bags in the pantry
+  potions?: Record<string, number>; // battle potions owned (v1.43)
   lenses: string[]; lens: string;
   tutorialDone?: boolean;
   tourSeen?: number;      // version of Professor Woods' tour last finished or skipped (v1.28 tour = 2)

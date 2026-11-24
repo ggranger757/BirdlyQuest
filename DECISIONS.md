@@ -409,3 +409,11 @@ One line per meaningful choice, with the reason.
   - The Super meter is purple.
   - Turn timer: after 8 seconds of thinking, a 5-second countdown appears; at 0 the bird uses its Quick move (it never wastes a skill use). It is off during the first-battle tutorial.
   - "How battles work" explains each rule in a sentence or two, in everyday words (owner: rules still unclear).
+- **v1.43.0: Attack/Defense gauges and potions; classes; timeout hands the turn over.**
+  - **Gauges:** every bird in battle has two 5-pip gauges under its HP. Each ATK pip is +10% damage dealt; each DEF pip is −10% damage taken. They start empty and reset after each battle. Your bird always shows them; a rival's show only when filled.
+  - **Potions:** the owner's pixel art, kept to three colours so they read at a glance: red fills Attack, blue fills Defense, green fills both. 11 bottles unlock gradually by birder level: Lv1 vials (+1), Lv6 flasks (+2), Lv10 green tonic, Lv16 bottles (+3), Lv22 forest draught, Lv30 elixirs (full), Lv40 golden elixir (both full).
+    - They are bought with Feather Coins in a new Potions shop category; locked bottles show "Unlocks at Lv X".
+    - They are drunk from Bag during battle only, and drinking uses your turn like a snack. A potion whose gauge is already full is greyed out.
+    - Everyone gets one Attack Vial and one Defense Vial to try. Only 11 of the 27 supplied bottles are used, so the shop stays simple.
+  - **Classes:** battle text says "class" instead of "style".
+  - **Timer:** when the turn timer runs out, your bird loses its turn and the rival moves ("Time's up!"), as the owner asked. Before, the bird auto-used its quick move.

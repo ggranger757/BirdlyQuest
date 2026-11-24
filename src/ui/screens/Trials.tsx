@@ -6,7 +6,8 @@ import { setOfSighting } from '../../core/gear';
 import { decodeDuel } from '../../core/duel';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useNav } from '../nav';
-import { finishDuel, useGame, getState, counts, speciesOf, finishTrial, finishWild, noteBattle, spendTrialItem, spendTicket } from '../../app/store';
+import { finishDuel, useGame, getState, counts, speciesOf, finishTrial, finishWild, noteBattle, spendTrialItem, spendPotion, spendTicket } from '../../app/store';
+import { POTIONS, potionTag, KIND_META, GAUGE_MAX } from '../../core/potions';
 import { regionEntries, speciesById } from '../../data/provider';
 import { playClip, preloadTrialClips, sfx, haptic, battleMusic } from '../../app/audio';
 import { TopBar, Sprite, Icon, useReducedMotion } from '../components';
@@ -135,10 +136,10 @@ function BattleGuide() {
       {sec(2, 'Taking turns', <>
         <p>You and the rival take turns. On your turn, pick one:</p>
         <ul className="tg-acts">
-          <li><b>Fight</b><span>use a move</span></li><li><b>Bag</b><span>give a snack</span></li>
+          <li><b>Fight</b><span>use a move</span></li><li><b>Bag</b><span>snack or potion</span></li>
           <li><b>Birds</b><span>switch birds</span></li><li><b>Run</b><span>leave</span></li>
         </ul>
-        <p>The faster bird moves first. Take your time: after {TURN_WAIT} seconds a {TURN_COUNT}-second countdown starts, and if it runs out your bird does its Quick move.</p>
+        <p>The faster bird moves first. Take your time: after {TURN_WAIT} seconds a {TURN_COUNT}-second countdown starts, and if it runs out, the rival gets your turn.</p>
       </>)}
       {sec(3, 'Moves', <>
         <div className="tg-moves">
@@ -149,16 +150,20 @@ function BattleGuide() {
         </div>
         <p>The dots show uses left. They all come back next battle.</p>
       </>)}
-      {sec(4, 'Styles', <>
-        <p>Every bird has a style. Each style beats the next one in this circle:</p>
+      {sec(4, 'Classes', <>
+        <p>Every bird has a class. Each class beats the next one in this circle:</p>
         <div className="tg-loop">{loop.map((c, i) => <Fragment key={i}>{i > 0 && <b aria-hidden>▶</b>}<i style={{ ['--c' as string]: CONTESTS[c].color }}>{CONTESTS[c].name}</i></Fragment>)}</div>
         <p><span className="tedge up">▲ Strong</span> means your move hits harder. <span className="tedge down">▼ Weak</span> means softer. Seeing ▼? Try switching birds.</p>
       </>)}
-      {sec(5, 'Super meter', <p>The purple bar fills a little each time you hit, block or get hit. When it says <b>Ready!</b>, tap it for your biggest move.</p>)}
-      {sec(6, 'Red “!”', <p>A rival bird with a red <b>!</b> is getting ready for a giant move. Tap <b>Guard</b> to block it.</p>)}
-      {sec(7, 'Bond', <p>As you level up as a birder, all your birds get stronger. Right now they get <b>+{pct}%</b>.</p>)}
-      {sec(8, 'Armor', <p>Birds earn armor pieces as they level up. Each piece adds a small power, like an extra use or taking less damage.</p>)}
-      {sec(9, 'Tickets', <p>Each battle uses 1 ticket. Every bird you log gives you 1 more (you can hold {TICKETS.max}).</p>)}
+      {sec(5, 'Attack & Defense gauges', <>
+        <p>Under each bird’s HP are two gauges with 5 pips each. Every <b style={{ color: '#E0483A' }}>⚔ Attack</b> pip makes your bird hit 10% harder. Every <b style={{ color: '#3A8FE0' }}>🛡 Defense</b> pip makes it take 10% less damage.</p>
+        <p>Fill them with potions: <b style={{ color: '#E0483A' }}>red</b> for Attack, <b style={{ color: '#3A8FE0' }}>blue</b> for Defense, <b style={{ color: '#4CC25A' }}>green</b> for both. Buy them in the Shop, then drink one from <b>Bag</b> (it uses your turn). Bigger bottles unlock as you level up. Gauges empty after each battle.</p>
+      </>)}
+      {sec(6, 'Super meter', <p>The purple bar fills a little each time you hit, block or get hit. When it says <b>Ready!</b>, tap it for your biggest move.</p>)}
+      {sec(7, 'Red “!”', <p>A rival bird with a red <b>!</b> is getting ready for a giant move. Tap <b>Guard</b> to block it.</p>)}
+      {sec(8, 'Bond', <p>As you level up as a birder, all your birds get stronger. Right now they get <b>+{pct}%</b>.</p>)}
+      {sec(9, 'Armor', <p>Birds earn armor pieces as they level up. Each piece adds a small power, like an extra use or taking less damage.</p>)}
+      {sec(10, 'Tickets', <p>Each battle uses 1 ticket. Every bird you log gives you 1 more (you can hold {TICKETS.max}).</p>)}
     </div>
   );
 }
@@ -403,7 +408,7 @@ function Party({ setup, size, team, party, setParty, onGo, bond, duel }: { setup
 
 // ─── battle ───
 type Anim = '' | 'enter' | 'lunge' | 'hit' | 'rest' | 'charge' | 'guard';
-interface SideView { idx: number; hp: number; max: number; anim: Anim; hidden: boolean }
+interface SideView { idx: number; hp: number; max: number; anim: Anim; hidden: boolean; atk?: number; def?: number }
 interface Pop { id: number; side: Side; text: string; kind: 'dmg' | 'crit' | 'heal' | 'info' | 'miss' | 'bad' }
 type Panel = 'busy' | 'menu' | 'fight' | 'snack' | 'swap';
 
@@ -418,6 +423,15 @@ function useCount(target: number) {
     return () => { cancelAnimationFrame(raf); from.current = target; };
   }, [target]);
   return v;
+}
+/** Attack and Defense gauges: 5 pips each, filled by potions. */
+function Gauges({ atk, def }: { atk: number; def: number }) {
+  const row = (k: 'atk' | 'def', n: number) => (
+    <span className={`tg-gauge ${k}`} aria-label={`${k === 'atk' ? 'Attack' : 'Defense'} gauge ${n} of ${GAUGE_MAX}${n ? `: ${k === 'atk' ? 'hits' : 'takes'} ${n * 10}% ${k === 'atk' ? 'harder' : 'less damage'}` : ''}`}>
+      <small aria-hidden>{k === 'atk' ? 'ATK' : 'DEF'}</small>{Array.from({ length: GAUGE_MAX }, (_, i) => <i key={i} className={i < n ? 'on' : ''} />)}
+    </span>
+  );
+  return <span className="thud-gauges">{row('atk', atk)}{row('def', def)}</span>;
 }
 function HpBar({ hp, max }: { hp: number; max: number }) {
   const pct = Math.max(0, Math.min(100, (hp / Math.max(1, max)) * 100));
@@ -558,6 +572,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
         case 'guard': playClip('tPick', { vol: 0.6 }); burst(e.side, FX_RING, 2); pop(e.side, 'Guard', 'info'); await anim(e.side, 'guard', 320); break;
         case 'charge': setCharging(true); playClip('tStart', { vol: 0.7 }); await anim('foe', 'charge', 520); await speak(line(setup.persona.charge, active(before, 'foe').c.sp.common)); break;
         case 'gauge': setGauge(e.value); break;
+        case 'gauges': setSide(e.side, (v) => ({ ...v, atk: e.atk, def: e.def })); playClip('buy', { vol: 0.5 }); burst(e.side, FX_RING, 2); await sleep(reduced ? 60 : 380); break;
         case 'rest': {
           playClip('tTie', { vol: 0.7 }); if (e.side === 'foe') setCharging(false); await anim(e.side, 'rest', 760); setSide(e.side, (v) => ({ ...v, hidden: true }));
           // the trainer reacts, unless that was the last bird (their win/lose line comes next)
@@ -570,7 +585,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
           if (e.side === 'you') youIdx.current = e.index; else foeIdx.current = e.index;
           const f = e.side === 'you' ? before.you[e.index] : before.foe[e.index];
           if (e.side === 'you') used.current.add(party[e.index]?.sightingId ?? '');
-          setSide(e.side, () => ({ idx: e.index, hp: f.hp, max: f.max, anim: 'enter', hidden: false }));
+          setSide(e.side, () => ({ idx: e.index, hp: f.hp, max: f.max, anim: 'enter', hidden: false, atk: f.atkG ?? 0, def: f.defG ?? 0 }));
           playClip('tPick', { vol: 0.6 }); await sleep(reduced ? 100 : 450); setSide(e.side, (v) => ({ ...v, anim: '' }));
           break;
         }
@@ -633,7 +648,9 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
   const live = panel !== 'busy';
   const fightLesson = tutId === 'quick' || tutId === 'skill' || tutId === 'guard';
   const lock = (id: string) => !live || (!!step && (step.info || (tutId !== id && !(id === 'fight' && fightLesson))));
-  const snacks = (['seeds', 'berries', 'worms'] as Item[]).reduce((n, it) => n + (items[it] ?? 0), 0);
+  const potions = useGame((s) => s.potions ?? {});
+  const myPotions = POTIONS.filter((p) => (potions[p.id] ?? 0) > 0);
+  const snacks = (['seeds', 'berries', 'worms'] as Item[]).reduce((n, it) => n + (items[it] ?? 0), 0) + myPotions.reduce((n, p) => n + (potions[p.id] ?? 0), 0);
   const sReady = gauge >= 100;
   const bench = bat.you.map((f, i) => ({ f, i })).filter(({ f, i }) => !f.out && i !== bat.yi);
   const meFirst = cur.spd >= them.spd;
@@ -661,7 +678,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
       const el = (Date.now() - t0) / 1000;
       if (el < TURN_WAIT) return;
       const r = Math.ceil(TURN_WAIT + TURN_COUNT - el);
-      if (r <= 0) { clearInterval(id); setLeft(null); pickRef.current({ kind: 'quick' }); return; }
+      if (r <= 0) { clearInterval(id); setLeft(null); pickRef.current({ kind: 'wait', timeout: true }); return; }   // time's up: the rival takes your turn
       setLeft((v) => { if (v !== r) sfx.move(); return r; });
     }, 200);
     return () => clearInterval(id);
@@ -674,6 +691,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
         <span className="thud-pips">{list.map((x, i) => <i key={i} className={x.out ? 'out' : i === at ? 'on' : ''} />)}</span>
         <span className="thud-status">{!v.hidden && statusOf(f).map((x) => <i key={x.t} className={x.good ? 'good' : 'bad'}>{x.t}</i>)}</span>
       </span>
+      {(side === 'you' || (v.atk ?? 0) + (v.def ?? 0) > 0) && <Gauges atk={v.atk ?? 0} def={v.def ?? 0} />}
     </div>
   );
 
@@ -762,7 +780,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
         {(panel === 'menu' || panel === 'busy') && (
           <div className="tcmd">
             <button className={`tcmd-b fight ${fightLesson && !step?.info ? 'tut-focus' : ''}`} disabled={lock('fight')} onClick={() => { sfx.select(); setPanel('fight'); }} aria-label="Fight: choose a move"><PixelEmoji name="fight" /><span className="tcmd-l">Fight</span></button>
-            <button className="tcmd-b" disabled={lock('bag') || !snacks} onClick={() => { sfx.select(); setPanel('snack'); }} aria-label={`Bag: ${snacks} snacks`}><PixelEmoji name="bag" /><span className="tcmd-l">Bag</span><small>×{snacks}</small></button>
+            <button className="tcmd-b" disabled={lock('bag') || !snacks} onClick={() => { sfx.select(); setPanel('snack'); }} aria-label={`Bag: ${snacks} snacks and potions`}><PixelEmoji name="bag" /><span className="tcmd-l">Bag</span><small>×{snacks}</small></button>
             <button className="tcmd-b" disabled={lock('birds') || !bench.length} onClick={() => { sfx.select(); setPanel('swap'); }} aria-label={`Birds: ${bench.length} to swap in`}><PixelEmoji name="birds" /><span className="tcmd-l">Birds</span><small>×{bench.length}</small></button>
             <button className="tcmd-b run" disabled={!live || !!step} onClick={() => { sfx.back(); act({ kind: 'run' }); }} aria-label="Run: leave the battle"><PixelEmoji name="run" /><span className="tcmd-l">Run</span></button>
             <button className="thelp" onClick={() => { sfx.select(); setGuide(true); }}><span className="thelp-q" aria-hidden>?</span><span className="thelp-l">How battles work</span></button>
@@ -813,6 +831,14 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
                 <span className="tact-ic" aria-hidden><FoodIcon food={it} size={26} /></span>
                 <span className="tact-txt"><b>{SNACKS[it].name}</b><small>{SNACKS[it].tag}</small></span>
                 <span className="tsnack-n">×{items[it] ?? 0}</span>
+              </button>
+            ))}
+            {myPotions.length > 0 && <p className="tbag-h">Potions <small>fill your bird’s gauges</small></p>}
+            {myPotions.map((p) => (
+              <button key={p.id} className="tact snackrow" disabled={(p.kind === 'atk' && (you.atk ?? 0) >= GAUGE_MAX) || (p.kind === 'def' && (you.def ?? 0) >= GAUGE_MAX) || (p.kind === 'both' && (you.atk ?? 0) >= GAUGE_MAX && (you.def ?? 0) >= GAUGE_MAX)} onClick={() => { if (spendPotion(p.id)) pick({ kind: 'potion', id: p.id }); }}>
+                <span className="tact-ic" aria-hidden><img src={p.img} width={28} height={28} className="pix potion-art" alt="" /></span>
+                <span className="tact-txt"><b>{p.name}</b><small style={{ color: KIND_META[p.kind].color }}>{potionTag(p)}</small></span>
+                <span className="tsnack-n">×{potions[p.id]}</span>
               </button>
             ))}
             <button className="btn ghost small trun" onClick={() => { sfx.back(); setPanel('menu'); }}>Back</button>

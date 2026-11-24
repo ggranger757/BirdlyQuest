@@ -11,6 +11,7 @@
 //                      Ultra Super Lv40) and your trainer level adds a Bond bonus to every bird you bring.
 // Matchups:            Song beats Display beats Forage beats Sky beats Song (×1.3, or ×0.77 the other way).
 import type { Species } from '../data/types';
+import { potionById, drink, potionTag, GAUGE_STEP } from './potions';
 import { armorStats, piecesFor, rivalLevelUps, type ArmorStats } from './armor';
 
 // ─── styles: a bird's best talent (sets its quick move, super move, colours and sounds) ───
@@ -202,6 +203,7 @@ export interface Fighter {
   fed: number;         // turns of +40% power (Mealworms)
   shelter: boolean;    // next hit blocked 60% (Waterproof)
   gear: ArmorStats;    // armor bonuses (v1.37)
+  atkG: number; defG: number; // Attack / Defense gauges, 0–5 pips, filled by potions (v1.43)
   out: boolean;
 }
 const avgStat = (sp: StatSp) => CONTEST_IDS.reduce((n, c) => n + contestStat(sp, c), 0) / 4;
@@ -221,7 +223,7 @@ export function fighter(c: Contender, hpScale = 1, bond = 0): Fighter {
     quick: lv >= GROW.quick ? QUICK_PLUS[style] : CONTESTS[style].quick, quickPow: lv >= GROW.quick ? 1.3 : 1,
     tech: lv >= GROW.tech ? TECHNIQUES[style] : null,
     superName: lv >= GROW.ultra ? ULTRA[style] : CONTESTS[style].super, superPow: lv >= GROW.ultra ? T.superPower * 1.2 : T.superPower,
-    weak: 0, dazzle: 0, focus: false, fed: 0, shelter: false, out: false,
+    weak: 0, dazzle: 0, focus: false, fed: 0, shelter: false, out: false, atkG: 0, defG: 0,
   };
 }
 
@@ -233,7 +235,7 @@ export const SNACKS: Record<Item, { name: string; tag: string }> = {
   berries: { name: 'Berry Mash', tag: 'Heals 60% HP' },
   worms: { name: 'Mealworms', tag: '+40% power, 3 turns' },
 };
-export type Action = { kind: 'quick' } | { kind: 'skill' } | { kind: 'tech' } | { kind: 'guard' } | { kind: 'super' } | { kind: 'snack'; item: Item } | { kind: 'swap'; to: number } | { kind: 'run' } | { kind: 'wait' };
+export type Action = { kind: 'quick' } | { kind: 'skill' } | { kind: 'tech' } | { kind: 'guard' } | { kind: 'super' } | { kind: 'snack'; item: Item } | { kind: 'swap'; to: number } | { kind: 'run' } | { kind: 'wait'; timeout?: boolean } | { kind: 'potion'; id: string };
 export type MoveKind = 'quick' | 'skill' | 'tech' | 'super' | 'big';
 export type Ev =
   | { t: 'log'; text: string }
@@ -245,6 +247,7 @@ export type Ev =
   | { t: 'miss'; side: Side }
   | { t: 'heal'; side: Side; amount: number }
   | { t: 'buff'; side: Side; text: string; good: boolean }
+  | { t: 'gauges'; side: Side; atk: number; def: number }
   | { t: 'hp'; side: Side; value: number; max: number }
   | { t: 'gauge'; value: number }
   | { t: 'rest'; side: Side }
@@ -281,6 +284,7 @@ function strike(b: Battle, side: Side, mult: number, style: Contest, rng: () => 
   const guarded = !o.pierce && ((side === 'foe' && b.guarding) || (side === 'you' && b.foeGuard) || d.shelter);
   if (guarded) { dmg *= 1 - T.guardBlock; d.shelter = false; }
   dmg *= 1 - (d.gear?.dr ?? 0); // helmet
+  dmg *= (1 + GAUGE_STEP * (a.atkG ?? 0)) * (1 - GAUGE_STEP * (d.defG ?? 0)); // potion gauges
   const amount = Math.max(1, Math.round(dmg));
   d.hp = Math.max(0, d.hp - amount);
   ev.push({ t: 'dmg', side: other(side), amount, crit, blocked: guarded, style, big: !!o.big, eff }, { t: 'hp', side: other(side), value: d.hp, max: d.max });
@@ -373,7 +377,7 @@ export function ambush(b0: Battle, rng: () => number): { b: Battle; ev: Ev[] } {
 export const skillReady = (b: Battle) => active(b, 'you').pp > 0;
 export const techReady = (b: Battle) => { const f = active(b, 'you'); return !!f.tech && f.pp2 > 0; };
 /** Guard, snacks, swapping and running always happen before attacks (like Protect, items and switching). */
-export const PRIORITY = new Set<Action['kind']>(['guard', 'snack', 'swap', 'run', 'wait']);
+export const PRIORITY = new Set<Action['kind']>(['guard', 'snack', 'swap', 'run', 'wait', 'potion']);
 /** Who acts first this turn. */
 export function youFirst(b: Battle, a: Action, rng: () => number): boolean {
   if (PRIORITY.has(a.kind)) return true;
@@ -402,7 +406,13 @@ export function takeTurn(b0: Battle, mine: Action, rng: () => number, opts: { fo
     const me = active(b, 'you');
     switch (mine.kind) {
       case 'run': b.over = 'foe'; ev.push({ t: 'log', text: 'You bowed out of the trial.' }, { t: 'end', winner: 'foe' }); return;
-      case 'wait': ev.push({ t: 'log', text: `${me.c.sp.common} hesitates.` }); return;
+      case 'wait': ev.push({ t: 'log', text: mine.timeout ? `Time’s up! ${nameOf(b, 'foe')} takes your turn.` : `${me.c.sp.common} hesitates.` }); return;
+      case 'potion': {
+        const p = potionById(mine.id); if (!p) return;
+        const g = drink(p, me.atkG, me.defG); me.atkG = g.atk; me.defG = g.def;
+        ev.push({ t: 'log', text: `${me.c.sp.common} drinks the ${p.name}!` }, { t: 'gauges', side: 'you', atk: g.atk, def: g.def }, { t: 'buff', side: 'you', text: potionTag(p), good: true });
+        return;
+      }
       case 'quick':
         ev.push({ t: 'move', side: 'you', kind: 'quick', name: me.quick, style: me.style }, { t: 'log', text: `${me.c.sp.common} uses ${me.quick}!` });
         strike(b, 'you', me.quickPow, me.style, rng, ev);
