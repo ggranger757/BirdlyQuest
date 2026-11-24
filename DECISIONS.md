@@ -418,3 +418,8 @@ One line per meaningful choice, with the reason.
   - **Classes:** battle text says "class" instead of "style".
   - **Timer:** when the turn timer runs out, your bird loses its turn and the rival moves ("Time's up!"), as the owner asked. Before, the bird auto-used its quick move.
 - **v1.43.1: battle HP cards match.** The rival's card now shows its ATK/DEF gauges too (empty until filled), and both cards stretch to the same height (owner: the opponent's HP box was shorter).
+- **v1.44.0: tap a captured photo to enlarge it.** On the species card and the journal spread, your photo shows a small ⤢ corner icon; tapping it opens a full-screen viewer.
+  - Pinch, double-tap or the mouse wheel zooms (up to 5×), and you drag to look around when zoomed.
+  - Close with ✕, Escape, or a tap outside the photo.
+  - Sketch-mode photos stay pixel-crisp.
+  - The viewer sits above every app layer (the species card overlay is z-index 2000).

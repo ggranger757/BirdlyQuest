@@ -1,4 +1,5 @@
 import { lookOfSighting } from '../../core/gear';
+import { PhotoViewer } from '../PhotoViewer';
 import { useEffect, useState } from 'react';
 import { useNav } from '../nav';
 import { useGame, speciesOf, updateNote, recordShare } from '../../app/store';
@@ -14,6 +15,7 @@ export function Spread({ sightingId }: { sightingId: string }) {
   const nav = useNav();
   const s = useGame((st) => st.sightings.find((x) => x.id === sightingId));
   const [photo, setPhoto] = useState<string | null>(null);
+  const [big, setBig] = useState(false);
   const [note, setNote] = useState(s?.note ?? '');
   const [busy, setBusy] = useState(false);
   useEffect(() => { photoURL(s?.photoId ?? null).then(setPhoto); }, [s?.photoId]);
@@ -40,7 +42,7 @@ export function Spread({ sightingId }: { sightingId: string }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: '2px solid var(--ink)', boxShadow: '4px 4px 0 #000' }}>
           <div className="paper" style={{ padding: 12, borderRight: '2px solid #cfc9b8', minHeight: 300 }}>
             <div className="taped tilt-l" style={{ width: '100%' }}>
-              {photo ? <img src={photo} alt="Your photo" style={{ aspectRatio: '1/1', objectFit: 'cover', imageRendering: s.mode === 'sketch' ? 'pixelated' : 'auto' }} />
+              {photo ? <button className="photo-zoom" onClick={() => setBig(true)} aria-label="Enlarge your photo"><img src={photo} alt="Your photo" style={{ aspectRatio: '1/1', objectFit: 'cover', imageRendering: s.mode === 'sketch' ? 'pixelated' : 'auto' }} /><span className="photo-zoom-ic" aria-hidden>⤢</span>{big && <PhotoViewer src={photo} alt="Your photo" pixelated={s.mode === 'sketch'} onClose={() => setBig(false)} />}</button>
                 : <div style={{ aspectRatio: '1/1', display: 'grid', placeItems: 'center', color: 'var(--smoke)', fontSize: 12 }}>Photo removed</div>}
             </div>
             <div className="mt16" style={{ color: 'var(--brick)', transform: 'rotate(-3deg)' }}>

@@ -1654,3 +1654,15 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 .tg-gauge.def i.on { background: #3A8FE0; box-shadow: inset 0 -2px 0 #1F5C9C; }
 .tbag-h { margin: 8px 2px 2px; font-family: var(--lbl); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
 .tbag-h small { text-transform: none; letter-spacing: 0; opacity: .7; margin-left: 4px; font-family: inherit; }
+
+/* v1.44 · tap a captured photo to enlarge it */
+.photo-zoom { position: relative; display: block; padding: 0; border: 0; background: none; cursor: zoom-in; color: inherit; font: inherit; }
+.photo-zoom img { display: block; width: 100%; }
+.photo-zoom-ic { position: absolute; right: 4px; bottom: 4px; width: 22px; height: 22px; display: grid; place-items: center; font-size: 14px; line-height: 1; color: #fff; background: rgba(0,0,0,.6); border: 1px solid rgba(255,255,255,.5); pointer-events: none; }
+.pview { position: fixed; inset: 0; z-index: 100000; display: grid; place-items: center; background: #06080A; touch-action: none; animation: pview-in 140ms ease-out; }
+.pview img { width: 100vw; height: 100dvh; object-fit: contain; user-select: none; -webkit-user-select: none; touch-action: none; transition: transform 60ms linear; }
+.pview img.pix { image-rendering: pixelated; }
+.pview-x { position: absolute; top: calc(10px + var(--safe-t, 0px)); right: 10px; width: 44px; height: 44px; font-size: 20px; color: #fff; background: rgba(0,0,0,.55); border: 2px solid #fff; cursor: pointer; }
+.pview-hint { position: absolute; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); margin: 0; padding: 4px 10px; white-space: nowrap; font-size: 12px; color: #fff; background: rgba(0,0,0,.65); pointer-events: none; }
+@keyframes pview-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .pview, .pview img { animation: none; transition: none; } }

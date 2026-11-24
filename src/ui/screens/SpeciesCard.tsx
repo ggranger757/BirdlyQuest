@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { PhotoViewer } from '../PhotoViewer';
 import { useNav } from '../nav';
 import { ArmorPanel } from '../ArmorPanel';
 import { lookOfSighting } from '../../core/gear';
@@ -23,6 +24,7 @@ export function SpeciesCard({ id, sightingId }: { id: string; sightingId?: strin
   const [sel, setSel] = useState<string | undefined>(sightingId ?? plumages[0]?.id ?? mine[0]?.id);
   const cur = mine.find((x) => x.id === sel) ?? mine[0];
   const [photo, setPhoto] = useState<string | null>(null);
+  const [big, setBig] = useState(false);
   const [summary, setSummary] = useState<string | null>(sp.summary ?? null);
   useEffect(() => { if (!sp.fact && !sp.summary && sp.inatId) taxonSummary(sp.inatId).then(setSummary); }, [sp.id]);
   const [identify, setIdentify] = useState(false);
@@ -79,7 +81,8 @@ export function SpeciesCard({ id, sightingId }: { id: string; sightingId?: strin
         {cur && (
           <div className="row mt16" style={{ alignItems: 'flex-start', gap: 16 }}>
             {photo ? (
-              <div className="taped tilt-l" style={{ width: 132, flex: 'none' }}><img src={photo} alt={`Your photo, ${formatDate(cur.capturedAt)}`} style={{ aspectRatio: '1/1', objectFit: 'cover', imageRendering: cur.mode === 'sketch' ? 'pixelated' : 'auto' }} /></div>
+              <><button className="taped tilt-l photo-zoom" style={{ width: 132, flex: 'none' }} onClick={() => setBig(true)} aria-label="Enlarge your photo"><img src={photo} alt={`Your photo, ${formatDate(cur.capturedAt)}`} style={{ aspectRatio: '1/1', objectFit: 'cover', imageRendering: cur.mode === 'sketch' ? 'pixelated' : 'auto' }} /><span className="photo-zoom-ic" aria-hidden>⤢</span></button>
+              {big && <PhotoViewer src={photo} alt={`Your ${sp.common} photo, ${formatDate(cur.capturedAt)}`} pixelated={cur.mode === 'sketch'} onClose={() => setBig(false)} />}</>
             ) : (
               <div className="taped tilt-l" style={{ width: 132, flex: 'none', background: 'var(--paper)' }}><div style={{ aspectRatio: '1/1', display: 'grid', placeItems: 'center', color: 'var(--smoke)', fontSize: 12, textAlign: 'center' }}>Photo removed.<br />Sprite kept.</div></div>
             )}
