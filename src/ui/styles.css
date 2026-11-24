@@ -974,17 +974,24 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 
 /* the action tray: app buttons and panels */
 .ttray { flex: none; display: flex; flex-direction: column; gap: 10px; padding: 10px 10px calc(8px + var(--safe-b)); background: var(--bg); }
+.tturn-timer { position: relative; display: flex; align-items: center; justify-content: space-between; height: 30px; padding: 0 12px; overflow: hidden;
+  font-family: var(--lbl); font-size: 13px; color: #fff; background: #3A0E12; border: 2px solid #000; box-shadow: 0 3px 0 #000; animation: tturn-in 160ms steps(2); }
+.tturn-timer span, .tturn-timer b { position: relative; z-index: 1; }
+.tturn-timer b { font-size: 18px; color: #FFD34D; }
+.tturn-timer > i { position: absolute; left: 0; top: 0; bottom: 0; background: #E0483A; transition: width 1s linear; }
+@keyframes tturn-in { from { transform: translateY(6px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .tturn-timer, .tturn-timer > i { animation: none; transition: none; } }
 .tsuper { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 42px; padding: 0 12px; overflow: hidden; cursor: pointer;
   font-family: var(--lbl); font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--text); background: #000; border: 2px solid #000; box-shadow: 0 3px 0 #000; }
-.tsuper > i { position: absolute; left: 0; top: 0; bottom: 0; background-color: var(--sun); opacity: .55; background-image: linear-gradient(90deg, transparent 0 calc(100% - 2px), rgba(0,0,0,.45) calc(100% - 2px)); background-size: 10% 100%; transition: width 400ms steps(5); }
+.tsuper > i { position: absolute; left: 0; top: 0; bottom: 0; background-color: #9B5CF6; opacity: .7; background-image: linear-gradient(90deg, transparent 0 calc(100% - 2px), rgba(0,0,0,.45) calc(100% - 2px)); background-size: 10% 100%; transition: width 400ms steps(5); }
 .tsuper-l, .tsuper-r { position: relative; display: inline-flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; color: #fff; }
 .tsuper-l span { overflow: hidden; text-overflow: ellipsis; }
-.tsuper-r { flex: none; color: var(--sun); }
+.tsuper-r { flex: none; color: #C9A8FF; }
 .tsuper:disabled { cursor: default; }
-.tsuper.ready { background: var(--sun); box-shadow: 0 3px 0 #000, 0 0 0 3px rgba(242,193,78,.35); animation: tbglow 1s steps(2) infinite; }
-.tsuper.ready > i { display: none; } .tsuper.ready .tsuper-l, .tsuper.ready .tsuper-r { color: #1A1200; }
+.tsuper.ready { background: #8B4CF0; box-shadow: 0 3px 0 #000, 0 0 0 3px rgba(155,92,246,.45); animation: tbglow 1s steps(2) infinite; }
+.tsuper.ready > i { display: none; } .tsuper.ready .tsuper-l, .tsuper.ready .tsuper-r { color: #fff; }
 :root.theme-field .tsuper { text-transform: none; font-weight: 600; font-size: 15px; }
-@keyframes tbglow { 50% { box-shadow: 0 3px 0 #000, 0 0 0 5px rgba(242,193,78,.2); } }
+@keyframes tbglow { 50% { box-shadow: 0 3px 0 #000, 0 0 0 5px rgba(155,92,246,.3); } }
 .tgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .tact { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 62px; padding: 8px 10px; text-align: left; cursor: pointer; color: var(--text); font: inherit;
   background: var(--slate); border: 2px solid #000; box-shadow: 0 3px 0 #000; transition: transform var(--t-tap) steps(2), box-shadow var(--t-tap) steps(2); }

@@ -398,3 +398,14 @@ One line per meaningful choice, with the reason.
 - **v1.39.0: owls redrawn from the owner's reference sprites.** One new 3/4-view owl form, used by every owl: round head (ear tufts drawn only for tufted species), spectacle facial disk, iris in the species' eye colour with a black pupil and a white catch-light, wing on the far side with speckles, tail and feet at the bottom right, and a full dark outline. The eye glint is a new `*` shading code in the sprite forms. The armor painter still anchors to the form's eye, shoulder and front points, so all 8 armor themes fit the new owls.
 - **v1.40.0: owls are the owner's two reference sprites.** The Great Horned and Snowy owls are drawn pixel for pixel from the owner's art (traced from the screenshots, faces, feet and stray pixels cleaned by hand), using the same hand-drawn sprite path as the sprite-sheet birds. Each also defines a shape: tufted (`owl`) and round-headed (`owl-round`, for owls without ear tufts). Other owls use that shape in their own colours and shading, so every owl has the same look. Owls get every animation other birds have (head bob, blink, tail flick, peck, hop, 8-frame flap); the blink also closes the coloured iris. The Tawny's facial disk moved from cool grey to warm "paper" so its eyes read.
 - **v1.41.0: owls face right; battle rules cut to one line each.** Every bird is drawn facing right and battle mirrors the rival, so the owls were mirrored to match (a left-facing owl looked away from the fight). The wing anchors stay put so the flight frames still spread outward. The "How battles work" rulebook and Professor Woods' first-battle walkthrough were rewritten to one short line per rule (owner: too much text).
+- **v1.42.0: technique animations, purple Super meter, turn timer, plain-language rules.**
+  - Each technique has its own effect, made from the owner's projectile and explosion sheets. They were scaled to the app's pixel size (the 96–128 px sheets halved), given a reduced palette and hard transparency.
+    - Tailwind Strike: a blue comet that hits with a lightning burst.
+    - Mirage Veil: a violet orb with a violet ring.
+    - Rally Anthem: rising gold lightning on the user.
+    - Second Helping: a green ring on the user.
+  - Self-moves now play on the bird itself instead of firing at the rival.
+  - Green explosions: Forage quick hits use a green leaf burst, Forage critical hits a green blast, and the Forage big move a green smoke cloud.
+  - The Super meter is purple.
+  - Turn timer: after 8 seconds of thinking, a 5-second countdown appears; at 0 the bird uses its Quick move (it never wastes a skill use). It is off during the first-battle tutorial.
+  - "How battles work" explains each rule in a sentence or two, in everyday words (owner: rules still unclear).

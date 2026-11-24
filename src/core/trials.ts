@@ -23,7 +23,7 @@ const P = {
   wave: { src: 'fx/trials/spell_wave_gold_proj.png', frames: 6, fw: 16, fh: 26 }, goldBoom: { src: 'fx/trials/spell_gold_boom.png', frames: 8, fw: 40, fh: 40 },
   orb: { src: 'fx/trials/spell_orb_gold_proj.png', frames: 6, fw: 24, fh: 14 }, star: { src: 'fx/trials/star_boom.png', frames: 7, fw: 32, fh: 32 },
   wind: { src: 'fx/trials/windblade_proj.png', frames: 4, fw: 28, fh: 39 }, windBoom: { src: 'fx/trials/windblade_boom.png', frames: 3, fw: 28, fh: 39 },
-  leaf: { src: 'fx/trials/leaf_proj.png', frames: 2, fw: 16, fh: 16 }, leafBoom: { src: 'fx/trials/leaf_boom.png', frames: 7, fw: 48, fh: 48 },
+  leaf: { src: 'fx/trials/leaf_proj.png', frames: 2, fw: 16, fh: 16 }, leafBoom: { src: 'fx/trials/leaf_green_boom.png', frames: 7, fw: 48, fh: 48 },
 } satisfies Record<string, Sheet>;
 export const CONTESTS: Record<Contest, ContestDef> = {
   song: { id: 'song', name: 'Song', quick: 'Echo Chirp', super: 'Symphony Burst', big: 'Thunder Chorus', proj: P.wave, boom: P.goldBoom, clip: 'tSong', color: 'var(--sun)' },
@@ -45,6 +45,20 @@ export const matchup = (move: Contest, defender: Contest): -1 | 0 | 1 => (BEATS[
 export const MATCHUP_MULT = { 1: 1.3, 0: 1, [-1]: 0.77 } as Record<-1 | 0 | 1, number>;
 
 export const FX_CRIT: Sheet = { src: 'fx/trials/fx_blast.png', frames: 8, fw: 48, fh: 48 };
+/** Forage birds explode green. */
+export const FX_GREEN_CRIT: Sheet = { src: 'fx/trials/green_blast.png', frames: 8, fw: 48, fh: 48 };
+export const FX_GREEN_BIG: Sheet = { src: 'fx/trials/green_smoke_boom.png', frames: 9, fw: 56, fh: 64 };
+export const critFx = (style: Contest, big: boolean): Sheet => (style === 'forage' ? (big ? FX_GREEN_BIG : FX_GREEN_CRIT) : FX_CRIT);
+
+// ─── technique animations (pixelated from the owner's projectile and explosion sheets) ───
+export type TechKind = 'rally' | 'veil' | 'tailwind' | 'mend';
+/** self: plays on the user (power-ups, heals). hits: the explosion lands with the damage. */
+export const TECH_FX: Record<TechKind, { proj?: Sheet; boom: Sheet; self?: boolean; hits?: boolean }> = {
+  tailwind: { proj: { src: 'fx/trials/spark_proj.png', frames: 5, fw: 32, fh: 16 }, boom: { src: 'fx/trials/spark_boom.png', frames: 11, fw: 48, fh: 48 }, hits: true },
+  veil: { proj: { src: 'fx/trials/spell_orb_violet_proj.png', frames: 6, fw: 24, fh: 14 }, boom: { src: 'fx/trials/spell_violet_boom.png', frames: 8, fw: 40, fh: 40 } },
+  rally: { boom: { src: 'fx/trials/rally_boom.png', frames: 11, fw: 48, fh: 48 }, self: true },
+  mend: { boom: { src: 'fx/trials/spell_green_boom.png', frames: 8, fw: 40, fh: 40 }, self: true },
+};
 export const FX_RING: Sheet = { src: 'fx/trials/sa_nova.png', frames: 6, fw: 52, fh: 48 };
 
 // ─── stats from real biology ───
@@ -223,7 +237,7 @@ export type Action = { kind: 'quick' } | { kind: 'skill' } | { kind: 'tech' } | 
 export type MoveKind = 'quick' | 'skill' | 'tech' | 'super' | 'big';
 export type Ev =
   | { t: 'log'; text: string }
-  | { t: 'move'; side: Side; kind: MoveKind; name: string; style: Contest }
+  | { t: 'move'; side: Side; kind: MoveKind; name: string; style: Contest; tech?: TechKind }
   | { t: 'guard'; side: Side }
   | { t: 'charge'; side: Side }
   | { t: 'dmg'; side: Side; amount: number; crit: boolean; blocked: boolean; style: Contest; big: boolean; eff: -1 | 0 | 1 }
@@ -298,7 +312,7 @@ function checkRest(b: Battle, side: Side, ev: Ev[]) {
 function useSkill(b: Battle, side: Side, rng: () => number, ev: Ev[], slot: 'skill' | 'tech' = 'skill') {
   const f = active(b, side), s = slot === 'tech' && f.tech ? f.tech : f.skill;
   if (slot === 'tech') f.pp2 = Math.max(0, f.pp2 - 1); else f.pp = Math.max(0, f.pp - 1);
-  ev.push({ t: 'move', side, kind: slot, name: s.name, style: s.style }, { t: 'log', text: `${nameOf(b, side)} uses ${s.name}!` });
+  ev.push({ t: 'move', side, kind: slot, name: s.name, style: s.style, tech: slot === 'tech' ? (s.kind as TechKind) : undefined }, { t: 'log', text: `${nameOf(b, side)} uses ${s.name}!` });
   const foe = active(b, other(side));
   switch (s.kind) {
     case 'focus': f.focus = true; ev.push({ t: 'buff', side, text: 'Focused!', good: true }, { t: 'log', text: `${nameOf(b, side)} waits perfectly still. Its next move will be huge!` }); return;

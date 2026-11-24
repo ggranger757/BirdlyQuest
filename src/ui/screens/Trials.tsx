@@ -18,7 +18,7 @@ import { runBackdrop } from '../../render/diorama';
 import { dayKey, trainerLevel } from '../../core/xp';
 import type { Species } from '../../data/types';
 import {
-  CONTESTS, RIVALS, WANDERERS, WANDERER_PERSONA, WILD, wandererFace, FX_CRIT, FX_RING, SNACKS, GROW, TECHNIQUES, BEATS, TICKETS, T,
+  CONTESTS, RIVALS, WANDERERS, WANDERER_PERSONA, WILD, wandererFace, FX_CRIT, FX_RING, TECH_FX, critFx, SNACKS, GROW, TECHNIQUES, BEATS, TICKETS, T,
   fighter, startBattle, takeTurn, active, rivalTeam, wildTeam, rewardFor, birdStyle, matchup, bondFor, learnedBetween, nextUnlock, ticketsOf, battleIsFree,
   type Contender, type Battle, type Ev, type Side, type Item, type Action, type Sheet, type Contest, type Persona,
 } from '../../core/trials';
@@ -38,6 +38,9 @@ function Fx({ sheet, scale = 2, ms = 500, loop, frame, className, style }: { she
     }} />
   );
 }
+
+/** Turn timer: seconds of free thinking, then the visible countdown. */
+const TURN_WAIT = 8, TURN_COUNT = 5;
 
 /** A little pixel Trial Ticket. */
 export function TicketIcon({ size = 16 }: { size?: number }) {
@@ -128,26 +131,34 @@ function BattleGuide() {
   const sec = (n: number, title: string, body: ReactNode) => <section className="tg-sec"><h4><span className="tg-n">{n}</span>{title}</h4>{body}</section>;
   return (
     <div className="tguide">
-      {sec(1, 'Goal', <p>Knock out every rival bird (0 HP).</p>)}
-      {sec(2, 'Your turn', <p>Pick one: <b>Fight</b>, <b>Bag</b> (snack), <b>Birds</b> (swap) or <b>Run</b>. Faster bird hits first.</p>)}
+      {sec(1, 'How to win', <p>Each bird has <b>HP</b>, its energy. When a bird’s HP reaches 0, it gets tired and flies off to rest (it’s fine!). Tire out all the rival’s birds to win.</p>)}
+      {sec(2, 'Taking turns', <>
+        <p>You and the rival take turns. On your turn, pick one:</p>
+        <ul className="tg-acts">
+          <li><b>Fight</b><span>use a move</span></li><li><b>Bag</b><span>give a snack</span></li>
+          <li><b>Birds</b><span>switch birds</span></li><li><b>Run</b><span>leave</span></li>
+        </ul>
+        <p>The faster bird moves first. Take your time: after {TURN_WAIT} seconds a {TURN_COUNT}-second countdown starts, and if it runs out your bird does its Quick move.</p>
+      </>)}
       {sec(3, 'Moves', <>
         <div className="tg-moves">
-          <span><b>Quick move</b></span><Uses />
-          <span><b>Signature skill</b></span><Uses left={T.skillPP} max={T.skillPP} />
-          <span><b>Technique</b><small>Lv{GROW.tech}+</small></span><Uses left={T.techPP} max={T.techPP} />
-          <span><b>Guard</b><small>blocks 60%</small></span><Uses />
+          <span><b>Quick move</b><small>A small hit. Use it as much as you like.</small></span><Uses />
+          <span><b>Signature skill</b><small>Your bird’s special trick. Stronger, but only a few uses.</small></span><Uses left={T.skillPP} max={T.skillPP} />
+          <span><b>Technique</b><small>A bonus trick learned at Lv{GROW.tech}.</small></span><Uses left={T.techPP} max={T.techPP} />
+          <span><b>Guard</b><small>A shield. Goes first and blocks most of the next hit.</small></span><Uses />
         </div>
-        <p>Dots = uses left. Refilled every battle.</p>
+        <p>The dots show uses left. They all come back next battle.</p>
       </>)}
       {sec(4, 'Styles', <>
+        <p>Every bird has a style. Each style beats the next one in this circle:</p>
         <div className="tg-loop">{loop.map((c, i) => <Fragment key={i}>{i > 0 && <b aria-hidden>▶</b>}<i style={{ ['--c' as string]: CONTESTS[c].color }}>{CONTESTS[c].name}</i></Fragment>)}</div>
-        <p><span className="tedge up">▲ Strong</span> +30% · <span className="tedge down">▼ Weak</span> −25%</p>
+        <p><span className="tedge up">▲ Strong</span> means your move hits harder. <span className="tedge down">▼ Weak</span> means softer. Seeing ▼? Try switching birds.</p>
       </>)}
-      {sec(5, 'Super', <p>Fills as you fight. Tap it at <b>Ready!</b> for a big hit.</p>)}
-      {sec(6, 'Red “!”', <p>A big move is coming. <b>Guard</b>.</p>)}
-      {sec(7, 'Bond', <p>Your Lv{tlv} gives your birds <b>+{pct}%</b>.</p>)}
-      {sec(8, 'Armor', <p>Earned on level-ups. Each piece adds an ability.</p>)}
-      {sec(9, 'Tickets', <p>1 per battle. +1 per bird you log (max {TICKETS.max}).</p>)}
+      {sec(5, 'Super meter', <p>The purple bar fills a little each time you hit, block or get hit. When it says <b>Ready!</b>, tap it for your biggest move.</p>)}
+      {sec(6, 'Red “!”', <p>A rival bird with a red <b>!</b> is getting ready for a giant move. Tap <b>Guard</b> to block it.</p>)}
+      {sec(7, 'Bond', <p>As you level up as a birder, all your birds get stronger. Right now they get <b>+{pct}%</b>.</p>)}
+      {sec(8, 'Armor', <p>Birds earn armor pieces as they level up. Each piece adds a small power, like an extra use or taking less damage.</p>)}
+      {sec(9, 'Tickets', <p>Each battle uses 1 ticket. Every bird you log gives you 1 more (you can hold {TICKETS.max}).</p>)}
     </div>
   );
 }
@@ -462,6 +473,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
   const [intro, setIntro] = useState(true);
   const [charging, setCharging] = useState(false);
   const [fx, setFx] = useState<{ key: number; side: Side; sheet: Sheet; scale: number } | null>(null);
+  const nextBoom = useRef<Sheet | null>(null), selfFx = useRef(false);
   const [proj, setProj] = useState<{ key: number; from: Side; sheet: Sheet; big: boolean } | null>(null);
   const [pops, setPops] = useState<Pop[]>([]);
   const [shake, setShake] = useState(false);
@@ -515,14 +527,20 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
           playClip(e.kind === 'super' || e.kind === 'big' ? 'tCritical' : def.clip, { vol: 0.8 });
           if (e.side === 'foe' && e.kind === 'big') setCharging(false);
           if (e.kind === 'super') { setFlash(true); setTimeout(() => setFlash(false), 260); }
+          const tfx = e.tech ? TECH_FX[e.tech] : null; selfFx.current = false;
+          if (tfx?.self) {   // power-ups and heals glow on the bird itself
+            selfFx.current = true; burst(e.side, tfx.boom, 3); await anim(e.side, 'guard', 520); await sleep(reduced ? 0 : 260); break;
+          }
           // wind-up, dash (the projectile leaves at the peak of the dash), then glide back
           const l = anim(e.side, 'lunge', 560);
-          if (!reduced) { await sleep(200); setProj({ key: ++k.current, from: e.side, sheet: def.proj, big: e.kind === 'super' || e.kind === 'big' }); await sleep(340); setProj(null); }
+          if (!reduced) { await sleep(200); setProj({ key: ++k.current, from: e.side, sheet: tfx?.proj ?? def.proj, big: e.kind === 'super' || e.kind === 'big' }); await sleep(340); setProj(null); }
+          if (tfx && tfx.hits) nextBoom.current = tfx.boom;                     // lands with the damage
+          else if (tfx) { burst(e.side === 'you' ? 'foe' : 'you', tfx.boom, 3); await sleep(reduced ? 0 : 300); }
           await l; break;
         }
         case 'recall': playClip('tPick', { vol: 0.5 }); await anim(e.side, 'rest', 420); setSide(e.side, (v) => ({ ...v, hidden: true })); break;
         case 'dmg': {
-          burst(e.side, e.crit || e.big ? FX_CRIT : CONTESTS[e.style].boom, e.big ? 4 : 3);
+          burst(e.side, nextBoom.current ?? (e.crit || e.big ? critFx(e.style, e.big) : CONTESTS[e.style].boom), e.big ? 4 : 3); nextBoom.current = null;
           pop(e.side, e.blocked ? `-${e.amount} blocked` : `-${e.amount}`, e.crit || e.big ? 'crit' : 'dmg');
           if (e.eff) setTimeout(() => pop(e.side, e.eff > 0 ? 'Strong!' : 'Weak…', e.eff > 0 ? 'crit' : 'miss'), 180);
           playClip(e.blocked ? 'tTie' : 'tHit', { vol: 0.75 });
@@ -534,7 +552,8 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
           setSide(e.side, (v) => ({ ...v, hp: e.value, max: e.max })); await sleep(reduced ? 80 : 300);
           if (e.side === 'foe' && !saidLow.current && e.value > 0 && e.value < e.max * 0.3 && foeOut.current === before.foe.length - 1) { saidLow.current = true; await speak(line([setup.persona.low], before.foe[foeIdx.current]?.c.sp.common ?? '')); }
           break;
-        case 'heal': pop(e.side, `+${e.amount}`, 'heal'); burst(e.side, FX_RING, 2); await sleep(340); break;
+        case 'heal': pop(e.side, `+${e.amount}`, 'heal'); if (!selfFx.current) burst(e.side, FX_RING, 2); selfFx.current = false; await sleep(340); break;
+        // (a technique's own glow already played for this heal)
         case 'buff': pop(e.side, e.text, e.good ? 'info' : 'bad'); await sleep(320); break;
         case 'guard': playClip('tPick', { vol: 0.6 }); burst(e.side, FX_RING, 2); pop(e.side, 'Guard', 'info'); await anim(e.side, 'guard', 320); break;
         case 'charge': setCharging(true); playClip('tStart', { vol: 0.7 }); await anim('foe', 'charge', 520); await speak(line(setup.persona.charge, active(before, 'foe').c.sp.common)); break;
@@ -631,6 +650,22 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
     </button>
   );
   const pick = (a: Action) => { sfx.select(); act(a); };
+  // turn timer: after 8 s of thinking a 5 s countdown appears; at 0 your bird uses its quick move
+  const pickRef = useRef(pick); pickRef.current = pick;
+  const [left, setLeft] = useState<number | null>(null);
+  const timed = live && !step;
+  useEffect(() => {
+    if (!timed) { setLeft(null); return; }
+    const t0 = Date.now();
+    const id = setInterval(() => {
+      const el = (Date.now() - t0) / 1000;
+      if (el < TURN_WAIT) return;
+      const r = Math.ceil(TURN_WAIT + TURN_COUNT - el);
+      if (r <= 0) { clearInterval(id); setLeft(null); pickRef.current({ kind: 'quick' }); return; }
+      setLeft((v) => { if (v !== r) sfx.move(); return r; });
+    }, 200);
+    return () => clearInterval(id);
+  }, [timed]);
   const card = (side: Side, f: Battle['you'][number], v: SideView, list: Battle['you'], at: number) => (
     <div className={`thud-card ${side} ${v.hidden ? 'dim' : ''}`}>
       <div className="thud-top"><b className="thud-name">{f.c.sp.common}</b><span className="thud-lv">Lv{f.c.level}</span></div>
@@ -659,7 +694,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
           <div className={`tbird ${foe.anim} ${charging ? 'charging' : ''}`}>
             {charging && <span className="twarn" aria-hidden>!</span>}
             <span className="tbody"><Sprite species={them.c.sp} armor={lookOf(them.c)} scale={3} mode="fly" flapMs={foe.anim === 'lunge' ? 38 : 92} flip /></span>
-            {fx?.side === 'foe' && <Fx key={fx.key} sheet={fx.sheet} scale={fx.scale} ms={480} className="tboom" />}
+            {fx?.side === 'foe' && <Fx key={fx.key} sheet={fx.sheet} scale={fx.scale} ms={Math.max(480, fx.sheet.frames * 60)} className="tboom" />}
             {pops.filter((p) => p.side === 'foe').map((p) => <span key={p.id} className={`tpop ${p.kind}`}>{p.text}</span>)}
           </div>
         </div>
@@ -667,7 +702,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
           <span className="tplat" aria-hidden />
           <div className={`tbird ${you.anim}`}>
             <span className="tbody"><Sprite species={me.c.sp} parts={me.c.parts} armor={lookOf(me.c)} scale={5} mode="fly" flapMs={you.anim === 'lunge' ? 38 : 92} /></span>
-            {fx?.side === 'you' && <Fx key={fx.key} sheet={fx.sheet} scale={fx.scale} ms={480} className="tboom" />}
+            {fx?.side === 'you' && <Fx key={fx.key} sheet={fx.sheet} scale={fx.scale} ms={Math.max(480, fx.sheet.frames * 60)} className="tboom" />}
             {pops.filter((p) => p.side === 'you').map((p) => <span key={p.id} className={`tpop ${p.kind}`}>{p.text}</span>)}
           </div>
         </div>
@@ -711,6 +746,12 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
             </div>
           </div>
         )}
+        {left != null && (
+          <div className="tturn-timer" role="timer" aria-live="polite">
+            <span>Pick a move!</span><b>{left}</b>
+            <i style={{ width: `${(left / TURN_COUNT) * 100}%` }} aria-hidden />
+          </div>
+        )}
         <button className={`tsuper ${sReady ? 'ready' : ''} ${tutId === 'super' ? 'tut-focus' : ''}`} disabled={!sReady || lock('super')} onClick={() => pick({ kind: 'super' })}
           aria-label={sReady ? `Super ${cur.superName}: ready, tap to use` : `Super meter ${gauge}%: fills as you fight`}>
           <i style={{ width: `${gauge}%` }} aria-hidden />
@@ -739,7 +780,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
               {move({ id: 'quick', cls: 'quick', icon: <Fx sheet={CONTESTS[cur.style].proj} scale={1} frame={1} />, name: cur.quick, sub: cur.quickPow > 1 ? 'Upgraded quick move' : 'Quick move · a steady hit', edge: cur.style, onClick: () => pick({ kind: 'quick' }) })}
               {move({ id: 'skill', cls: 'skill', icon: <Fx sheet={CONTESTS[cur.skill.style].boom} scale={1} frame={2} />, name: cur.skill.name, sub: cur.skill.tag, uses: [cur.pp, cur.ppMax], disabled: cur.pp < 1, edge: cur.skill.power ? cur.skill.style : undefined, onClick: () => pick({ kind: 'skill' }) })}
               {cur.tech
-                ? move({ id: 'tech', cls: 'tech', icon: <Fx sheet={CONTESTS[cur.tech.style].proj} scale={1} frame={3} />, name: cur.tech.name, sub: cur.tech.tag, uses: [cur.pp2, cur.pp2Max], disabled: cur.pp2 < 1, edge: cur.tech.power ? cur.tech.style : undefined, onClick: () => pick({ kind: 'tech' }) })
+                ? move({ id: 'tech', cls: 'tech', icon: (() => { const t = TECH_FX[cur.tech.kind as keyof typeof TECH_FX]; return t?.proj ? <Fx sheet={t.proj} scale={1} frame={2} /> : t ? <Fx sheet={t.boom} scale={0.6} frame={3} /> : <Fx sheet={CONTESTS[cur.tech.style].proj} scale={1} frame={3} />; })(), name: cur.tech.name, sub: cur.tech.tag, uses: [cur.pp2, cur.pp2Max], disabled: cur.pp2 < 1, edge: cur.tech.power ? cur.tech.style : undefined, onClick: () => pick({ kind: 'tech' }) })
                 : (
                   <div className="tact locked" aria-label={`${TECHNIQUES[cur.style].name}: learned at level ${GROW.tech}`}>
                     <span className="tact-ic" aria-hidden>🔒</span>
