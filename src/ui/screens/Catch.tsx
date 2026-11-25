@@ -18,7 +18,7 @@ import { lensOf, boostedPower } from '../../core/lenses';
 import { sfx, haptic, gameMusic, playClip } from '../../app/audio';
 import { RANK_LINES, snapGrade, COIN_MULT } from '../../core/xp';
 import type { Verification } from '../../core/model';
-import { paintSceneThumb } from '../../render/diorama';
+import { paintSceneThumb, lensScene } from '../../render/diorama';
 import { sunTimes, dayPhase } from '../../core/sun';
 
 type Stage = 'wipe' | 'spotted' | 'dark' | 'identify' | 'search' | 'appear' | 'throw' | 'caught';
@@ -243,7 +243,9 @@ function BattleField({ job, habitat, region, stage, result, analysis, snapPower,
   const [wob, setWob] = useState(0);
   useEffect(() => {
     const now = new Date();
-    paintSceneThumb(sceneRef.current!, habitat, dayPhase(now, sunTimes(now, region.lat, region.lng)), 200, 260);
+    // the backdrop changes every 3 discoveries, so the lens step doesn't always look the same
+    const ph = dayPhase(now, sunTimes(now, region.lat, region.lng));
+    paintSceneThumb(sceneRef.current!, lensScene(getState().sightings.length, ph), ph, 200, 260);
   }, []);
 
   // photo → sprite reveal (the "appeared" moment)

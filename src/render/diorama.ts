@@ -130,9 +130,21 @@ function paintLayers(g: CanvasRenderingContext2D, imgs: HTMLImageElement[], s: S
   if (s.tint) { g.fillStyle = s.tint; g.fillRect(0, 0, viewW, viewH); }
 }
 
+/** Backdrops for the lens step after a discovery: they change every 3 discoveries (v1.47). Outdoor scenes only,
+ *  with night versions after dark so the sky still matches the time of day. */
+const LENS_DAY = ['pine', 'valley', 'c4', 'n3', 'nfb', 'b3', 'v_downs', 'n1', 'a4', 'w2', 'v_mesa', 'pfor', 'b1'];
+const LENS_NIGHT = ['nfa', 'neoncity', 'dusk', 'moonkeep', 'v_tundra', 'v_hollow'];
+export const LENS_EVERY = 3;
+export function lensScene(discoveries: number, phase: DayPhase): SceneDef {
+  const list = phase === 'dusk' || phase === 'night' ? LENS_NIGHT : LENS_DAY;
+  const id = list[Math.floor(Math.max(0, discoveries) / LENS_EVERY) % list.length];
+  const tint = phase === 'golden' ? 'rgba(255,170,60,0.14)' : phase === 'dawn' ? 'rgba(255,140,120,0.14)' : undefined;
+  return { ...SCENES[id], tint: tint ?? SCENES[id].tint };
+}
+
 /** Static thumbnail of a scene (onboarding cards, Field hero). Draws at native pixels; scale with CSS. */
-export async function paintSceneThumb(canvas: HTMLCanvasElement, biome: Habitat, phase: DayPhase, viewW: number, viewH: number) {
-  const s = sceneFor(biome, phase);
+export async function paintSceneThumb(canvas: HTMLCanvasElement, biome: Habitat | SceneDef, phase: DayPhase, viewW: number, viewH: number) {
+  const s = typeof biome === 'string' ? sceneFor(biome, phase) : biome;
   const imgs = await loadScene(s);
   canvas.width = viewW; canvas.height = Math.min(viewH, s.h);
   paintLayers(canvas.getContext('2d')!, imgs, s, viewW, canvas.height);
