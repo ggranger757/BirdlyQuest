@@ -1637,3 +1637,19 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 @keyframes pview-in { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .pview, .pview img { animation: none; transition: none; } }
 .pview-credit { position: absolute; top: calc(18px + var(--safe-t, 0px)); left: 12px; right: 64px; margin: 0; font-size: 11px; color: rgba(255,255,255,.8); pointer-events: none; }
+
+/* v1.46 · birds still needed for a BirdDex goal */
+.goal-need { display: block; width: calc(100% - 16px); margin: 0 8px 8px; padding: 6px 8px; font: inherit; font-size: 12px; font-weight: 600; color: var(--text); background: transparent; border: 2px dashed var(--goal, var(--accent)); cursor: pointer; }
+.goal-need.on { background: var(--goal, var(--accent)); color: #fff; border-style: solid; }
+.goal-needs { margin-top: 10px; padding: 10px; border-left: 4px solid var(--goal, var(--accent)); }
+.goal-needs-head { display: flex; align-items: center; gap: 8px; }
+.goal-needs-head .link { margin-left: auto; font-size: 16px; }
+.goal-needs-tip { margin: 4px 0 8px; }
+.goal-needs-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.goal-need-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 8px; font: inherit; color: inherit; text-align: left; background: var(--well, rgba(255,255,255,.04)); border: 2px solid var(--line, rgba(255,255,255,.12)); cursor: pointer; }
+.goal-need-art { flex: none; width: 34px; height: 34px; display: grid; place-items: center; }
+.goal-need-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.goal-need-txt b { font-size: 13.5px; overflow-wrap: anywhere; }
+.goal-need-txt small { font-size: 11.5px; }
+.goal-need-seen { flex: none; font-size: 11px; font-weight: 700; color: var(--accent); }
+.goal-need-go { flex: none; font-size: 18px; opacity: .6; }

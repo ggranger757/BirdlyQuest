@@ -16,6 +16,9 @@ import { PageHeader, FeatherChip } from '../kit';
 import { hpNow } from '../../core/pets';
 import { HEX } from '../../core/palette';
 
+/** Where a bird lives, in a few words, for the "still to find" list. */
+const NEED_HAB: Record<string, string> = { urban: 'towns & yards', woodland: 'woods', water: 'water & wetlands' };
+
 type Filter = 'all' | 'found' | 'missing';
 
 // each goal gets its own colour and pixel emblem so the row reads like a quest board
@@ -196,11 +199,51 @@ export function Dex() {
                   )}
                   {burst === c.id && <CoinBurst />}
                 </div>
+                {!done && (
+                  <button className={`goal-need ${chap === c.id ? 'on' : ''}`} onClick={() => { haptic(6); setChap(chap === c.id ? null : c.id); }} aria-expanded={chap === c.id}>
+                    {chap === c.id ? 'Hide birds needed' : `See the ${left} bird${left === 1 ? '' : 's'} needed`}
+                  </button>
+                )}
               </div>
             </div>
           );
         })}
       </div>
+
+      {(() => {
+        const c = chap ? chapters.find((x) => x.id === chap) : null;
+        if (!c) return null;
+        const need = c.ids.map((id) => entries.find((e) => e.sp.id === id)).filter((e): e is (typeof entries)[number] => !!e && !mine.has(e.sp.id));
+        const look = goalLook(c.id);
+        return (
+          <section className="panel goal-needs" style={{ ['--goal' as string]: look.color }} aria-label={`Birds still needed for ${c.name}`}>
+            <div className="goal-needs-head">
+              <b>{c.name}</b>
+              <span className="small muted">{need.length ? `Still to find: ${need.length}` : 'All found!'}</span>
+              <button className="link" style={{ minHeight: 0 }} onClick={() => setChap(null)} aria-label="Close">✕</button>
+            </div>
+            {need.length > 0 && <p className="small muted goal-needs-tip">Tap a bird to see what it looks like and where to find it.</p>}
+            <ul className="goal-needs-list">
+              {need.map((e) => {
+                const seen = seenIds.has(e.sp.id);
+                return (
+                  <li key={e.sp.id}>
+                    <button className="goal-need-row" onClick={() => nav.open({ name: 'species', id: e.sp.id })} aria-label={`${e.sp.common}${seen ? ', seen but not photographed yet' : ''}. Open its card`}>
+                      <span className="goal-need-art"><Sprite species={e.sp} mode="silhouette" scale={1} /></span>
+                      <span className="goal-need-txt">
+                        <b>{e.sp.common}</b>
+                        <small className="muted">{dexNo(e.dex)} · {(e.sp.habitats ?? []).map((h) => NEED_HAB[h] ?? h).join(', ')}</small>
+                      </span>
+                      {seen && <span className="goal-need-seen">Seen</span>}
+                      <span className="goal-need-go" aria-hidden>›</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        );
+      })()}
 
       {pending.length > 0 && (
         <section className="panel dashed mt8" aria-label="Birds waiting for a name">
