@@ -110,21 +110,21 @@ export type SkillKind = 'weaken' | 'double' | 'dazzle' | 'crit' | 'gauge' | 'hea
 export interface Skill { id: string; name: string; tag: string; fact: string; kind: SkillKind; power: number; hits: number; style: Contest }
 const S = (id: string, name: string, style: Contest, kind: SkillKind, power: number, hits: number, tag: string, fact: string): Skill => ({ id, name, style, kind, power, hits, tag, fact });
 export const SKILLS: Record<string, Skill> = Object.fromEntries([
-  S('song', 'Daybreak Aria', 'song', 'weaken', 1.6, 1, 'Big hit · lowers its power', 'Songbirds sing hardest at dawn to claim their territory.'),
-  S('mimic', 'Mirror Mimic', 'song', 'double', 0.95, 2, 'Hits twice', 'Mockingbirds, starlings and jays copy the calls of other birds.'),
-  S('display', 'Prism Flash', 'display', 'dazzle', 1.5, 1, 'Hit · dazzles: it may miss', 'Brightly coloured birds flash their feathers to impress.'),
-  S('raptor', 'Falcon Stoop', 'sky', 'crit', 2.1, 1, 'Huge hit · often critical', 'A diving peregrine falcon tops 300 km/h, the fastest animal on Earth.'),
-  S('corvid', "Crow's Gambit", 'forage', 'gauge', 1.5, 1, 'Hit · fills your Super', 'Crows and jays solve puzzles and even use tools.'),
-  S('cache', 'Hidden Cache', 'forage', 'heal', 1.35, 1, 'Hit · heals 20% HP', 'Chickadees hide thousands of seeds and remember where each one is.'),
-  S('drum', 'Thunder Drum', 'forage', 'triple', 0.65, 3, 'Hits 3 times', 'Woodpeckers drum on wood up to 20 times a second.'),
-  S('owl', 'Phantom Glide', 'sky', 'pierce', 1.8, 1, 'Hit · goes through Guard', "An owl's soft feathers make its flight almost silent."),
-  S('hover', 'Hyper Hover', 'sky', 'triple', 0.7, 3, 'Hits 3 times', 'Hummingbirds beat their wings up to 80 times a second.'),
-  S('dove', 'Homing Comet', 'sky', 'sure', 1.75, 1, 'Hit · never misses', 'Pigeons can find their way home from hundreds of kilometres away.'),
-  S('aerial', 'Aero Ace', 'sky', 'big', 2.0, 1, 'Huge hit', 'Swallows and swifts catch insects in mid-air at full speed.'),
+  S('song', 'Daybreak Aria', 'song', 'weaken', 1.6, 1, 'Big score · lowers its power', 'Songbirds sing hardest at dawn to claim their territory.'),
+  S('mimic', 'Mirror Mimic', 'song', 'double', 0.95, 2, 'Scores twice', 'Mockingbirds, starlings and jays copy the calls of other birds.'),
+  S('display', 'Prism Flash', 'display', 'dazzle', 1.5, 1, 'Scores · dazzles: it may miss', 'Brightly coloured birds flash their feathers to impress.'),
+  S('raptor', 'Falcon Stoop', 'sky', 'crit', 2.1, 1, 'Huge score · often critical', 'A diving peregrine falcon tops 300 km/h, the fastest animal on Earth.'),
+  S('corvid', "Crow's Gambit", 'forage', 'gauge', 1.5, 1, 'Scores · fills your Super', 'Crows and jays solve puzzles and even use tools.'),
+  S('cache', 'Hidden Cache', 'forage', 'heal', 1.35, 1, 'Scores · restores 20% energy', 'Chickadees hide thousands of seeds and remember where each one is.'),
+  S('drum', 'Thunder Drum', 'forage', 'triple', 0.65, 3, 'Scores 3 times', 'Woodpeckers drum on wood up to 20 times a second.'),
+  S('owl', 'Phantom Glide', 'sky', 'pierce', 1.8, 1, 'Scores · goes through Guard', "An owl's soft feathers make its flight almost silent."),
+  S('hover', 'Hyper Hover', 'sky', 'triple', 0.7, 3, 'Scores 3 times', 'Hummingbirds beat their wings up to 80 times a second.'),
+  S('dove', 'Homing Comet', 'sky', 'sure', 1.75, 1, 'Scores · never misses', 'Pigeons can find their way home from hundreds of kilometres away.'),
+  S('aerial', 'Aero Ace', 'sky', 'big', 2.0, 1, 'Huge score', 'Swallows and swifts catch insects in mid-air at full speed.'),
   S('wader', 'Zen Stalk', 'forage', 'focus', 0, 0, 'Next move does ×2.2', 'Herons stand perfectly still, then lunge in a flash.'),
-  S('duck', 'Aqua Shield', 'display', 'shelter', 0, 0, 'Heals 25% · blocks next hit', "Water rolls right off a duck's oily feathers."),
-  S('gull', 'Plunder Dive', 'forage', 'drain', 1.45, 1, 'Hit · heals half of it', 'Gulls are famous for snatching food on the fly.'),
-  S('flock', 'Flock Rally', 'song', 'heal', 1.4, 1, 'Hit · heals 20% HP', 'Sparrows live in chatty flocks that watch out for each other.'),
+  S('duck', 'Aqua Shield', 'display', 'shelter', 0, 0, 'Restores 25% · blocks a move', "Water rolls right off a duck's oily feathers."),
+  S('gull', 'Plunder Dive', 'forage', 'drain', 1.45, 1, 'Scores · restores half of it', 'Gulls are famous for snatching food on the fly.'),
+  S('flock', 'Flock Rally', 'song', 'heal', 1.4, 1, 'Scores · restores 20% energy', 'Sparrows live in chatty flocks that watch out for each other.'),
 ].map((s) => [s.id, s]));
 
 const SKILL_BY_FAMILY: Record<string, string> = {
@@ -147,14 +147,14 @@ export function skillFor(sp: StatSp): Skill {
 // ─── techniques: a second move every bird learns at Lv12, one per style ───
 export const TECHNIQUES: Record<Contest, Skill> = {
   song: S('rally', 'Rally Anthem', 'song', 'rally', 0, 0, 'Power up for 3 turns', 'Birds sing louder and longer when rivals are nearby.'),
-  display: S('veil', 'Mirage Veil', 'display', 'veil', 0, 0, 'Rival may miss · heals 15%', 'Many birds fluff up and flash patterns to confuse a rival.'),
-  sky: S('tailwind', 'Tailwind Strike', 'sky', 'tailwind', 1.3, 1, 'Never misses · Super +25%', 'Migrating birds ride tailwinds to fly farther and faster.'),
-  forage: S('mend', 'Second Helping', 'forage', 'mend', 0, 0, 'Heals 35% HP', 'Foraging birds refuel fast, eating up to a third of their weight a day.'),
+  display: S('veil', 'Mirage Veil', 'display', 'veil', 0, 0, 'Rival may miss · restores 15%', 'Many birds fluff up and flash patterns to confuse a rival.'),
+  sky: S('tailwind', 'Tailwind Rush', 'sky', 'tailwind', 1.3, 1, 'Never misses · Super +25%', 'Migrating birds ride tailwinds to fly farther and faster.'),
+  forage: S('mend', 'Second Helping', 'forage', 'mend', 0, 0, 'Restores 35% energy', 'Foraging birds refuel fast, eating up to a third of their weight a day.'),
 };
 
 // ─── growth: what a bird learns as it levels up ───
 export const GROW = { tech: 12, quick: 20, master: 30, ultra: 40 };
-const QUICK_PLUS: Record<Contest, string> = { song: 'Sonic Trill', display: 'Dazzle Wing', sky: 'Razor Gale', forage: 'Fury Peck' };
+const QUICK_PLUS: Record<Contest, string> = { song: 'Sonic Trill', display: 'Dazzle Wing', sky: 'Swift Gale', forage: 'Rapid Peck' };
 const ULTRA: Record<Contest, string> = { song: 'Maestro Symphony', display: 'Aurora Showcase', sky: 'Hypersonic Dive', forage: 'Grand Harvest' };
 export interface Unlock { level: number; kind: 'tech' | 'quick' | 'master' | 'ultra'; name: string; text: string }
 /** Everything a bird learns on its way to Lv50, in order. */
@@ -214,7 +214,7 @@ export function fighter(c: Contender, hpScale = 1, bond = 0): Fighter {
   return {
     c: { ...c, level: lv }, style, hp: max, max, atk,
     // a mastered skill hits 30% harder
-    skill: mastered ? { ...base, name: `${base.name}+`, power: base.power * 1.3, tag: base.kind === 'shelter' ? 'Heals 35% · blocks next hit' : base.kind === 'focus' ? 'Next move does ×2.6' : `${base.tag} · +30%` } : base,
+    skill: mastered ? { ...base, name: `${base.name}+`, power: base.power * 1.3, tag: base.kind === 'shelter' ? 'Restores 35% · blocks a move' : base.kind === 'focus' ? 'Next move does ×2.6' : `${base.tag} · +30%` } : base,
     mastered, pp: T.skillPP, ppMax: T.skillPP, pp2: lv >= GROW.tech ? T.techPP : 0, pp2Max: lv >= GROW.tech ? T.techPP : 0,
     // speed comes from flying ability (fast fliers act first), plus level
     spd: Math.round((contestStat(c.sp, 'sky') * 0.6 + lv * 1.5 + clamp(c.quality, 0, 100) / 20)),
@@ -229,8 +229,8 @@ export function fighter(c: Contender, hpScale = 1, bond = 0): Fighter {
 export type Side = 'you' | 'foe';
 export type Item = 'seeds' | 'berries' | 'worms';
 export const SNACKS: Record<Item, { name: string; tag: string }> = {
-  seeds: { name: 'Seed Mix', tag: 'Heals 30% HP' },
-  berries: { name: 'Berry Mash', tag: 'Heals 60% HP' },
+  seeds: { name: 'Seed Mix', tag: 'Restores 30% energy' },
+  berries: { name: 'Berry Mash', tag: 'Restores 60% energy' },
   worms: { name: 'Mealworms', tag: '+40% power, 3 turns' },
 };
 export type Action = { kind: 'quick' } | { kind: 'skill' } | { kind: 'tech' } | { kind: 'guard' } | { kind: 'super' } | { kind: 'snack'; item: Item } | { kind: 'swap'; to: number } | { kind: 'run' } | { kind: 'wait'; timeout?: boolean } | { kind: 'potion'; id: string };
@@ -286,8 +286,8 @@ function strike(b: Battle, side: Side, mult: number, style: Contest, rng: () => 
   d.hp = Math.max(0, d.hp - amount);
   ev.push({ t: 'dmg', side: other(side), amount, crit, blocked: guarded, style, big: !!o.big, eff }, { t: 'hp', side: other(side), value: d.hp, max: d.max });
   if (crit) ev.push({ t: 'log', text: 'Critical!' });
-  if (eff === 1) ev.push({ t: 'log', text: 'Strong matchup! It hits hard!' });
-  else if (eff === -1) ev.push({ t: 'log', text: 'Weak matchup… it barely lands.' });
+  if (eff === 1) ev.push({ t: 'log', text: 'Strong matchup! Big points!' });
+  else if (eff === -1) ev.push({ t: 'log', text: 'Weak matchup… only a few points.' });
   if (guarded) ev.push({ t: 'log', text: `${nameOf(b, other(side))} guarded! Most of it was blocked.` });
   if (other(side) === 'you') { b.gauge = gainGauge(b, T.gauge.hurt); ev.push({ t: 'gauge', value: b.gauge }); }
   return amount;
@@ -324,7 +324,7 @@ function useSkill(b: Battle, side: Side, rng: () => number, ev: Ev[], slot: 'ski
   }
   let total = 0;
   for (let i = 0; i < s.hits && !foe.out; i++) total += strike(b, side, s.power, s.style, rng, ev, { pierce: s.kind === 'pierce', sure: s.kind === 'sure' || s.kind === 'tailwind', critChance: s.kind === 'crit' ? T.critRaptor : undefined });
-  if (s.hits > 1 && total) ev.push({ t: 'log', text: `Hit ${s.hits} times!` });
+  if (s.hits > 1 && total) ev.push({ t: 'log', text: `Scored ${s.hits} times!` });
   if (!total) return;
   if (s.kind === 'weaken') { foe.weak = 2; ev.push({ t: 'buff', side: other(side), text: 'Power down', good: false }); }
   if (s.kind === 'dazzle') { foe.dazzle = 1; ev.push({ t: 'buff', side: other(side), text: 'Dazzled', good: false }); }
@@ -342,7 +342,7 @@ function foeTurn(b: Battle, rng: () => number, ev: Ev[], forceCharge = false) {
   if (b.foeCharging) {
     b.foeCharging = false;
     const name = CONTESTS[f.style].big;
-    ev.push({ t: 'move', side: 'foe', kind: 'big', name, style: f.style }, { t: 'log', text: `${nameOf(b, 'foe')} unleashes ${name}!` });
+    ev.push({ t: 'move', side: 'foe', kind: 'big', name, style: f.style }, { t: 'log', text: `${nameOf(b, 'foe')} performs ${name}!` });
     strike(b, 'foe', T.bigMove, f.style, rng, ev, { big: true });
   } else if (forceCharge || (b.turn % T.bigEvery === T.bigEvery - 1 && b.turn > 1)) {
     b.foeCharging = true;
@@ -390,9 +390,9 @@ export function takeTurn(b0: Battle, mine: Action, rng: () => number, opts: { fo
   if (b0.over) return { b: b0, ev: [] };
   const m0 = active(b0, 'you');
   // moves that can't be used right now don't cost the turn
-  if (mine.kind === 'skill' && m0.pp < 1) return { b: b0, ev: [{ t: 'log', text: `${m0.skill.name} has no uses left this battle. Quick moves and Guard always work.` }] };
-  if (mine.kind === 'tech' && (!m0.tech || m0.pp2 < 1)) return { b: b0, ev: [{ t: 'log', text: m0.tech ? `${m0.tech.name} has no uses left this battle. Quick moves and Guard always work.` : `${m0.c.sp.common} hasn't learned a technique yet.` }] };
-  if (mine.kind === 'super' && b0.gauge < 100) return { b: b0, ev: [{ t: 'log', text: 'Your Super isn’t ready yet. The Super meter fills as you fight.' }] };
+  if (mine.kind === 'skill' && m0.pp < 1) return { b: b0, ev: [{ t: 'log', text: `${m0.skill.name} has no uses left this duel. Quick moves and Guard always work.` }] };
+  if (mine.kind === 'tech' && (!m0.tech || m0.pp2 < 1)) return { b: b0, ev: [{ t: 'log', text: m0.tech ? `${m0.tech.name} has no uses left this duel. Quick moves and Guard always work.` : `${m0.c.sp.common} hasn't learned a technique yet.` }] };
+  if (mine.kind === 'super' && b0.gauge < 100) return { b: b0, ev: [{ t: 'log', text: 'Your Super isn’t ready yet. The Super meter fills as you compete.' }] };
   if (mine.kind === 'swap' && (!b0.you[mine.to] || b0.you[mine.to].out || mine.to === b0.yi)) return { b: b0, ev: [] };
   const b = clone(b0), ev: Ev[] = [];
   b.turn++;
@@ -438,7 +438,7 @@ export function takeTurn(b0: Battle, mine: Action, rng: () => number, opts: { fo
       case 'super': {
         b.gauge = 0;
         const name = me.superName;
-        ev.push({ t: 'gauge', value: 0 }, { t: 'move', side: 'you', kind: 'super', name, style: me.style }, { t: 'log', text: `${me.c.sp.common} unleashes ${name}!` });
+        ev.push({ t: 'gauge', value: 0 }, { t: 'move', side: 'you', kind: 'super', name, style: me.style }, { t: 'log', text: `${me.c.sp.common} performs ${name}!` });
         strike(b, 'you', me.superPow, me.style, rng, ev, { pierce: true, sure: true, big: true });
         return;
       }
@@ -576,9 +576,9 @@ export const wandererFor = (key: string) => WANDERERS[hashStr(key) % WANDERERS.l
 export const wandererFace = (key: string) => WANDERER_PERSONA[wandererFor(key)].face;
 export const WILD = { coins: 15, xp: 30, time: 10, chance: 0.4, scenes: ['valley', 'pine', 'n1', 'nfb', 'n3'], music: ['music/battle/battle-2.mp3', 'music/battle/battle-8.mp3', 'music/battle/battle-6.mp3', 'music/battle/default-1.mp3'] };
 
-/** Rival levels keep pace with your team so later rivals stay a challenge. */
-export function rivalLevel(r: Pick<RivalDef, 'level'>, tier: number, yourAvg: number): number {
-  return Math.max(r.level, Math.round(yourAvg * (0.78 + tier * 0.05)));
+/** Each rival has a fixed level that climbs up the ladder (Pip Lv3 … Professor Woods Lv50), whatever your team's level. */
+export function rivalLevel(r: Pick<RivalDef, 'level'>, _tier?: number, _yourAvg?: number): number {
+  return Math.min(50, r.level);
 }
 /** Rival birds come from your region: strong local specialists in the rival's styles, no repeats. */
 export function rivalTeam(r: RivalDef, pool: Species[], tier: number, yourAvg = 5): Contender[] {
@@ -591,7 +591,7 @@ export function rivalTeam(r: RivalDef, pool: Species[], tier: number, yourAvg = 
     const ranked = options.filter((s) => !used.has(s.id)).sort((a, b) => contestStat(b, c) - contestStat(a, c));
     const sp = ranked[Math.min(ranked.length - 1, Math.max(0, 2 - tier) + (i % 2))] ?? ranked[0] ?? pool[0];
     used.add(sp.id);
-    { const level = lv + (i === r.size - 1 ? 1 : 0); return { sp, level, quality: r.quality }; }
+    { const level = Math.min(50, lv + (i === r.size - 1 ? 1 : 0)); return { sp, level, quality: r.quality }; }
   });
 }
 /** A wandering birder's bird: a random local bird at about your new bird's level. */

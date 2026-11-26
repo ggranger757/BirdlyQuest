@@ -12,7 +12,7 @@ const STEPS: Step[] = [
   // Explore
   { tab: 'explore', target: '.map-wrap', text: 'This is your MAP. Real birds people have reported near you in the last 30 days show up here, live. Parks marked with a pin are good birding spots.' },
   { tab: 'explore', target: '.drawer .seg', text: 'LATEST shows the newest sightings around you. LIKELY shows the birds you’re most likely to find right now, here, at this time of day.' },
-  { tab: 'explore', target: '.feather-chip', text: 'These are FEATHER COINS, BirdlyQuest’s money. You earn them by logging birds, winning battles and finishing quests. Tap here any time to open my shop.' },
+  { tab: 'explore', target: '.feather-chip', text: 'These are FEATHER COINS, BirdlyQuest’s money. You earn them by logging birds, winning duels and finishing quests. Tap here any time to open my shop.' },
   // Camera + Snap Power
   { tab: 'explore', target: '.tabbar .tab.cam', text: 'This is the SNAP button. Point the camera at a real bird and press the shutter. Pinch to zoom, and use the brightness button in dim light.' },
   { tab: 'explore', target: '.tabbar .tab.cam', text: 'Every photo gets a SNAP POWER score out of 100. Close, sharp, well-lit, centred birds score highest. Higher Snap Power earns more XP and makes your capture more certain.' },
@@ -24,12 +24,12 @@ const STEPS: Step[] = [
   { tab: 'aviary', target: '[data-tour="aviary"]', text: 'Your AVIARY. Birds you discover live here as pets and fly between perches. Tap one for a fun fact. Healthy birds bring you Feather Coins every day.' },
   { tab: 'aviary', target: '[role="tablist"][aria-label="Aviary sections"]', text: 'Their HP slowly drops, so keep the FEEDER full. Hungry birds fly to the feeder and eat by themselves.' },
   { tab: 'aviary', target: '.home-strip', text: 'BIRD HOMES. New homes unlock as you level up, then you buy them with Feather Coins. You can also hang new feeders and set out perches from my shop.' },
-  { tab: 'aviary', target: '.trials-entry', text: 'FIELD TRIALS! Battle rival birders with your birds’ real-life talents: songs, displays, flight and foraging. Win to level your birds up so they learn new moves.' },
-  { tab: 'aviary', target: '.trials-entry', text: 'Each rival battle costs a TRIAL TICKET. You earn one for every bird you log (up to 5). Wandering birders sometimes challenge you after a new find, and those battles are free.' },
-  { tab: 'aviary', target: '.trials-entry', text: 'In battle: FIGHT to pick a move, BAG for snacks and potions, BIRDS to swap. The faster bird moves first, and every bird has a class. Song beats Display, Display beats Forage, Forage beats Sky, Sky beats Song.' },
+  { tab: 'aviary', target: '.trials-entry', text: 'FIELD TRIALS! Duel rival birders with your birds’ real-life talents: songs, displays, flight and foraging. Win to level your birds up so they learn new moves.' },
+  { tab: 'aviary', target: '.trials-entry', text: 'Each rival duel costs a TRIAL TICKET. You earn one for every bird you log (up to 5). Wandering birders sometimes challenge you after a new find, and those duels are free.' },
+  { tab: 'aviary', target: '.trials-entry', text: 'In a duel: MOVES to pick a move, BAG for snacks and potions, BIRDS to swap. The faster bird moves first, and every bird has a class. Song beats Display, Display beats Forage, Forage beats Sky, Sky beats Song.' },
   // Trainer
   { tab: 'you', section: 'lenses', target: '[aria-label="Your Snap Lenses"]', text: 'SNAP LENSES add Snap Power to every photo, and each records your bird with its own effect. Better lenses unlock as you level up.' },
-  { tab: 'you', section: 'quests', target: '[role="tablist"][aria-label="Trainer sections"]', text: 'QUESTS and BADGES earn XP and Feather Coins. Each trainer level also adds BOND: +1% HP and power for every bird you bring to battle.' },
+  { tab: 'you', section: 'quests', target: '[role="tablist"][aria-label="Trainer sections"]', text: 'QUESTS and BADGES earn XP and Feather Coins. Each trainer level also adds BOND: +1% energy and power for every bird you bring to a duel.' },
   { tab: 'explore', target: '.feather-chip', text: 'My SHOP sells bird food, potions, Snap Lenses, 50 feeders and 50 perches. Bird Homes are on the Aviary’s Birds page. Everything is paid in Feather Coins.' },
   { tab: 'explore', text: 'That’s everything! Go outside and find your first bird. You can replay this tour any time from Settings. Happy birding!' },
 ];

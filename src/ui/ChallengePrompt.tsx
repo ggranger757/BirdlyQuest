@@ -14,7 +14,7 @@ export function ChallengePrompt() {
   const sp = speciesOf(sighting);
   const who = wandererFor(sighting.id);
   return (
-    <div className="tchallenge" role="dialog" aria-modal="true" aria-label="Battle challenge">
+    <div className="tchallenge" role="dialog" aria-modal="true" aria-label="Duel challenge">
       <div className="tchallenge-card panel">
         <span className="thero-kicker">Challenge!</span>
         <div className="tchallenge-vs">
@@ -27,7 +27,7 @@ export function ChallengePrompt() {
         <p className="tchallenge-line">“{(WANDERER_PERSONA[who]?.line ?? 'They spotted your new {new}!').replace(/\{new\}/g, sp.common)}”</p>
         <div className="tchallenge-row">
           <button className="btn ghost" onClick={() => { sfx.back(); clearChallenge(); }}>Not now</button>
-          <button className="btn primary" onClick={() => { playClip('tStart'); clearChallenge(); nav.open({ name: 'trials', wild: sighting.id }); }}>Battle!</button>
+          <button className="btn primary" onClick={() => { playClip('tStart'); clearChallenge(); nav.open({ name: 'trials', wild: sighting.id }); }}>Duel!</button>
         </div>
       </div>
     </div>

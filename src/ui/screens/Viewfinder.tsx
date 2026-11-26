@@ -302,7 +302,7 @@ export function Viewfinder() {
   }
 
   return (
-    <div className="overlay" style={{ background: '#000' }}>
+    <div className="overlay cam-screen" style={{ background: '#000' }}>
       <TopBar title={peek !== null ? 'Likely bird' : regionCode} onBack={peek !== null ? closePeek : nav.back} backIcon={peek !== null ? 'back' : 'close'}
         right={<button className="icon-btn" aria-pressed={grid} aria-label="Toggle grid" onClick={() => setState((s) => ({ ...s, settings: { ...s.settings, grid: !s.settings.grid } }))}><Icon name="grid" size={20} filled={grid} /></button>} />
       <div className={`cam-view${peek !== null ? ' peeking' : ''}`} ref={viewRef}

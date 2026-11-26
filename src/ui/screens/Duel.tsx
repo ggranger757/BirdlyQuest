@@ -60,7 +60,7 @@ export function Duel({ code: incoming }: { code?: string }) {
         {tab === 'challenge' && (
           team.length === 0 ? <p className="panel">Photograph a bird first. Then you can challenge your friends.</p> : (
             <>
-              <p className="small muted">Pick up to 3 birds. Your friend scans your code and battles them.</p>
+              <p className="small muted">Pick up to 3 birds. Your friend scans your code and duels them.</p>
               <div className="duel-pick">
                 {team.slice(0, 12).map((c) => (
                   <button key={c.sp.id} className={`duel-bird ${picked.includes(c.sp.id) ? 'on' : ''}`} aria-pressed={picked.includes(c.sp.id)} onClick={() => toggle(c.sp.id)}>

@@ -1598,3 +1598,15 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 .npc-fit .shop-npc-box .dialog-text::-webkit-scrollbar { width: 4px; }
 .npc-fit .shop-npc-box .dialog-text::-webkit-scrollbar-thumb { background: rgba(0,0,0,.35); }
 .npc-fit .shop-npc-next { bottom: 2px; }
+
+/* v1.52 camera on black: the Field Guide theme's dark ink would vanish, so the camera's bar and labels stay light */
+:root.theme-field .cam-screen > .topbar { border-bottom-color: #3F3122; }
+:root.theme-field .cam-screen > .topbar h2, :root.theme-field .cam-screen > .topbar .icon-btn { color: #FBF5E6; }
+:root.theme-field .cam-screen .cam-likely-label { color: #FBF5E6; }
+/* v1.52 Field Trials header: tickets, bond and the rules button sit in one row of equal boxes */
+.thero-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: stretch; }
+.thero-stats > .tticket-chip, .thero-stats > .tbond-chip, .thero-stats > .btn { order: 0; margin: 0; min-width: 0; min-height: 44px; height: auto; padding: 4px 6px;
+  justify-content: center; text-align: center; white-space: normal; line-height: 1.25; font-size: 10px; letter-spacing: .04em; gap: 4px; flex-wrap: wrap; }
+.thero-stats > .btn { font-family: var(--lbl); text-transform: uppercase; box-shadow: 2px 2px 0 #000; border: 2px solid #000; background: var(--well); color: var(--text); }
+.thero-stats > .tticket-note { order: 1; grid-column: 1 / -1; margin-top: 0; }
+.thero-stats > .tticket-chip > svg:first-child, .thero-stats > .tbond-chip > svg:first-child { flex: 0 0 100%; }

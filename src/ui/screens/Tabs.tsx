@@ -194,7 +194,7 @@ export function HabitatTab() {
         <span className="trials-entry-icon" aria-hidden><span className="tfx" style={{ width: 52, height: 48, backgroundImage: 'url(fx/trials/sa_nova.png)', backgroundSize: '312px 48px', ['--sheet-w' as string]: '-312px', animation: 'tfx 900ms steps(6) infinite' }} /></span>
         <span className="grow" style={{ textAlign: 'left' }}>
           <b className="trials-entry-title">Field Trials</b>
-          <span className="small">Song-offs, displays, sky races and foraging. Pit your birds against rival birders.</span>
+          <span className="small">Song-offs, displays, sky races and foraging. Duel rival birders with your birds.</span>
         </span>
         <span className="px small trials-entry-go">{Math.min(st.trials?.cleared ?? 0, RIVALS.length)}/{RIVALS.length} ▶</span>
       </button>

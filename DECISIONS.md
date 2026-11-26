@@ -452,3 +452,14 @@ One line per meaningful choice, with the reason.
   - While typing, the newest words stay in view.
   - Other uses of the box (quick log) are unchanged.
 - **v1.51.1: Bird Home buy panel scrolls into view and keeps its buttons inside.** Tapping a home for sale smooth-scrolls its panel to the middle of the screen (an instant jump with reduced motion). The panel now stacks: picture and text on top, then "Not now" / "Buy & move in" as a full-width row. Labels may wrap instead of overflowing. Checked at 320 px and 390 px.
+- **v1.52: Field Trials become friendly duels, plus three fixes.**
+  - **Wording:** everything players see says *duel*, not *battle*. Birds compete, not fight:
+    - Moves *score* instead of *hit*; HP is now *energy*; healing is *restoring*.
+    - The Fight button is **Moves** and Run is **Leave**.
+    - The Attack gauge and potions are **Power** (Power Vial, Flask, Bottle); ⚔ became ✦.
+    - Moves renamed: Tailwind Strike → Tailwind Rush, Razor Gale → Swift Gale, Fury Peck → Rapid Peck.
+    - Rival lines softened: Brick the wrestler is a showman, not a brawler; the Heron fences without a blade; Kaede's archery lines no longer aim at birds; Silas seeks birds instead of hunting them.
+    - Code names (`battle`, `fight`, `foe`, music paths) are unchanged, so saves and duel codes still work. Aviary hunger HP is untouched.
+  - **Rival levels are fixed:** each rival fights at its own level, a steady climb from Pip (Lv4) to Professor Woods (Lv50, capped). They no longer scale to your team, which had made Pip show Lv11.
+  - **Field Trials header:** the Tickets, Bond and "How duels work" boxes sit in one row, all the same size (checked at 340 and 390 px).
+  - **Camera in Field Guide theme:** the close X, the region title, the grid icon and the "Likely" label are light on the black camera background (they were dark ink on black).

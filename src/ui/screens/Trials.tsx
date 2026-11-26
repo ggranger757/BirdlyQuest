@@ -59,14 +59,14 @@ function TicketInfo({ tickets, free }: { tickets: number; free: boolean }) {
   return (
     <>
       <button className={`tticket-chip ${tickets || free ? '' : 'empty'}`} onClick={toggle} aria-expanded={open}
-        aria-label={`${free ? 'First battle free. ' : ''}${tickets} of ${TICKETS.max} Trial Tickets. ${open ? 'Hide' : 'Show'} details`}>
-        <TicketIcon /> {free ? 'First battle free' : `${tickets}/${TICKETS.max} tickets`} <span className="tticket-caret" aria-hidden>{open ? '▴' : '▾'}</span>
+        aria-label={`${free ? 'First duel free. ' : ''}${tickets} of ${TICKETS.max} Trial Tickets. ${open ? 'Hide' : 'Show'} details`}>
+        <TicketIcon /> {free ? 'First duel free' : `${tickets}/${TICKETS.max} tickets`} <span className="tticket-caret" aria-hidden>{open ? '▴' : '▾'}</span>
       </button>
       {open && (
         <p className="tticket-note small">
-          Rival battles use 1 ticket. Log a bird to earn one (max {TICKETS.max}). Challenges after a new find are free. Tickets never refill on their own.
+          Rival duels use 1 ticket. Log a bird to earn one (max {TICKETS.max}). Challenges after a new find are free. Tickets never refill on their own.
           {(tst?.ticketsEarned !== undefined || tst?.ticketsUsed !== undefined) && (
-            <span className="tticket-tally">You started with {TICKETS.start} · +{tst?.ticketsEarned ?? 0} from logging birds · −{tst?.ticketsUsed ?? 0} used in battles</span>
+            <span className="tticket-tally">You started with {TICKETS.start} · +{tst?.ticketsEarned ?? 0} from logging birds · −{tst?.ticketsUsed ?? 0} used in duels</span>
           )}
         </p>
       )}
@@ -86,7 +86,7 @@ function BondChip() {
       </button>
       {open && (
         <p className="tticket-note tbond-note small">
-          <b>Bond</b> is how well you know your birds. Your trainer level (Lv{tlv}) gives <b>every bird you bring +{pct}% HP and power</b>.
+          <b>Bond</b> is how well you know your birds. Your trainer level (Lv{tlv}) gives <b>every bird you bring +{pct}% energy and power</b>.
           {pct < 30 ? ` It grows by 1% each trainer level (next level: +${next}%), up to +30%. Log birds to earn trainer XP.` : ' That’s the maximum.'}
         </p>
       )}
@@ -130,37 +130,37 @@ function BattleGuide() {
   const sec = (n: number, title: string, body: ReactNode) => <section className="tg-sec"><h4><span className="tg-n">{n}</span>{title}</h4>{body}</section>;
   return (
     <div className="tguide">
-      {sec(1, 'How to win', <p>Each bird has <b>HP</b>, its energy. When a bird’s HP reaches 0, it gets tired and flies off to rest (it’s fine!). Tire out all the rival’s birds to win.</p>)}
+      {sec(1, 'How to win', <p>Each bird has <b>energy</b>. Good moves from the other bird use it up. When a bird’s energy reaches 0, it gets tired and flies off to rest. Tire out all the rival’s birds to win.</p>)}
       {sec(2, 'Taking turns', <>
         <p>You and the rival take turns. On your turn, pick one:</p>
         <ul className="tg-acts">
-          <li><b>Fight</b><span>use a move</span></li><li><b>Bag</b><span>snack or potion</span></li>
-          <li><b>Birds</b><span>switch birds</span></li><li><b>Run</b><span>leave</span></li>
+          <li><b>Moves</b><span>use a move</span></li><li><b>Bag</b><span>snack or potion</span></li>
+          <li><b>Birds</b><span>switch birds</span></li><li><b>Leave</b><span>end the duel</span></li>
         </ul>
         <p>The faster bird moves first. Take your time: after {TURN_WAIT} seconds a {TURN_COUNT}-second countdown starts, and if it runs out, the rival gets your turn.</p>
       </>)}
       {sec(3, 'Moves', <>
         <div className="tg-moves">
-          <span><b>Quick move</b><small>A small hit. Use it as much as you like.</small></span><Uses />
+          <span><b>Quick move</b><small>Scores a few points. Use it as much as you like.</small></span><Uses />
           <span><b>Signature skill</b><small>Your bird’s special trick. Stronger, but only a few uses.</small></span><Uses left={T.skillPP} max={T.skillPP} />
           <span><b>Technique</b><small>A bonus trick learned at Lv{GROW.tech}.</small></span><Uses left={T.techPP} max={T.techPP} />
-          <span><b>Guard</b><small>A shield. Goes first and blocks most of the next hit.</small></span><Uses />
+          <span><b>Guard</b><small>Goes first and blocks most of the rival’s next move.</small></span><Uses />
         </div>
-        <p>The dots show uses left. They all come back next battle.</p>
+        <p>The dots show uses left. They all come back next duel.</p>
       </>)}
       {sec(4, 'Classes', <>
         <p>Every bird has a class. Each class beats the next one in this circle:</p>
         <div className="tg-loop">{loop.map((c, i) => <Fragment key={i}>{i > 0 && <b aria-hidden>▶</b>}<i style={{ ['--c' as string]: CONTESTS[c].color }}>{CONTESTS[c].name}</i></Fragment>)}</div>
-        <p><span className="tedge up">▲ Strong</span> means your move hits harder. <span className="tedge down">▼ Weak</span> means softer. Seeing ▼? Try switching birds.</p>
+        <p><span className="tedge up">▲ Strong</span> means your move scores more. <span className="tedge down">▼ Weak</span> means softer. Seeing ▼? Try switching birds.</p>
       </>)}
-      {sec(5, 'Attack & Defense gauges', <>
-        <p>Under each bird’s HP are two gauges with 5 pips each. Every <b style={{ color: '#E0483A' }}>⚔ Attack</b> pip makes your bird hit 10% harder. Every <b style={{ color: '#3A8FE0' }}>🛡 Defense</b> pip makes it take 10% less damage.</p>
-        <p>Fill them with potions: <b style={{ color: '#E0483A' }}>red</b> for Attack, <b style={{ color: '#3A8FE0' }}>blue</b> for Defense, <b style={{ color: '#4CC25A' }}>green</b> for both. Buy them in the Shop, then drink one from <b>Bag</b> (it uses your turn). Bigger bottles unlock as you level up. Gauges empty after each battle.</p>
+      {sec(5, 'Power & Defense gauges', <>
+        <p>Under each bird’s energy bar are two gauges with 5 pips each. Every <b style={{ color: '#E0483A' }}>✦ Power</b> pip makes your bird’s moves score 10% more. Every <b style={{ color: '#3A8FE0' }}>🛡 Defense</b> pip makes the rival’s moves score 10% less.</p>
+        <p>Fill them with potions: <b style={{ color: '#E0483A' }}>red</b> for Power, <b style={{ color: '#3A8FE0' }}>blue</b> for Defense, <b style={{ color: '#4CC25A' }}>green</b> for both. Buy them in the Shop, then drink one from <b>Bag</b> (it uses your turn). Bigger bottles unlock as you level up. Gauges empty after each duel.</p>
       </>)}
-      {sec(6, 'Super meter', <p>The purple bar fills a little each time you hit, block or get hit. When it says <b>Ready!</b>, tap it for your biggest move.</p>)}
+      {sec(6, 'Super meter', <p>The purple bar fills a little each time you score, block or get scored on. When it says <b>Ready!</b>, tap it for your biggest move.</p>)}
       {sec(7, 'Red “!”', <p>A rival bird with a red <b>!</b> is getting ready for a giant move. Tap <b>Guard</b> to block it.</p>)}
       {sec(8, 'Bond', <p>As you level up as a birder, all your birds get stronger. Right now they get <b>+{pct}%</b>.</p>)}
-      {sec(9, 'Tickets', <p>Each battle uses 1 ticket. Every bird you log gives you 1 more (you can hold {TICKETS.max}).</p>)}
+      {sec(9, 'Tickets', <p>Each duel uses 1 ticket. Every bird you log gives you 1 more (you can hold {TICKETS.max}).</p>)}
     </div>
   );
 }
@@ -274,7 +274,7 @@ export function Trials({ wild, duel }: { wild?: string; duel?: string }) {
             setPhase('result');
           }} />
       )}
-      {phase === 'battle' && party.length === 0 && <div className="trials-body"><p>You need a photographed bird to battle.</p></div>}
+      {phase === 'battle' && party.length === 0 && <div className="trials-body"><p>You need a photographed bird to duel.</p></div>}
       {phase === 'result' && outcome && (
         <Result setup={setup} won={outcome.won} prize={outcome.prize} party={party} wild={!!wild || !!duel}
           onRematch={wild ? undefined : () => { setSeed((s) => s + 1); setPhase('party'); }} onLadder={() => (wild || duel ? nav.back() : setPhase('ladder'))}
@@ -297,15 +297,15 @@ function Ladder({ team, pool, cleared, wins, onPick, onCamera }: { team: Contend
   return (
     <div className="trials-body">
       <div className="thero panel">
-        <span className="thero-kicker">Battle mode</span>
+        <span className="thero-kicker">Duel mode</span>
         <b className="thero-title">Field Trials</b>
         <span className="thero-sub">Birds compete with their real-life talents. Beat each rival birder to unlock the next.</span>
         <div className="thero-stats">
           <TicketInfo tickets={tickets} free={free} />
           <BondChip />
-          <button className="btn ghost small" onClick={() => { sfx.select(); setHow((v) => !v); }} aria-expanded={howOpen}>{howOpen ? 'Close rules' : 'How battles work'}</button>
+          <button className="btn ghost small" onClick={() => { sfx.select(); setHow((v) => !v); }} aria-expanded={howOpen}>{howOpen ? 'Close rules' : 'How duels work'}</button>
         </div>
-        <button className="btn primary block tduel-btn" onClick={() => { sfx.select(); nav.open({ name: 'duel' }); }} disabled={team.length === 0}>⚔ Duel a friend (QR code)</button>
+        <button className="btn primary block tduel-btn" onClick={() => { sfx.select(); nav.open({ name: 'duel' }); }} disabled={team.length === 0}>✦ Duel a friend (QR code)</button>
         {howOpen && <BattleGuide />}
       </div>
       {team.length === 0 && (
@@ -331,7 +331,7 @@ function Ladder({ team, pool, cleared, wins, onPick, onCamera }: { team: Contend
               <div className="trival-side">
                 {locked ? <span className="trival-lock" aria-label="Locked: beat the rival above first">Locked</span> : (
                   <button className="btn primary small" disabled={team.length === 0 || (!free && tickets < 1)} onClick={() => onPick(i)}
-                    aria-label={`${beaten ? 'Rematch' : 'Battle'} ${r.name}${free ? '' : ', uses 1 Trial Ticket'}`}>{beaten ? 'Rematch' : 'Battle'}</button>
+                    aria-label={`${beaten ? 'Rematch' : 'Duel'} ${r.name}${free ? '' : ', uses 1 Trial Ticket'}`}>{beaten ? 'Rematch' : 'Duel'}</button>
                 )}
                 <span className="trival-prize">{beaten ? <span className="trival-done">✓ Beaten</span> : rw.coins ? <><FeatherIcon size={12} /> {rw.coins}</> : null}</span>
               </div>
@@ -378,7 +378,7 @@ function Party({ setup, size, team, party, setParty, onGo, bond, duel }: { setup
           const score = fit(f.style), next = nextUnlock(c.sp, f.c.level);
           return (
             <button key={c.sp.id} role="listitem" className={`tpick ${at >= 0 ? 'on' : ''}`} onClick={() => toggle(c)} aria-pressed={at >= 0}
-              aria-label={`${c.sp.common}, level ${f.c.level}, ${f.max} HP. Signature skill: ${f.skill.name}, ${f.skill.tag}.`}>
+              aria-label={`${c.sp.common}, level ${f.c.level}, ${f.max} energy. Signature skill: ${f.skill.name}, ${f.skill.tag}.`}>
               {at >= 0 && <span className="tpick-tag">{at === 0 ? 'Lead' : at + 1}</span>}
               <Sprite species={c.sp} parts={c.parts} scale={2} mode="static" />
               <span className="tpick-name">{c.sp.common}</span>
@@ -393,7 +393,7 @@ function Party({ setup, size, team, party, setParty, onGo, bond, duel }: { setup
       </div>
       <div className="trials-cta">
         <button className="btn primary big block" disabled={!party.length || (!duel && !free && tickets < 1)} onClick={onGo}>
-          {duel ? 'Start duel · free' : free ? 'Start battle · free' : <>Start battle · <TicketIcon /> 1</>}
+          {duel ? 'Start duel · free' : free ? 'Start duel · free' : <>Start duel · <TicketIcon /> 1</>}
         </button>
         {duel ? <p className="small muted tcta-note">Friend duels never use tickets. Your first win against each friend each day pays a prize and levels your birds.</p> : <div className="tcta-note"><TicketInfo tickets={tickets} free={free} /></div>}
       </div>
@@ -419,11 +419,11 @@ function useCount(target: number) {
   }, [target]);
   return v;
 }
-/** Attack and Defense gauges: 5 pips each, filled by potions. */
+/** Power and Defense gauges: 5 pips each, filled by potions. */
 function Gauges({ atk, def }: { atk: number; def: number }) {
   const row = (k: 'atk' | 'def', n: number) => (
-    <span className={`tg-gauge ${k}`} aria-label={`${k === 'atk' ? 'Attack' : 'Defense'} gauge ${n} of ${GAUGE_MAX}${n ? `: ${k === 'atk' ? 'hits' : 'takes'} ${n * 10}% ${k === 'atk' ? 'harder' : 'less damage'}` : ''}`}>
-      <small aria-hidden>{k === 'atk' ? 'ATK' : 'DEF'}</small>{Array.from({ length: GAUGE_MAX }, (_, i) => <i key={i} className={i < n ? 'on' : ''} />)}
+    <span className={`tg-gauge ${k}`} aria-label={`${k === 'atk' ? 'Power' : 'Defense'} gauge ${n} of ${GAUGE_MAX}${n ? `: ${k === 'atk' ? 'moves score' : 'rival moves score'} ${n * 10}% ${k === 'atk' ? 'more' : 'less'}` : ''}`}>
+      <small aria-hidden>{k === 'atk' ? 'PWR' : 'DEF'}</small>{Array.from({ length: GAUGE_MAX }, (_, i) => <i key={i} className={i < n ? 'on' : ''} />)}
     </span>
   );
   return <span className="thud-gauges">{row('atk', atk)}{row('def', def)}</span>;
@@ -433,11 +433,11 @@ function HpBar({ hp, max }: { hp: number; max: number }) {
   const shown = useCount(hp);
   return (
     <span className="thp">
-      <span className="thp-track" role="meter" aria-valuemin={0} aria-valuemax={max} aria-valuenow={hp} aria-label="HP">
+      <span className="thp-track" role="meter" aria-valuemin={0} aria-valuemax={max} aria-valuenow={hp} aria-label="Energy">
         <i className="trail" style={{ width: `${pct}%` }} />
         <i className={`fill ${pct > 50 ? 'hi' : pct > 20 ? 'mid' : 'lo'}`} style={{ width: `${pct}%` }} />
       </span>
-      <span className="thp-num"><b>{shown}</b>/{max}<span className="thp-unit"> HP</span></span>
+      <span className="thp-num"><b>{shown}</b>/{max}<span className="thp-unit"> energy</span></span>
     </span>
   );
 }
@@ -445,13 +445,13 @@ function HpBar({ hp, max }: { hp: number; max: number }) {
 const TUT = (b: Battle) => {
   const me = active(b, 'you'), foe = active(b, 'foe');
   return [
-    { id: 'hud', info: true, text: `Your first Field Trial! Knock ${foe.c.sp.common} to 0 HP. It just flies off to rest.` },
-    { id: 'quick', info: false, text: `Tap FIGHT, then ${me.quick}. Quick moves never run out.` },
-    { id: 'skill', info: false, text: `Now FIGHT, then ${me.skill.name}. Stronger, but only ${me.ppMax} uses (the dots).` },
-    { id: 'guard', info: false, text: `${foe.c.sp.common} is charging a big move! FIGHT, then Guard.` },
+    { id: 'hud', info: true, text: `Your first Field Trial! Tire out ${foe.c.sp.common}: when its energy hits 0, it flies off to rest.` },
+    { id: 'quick', info: false, text: `Tap MOVES, then ${me.quick}. Quick moves never run out.` },
+    { id: 'skill', info: false, text: `Now MOVES, then ${me.skill.name}. Stronger, but only ${me.ppMax} uses (the dots).` },
+    { id: 'guard', info: false, text: `${foe.c.sp.common} is charging a big move! MOVES, then Guard.` },
     { id: 'snack', info: true, text: 'Blocked! BAG feeds a snack. BIRDS swaps in another bird.' },
     { id: 'super', info: false, text: `Super is full! Tap it for ${me.superName}.` },
-    { id: 'done', info: true, text: 'Look for ▲ Strong moves. All rules are under How battles work. Finish it!' },
+    { id: 'done', info: true, text: 'Look for ▲ Strong moves. All rules are under How duels work. Go for the win!' },
   ];
 };
 
@@ -605,7 +605,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
   useEffect(() => {
     let live = true;
     (async () => {
-      show(`${setup.title === 'Wandering birder' ? 'Birder' : 'Rival'} ${setup.foeName} wants to battle!`);
+      show(`${setup.title === 'Wandering birder' ? 'Birder' : 'Rival'} ${setup.foeName} wants to duel!`);
       await sleep(reduced ? 300 : 1500); if (!live) return;
       setIntro(false);
       await speak(setup.line); if (!live) return;
@@ -655,7 +655,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
   // plain render helper (not a component), so buttons are never rebuilt mid-tap
   const move = (o: { id: string; cls: string; icon: ReactNode; name: string; sub: string; uses?: [number, number]; onClick: () => void; disabled?: boolean; edge?: Contest }) => (
     <button key={o.id} className={`tact ${o.cls} ${tutId === o.id && !step?.info ? 'tut-focus' : ''}`} onClick={o.onClick} disabled={o.disabled || lock(o.id)}
-      aria-label={`${o.name}: ${o.sub}, ${o.uses ? `${o.uses[0]} of ${o.uses[1]} uses left this battle` : 'always available'}${o.edge && matchup(o.edge, them.style) ? (matchup(o.edge, them.style) > 0 ? ', strong matchup' : ', weak matchup') : ''}`}>
+      aria-label={`${o.name}: ${o.sub}, ${o.uses ? `${o.uses[0]} of ${o.uses[1]} uses left this duel` : 'always available'}${o.edge && matchup(o.edge, them.style) ? (matchup(o.edge, them.style) > 0 ? ', strong matchup' : ', weak matchup') : ''}`}>
       <span className="tact-ic" aria-hidden>{o.icon}</span>
       <span className="tact-txt"><span className="tact-top"><b>{o.name}</b>{o.uses ? <Uses left={o.uses[0]} max={o.uses[1]} /> : <Uses />}</span><small>{o.sub}</small></span>
       {o.edge && !foe.hidden && <Edge move={o.edge} vs={them.style} />}
@@ -731,7 +731,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
 
         {intro && (
           <div className="tintro" aria-hidden>
-            <span className="tintro-k">{setup.title === 'Wandering birder' ? 'Challenge' : 'Rival battle'}</span>
+            <span className="tintro-k">{setup.title === 'Wandering birder' ? 'Challenge' : 'Rival duel'}</span>
             <Face face={setup.face} merlin={setup.merlin} name={setup.foeName} size={104} tall className="tintro-face" />
             <b className="tintro-t">{setup.foeName}</b>
             <span className="tintro-s">{setup.title}</span>
@@ -740,14 +740,14 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
       </div>
 
       {guide && (
-        <div className="tguide-sheet" role="dialog" aria-label="How battles work">
-          <div className="tguide-head"><b>How battles work</b><button className="btn small" onClick={() => { sfx.back(); setGuide(false); }}>Close</button></div>
+        <div className="tguide-sheet" role="dialog" aria-label="How duels work">
+          <div className="tguide-head"><b>How duels work</b><button className="btn small" onClick={() => { sfx.back(); setGuide(false); }}>Close</button></div>
           <div className="tguide-scroll"><BattleGuide /></div>
         </div>
       )}
       <div className={`ttray ${live ? '' : 'busy'}`} onClick={live ? undefined : advance}>
         {step && (
-          <div className="ttut dialog" role="dialog" aria-label="Battle tutorial">
+          <div className="ttut dialog" role="dialog" aria-label="Duel tutorial">
             <span className="dialog-name">Professor Woods · {tut + 1}/{steps.length}</span>
             <div className="ttut-merlin woods-frame"><Professor height={64} /></div>
             <div className="ttut-body">
@@ -766,7 +766,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
           </div>
         )}
         <button className={`tsuper ${sReady ? 'ready' : ''} ${tutId === 'super' ? 'tut-focus' : ''}`} disabled={!sReady || lock('super')} onClick={() => pick({ kind: 'super' })}
-          aria-label={sReady ? `Super ${cur.superName}: ready, tap to use` : `Super meter ${gauge}%: fills as you fight`}>
+          aria-label={sReady ? `Super ${cur.superName}: ready, tap to use` : `Super meter ${gauge}%: fills as you compete`}>
           <i style={{ width: `${gauge}%` }} aria-hidden />
           <span className="tsuper-l"><Icon name="star" size={16} /> <span>{sReady ? cur.superName : 'Super meter'}</span></span>
           <span className="tsuper-r">{sReady ? 'Ready!' : `${gauge}%`}</span>
@@ -774,23 +774,23 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
 
         {(panel === 'menu' || panel === 'busy') && (
           <div className="tcmd">
-            <button className={`tcmd-b fight ${fightLesson && !step?.info ? 'tut-focus' : ''}`} disabled={lock('fight')} onClick={() => { sfx.select(); setPanel('fight'); }} aria-label="Fight: choose a move"><PixelEmoji name="fight" /><span className="tcmd-l">Fight</span></button>
+            <button className={`tcmd-b fight ${fightLesson && !step?.info ? 'tut-focus' : ''}`} disabled={lock('fight')} onClick={() => { sfx.select(); setPanel('fight'); }} aria-label="Moves: choose a move"><PixelEmoji name="fight" /><span className="tcmd-l">Moves</span></button>
             <button className="tcmd-b" disabled={lock('bag') || !snacks} onClick={() => { sfx.select(); setPanel('snack'); }} aria-label={`Bag: ${snacks} snacks and potions`}><PixelEmoji name="bag" /><span className="tcmd-l">Bag</span><small>×{snacks}</small></button>
             <button className="tcmd-b" disabled={lock('birds') || !bench.length} onClick={() => { sfx.select(); setPanel('swap'); }} aria-label={`Birds: ${bench.length} to swap in`}><PixelEmoji name="birds" /><span className="tcmd-l">Birds</span><small>×{bench.length}</small></button>
-            <button className="tcmd-b run" disabled={!live || !!step} onClick={() => { sfx.back(); act({ kind: 'run' }); }} aria-label="Run: leave the battle"><PixelEmoji name="run" /><span className="tcmd-l">Run</span></button>
-            <button className="thelp" onClick={() => { sfx.select(); setGuide(true); }}><span className="thelp-q" aria-hidden>?</span><span className="thelp-l">How battles work</span></button>
+            <button className="tcmd-b run" disabled={!live || !!step} onClick={() => { sfx.back(); act({ kind: 'run' }); }} aria-label="Leave: end the duel"><PixelEmoji name="run" /><span className="tcmd-l">Leave</span></button>
+            <button className="thelp" onClick={() => { sfx.select(); setGuide(true); }}><span className="thelp-q" aria-hidden>?</span><span className="thelp-l">How duels work</span></button>
           </div>
         )}
         {panel === 'fight' && (
           <>
             <div className="tfight-top">
-              <span>{meFirst ? '⚡ You attack first' : `⚡ ${them.c.sp.common} attacks first`}</span>
+              <span>{meFirst ? '⚡ You go first' : `⚡ ${them.c.sp.common} goes first`}</span>
               <span className={`tmatch ${myEdge > 0 ? 'up' : myEdge < 0 ? 'down' : ''}`}>{myEdge > 0 ? `▲ Your ${CONTESTS[cur.style].name} beats ${CONTESTS[them.style].name}` : myEdge < 0 ? `▼ ${CONTESTS[them.style].name} beats your ${CONTESTS[cur.style].name}` : `${CONTESTS[cur.style].name} vs ${CONTESTS[them.style].name}: even`}</span>
             </div>
             {charging ? <p className="tfight-hint warn">The rival is powering up a Big Move. <b>Guard</b> blocks most of it.</p>
               : myEdge < 0 && betterBench ? <p className="tfight-hint">Tip: go Back and tap <b>Birds</b> to swap in {betterBench.c.sp.common}, who has the edge.</p> : null}
             <div className="tgrid">
-              {move({ id: 'quick', cls: 'quick', icon: <Fx sheet={CONTESTS[cur.style].proj} scale={1} frame={1} />, name: cur.quick, sub: cur.quickPow > 1 ? 'Upgraded quick move' : 'Quick move · a steady hit', edge: cur.style, onClick: () => pick({ kind: 'quick' }) })}
+              {move({ id: 'quick', cls: 'quick', icon: <Fx sheet={CONTESTS[cur.style].proj} scale={1} frame={1} />, name: cur.quick, sub: cur.quickPow > 1 ? 'Upgraded quick move' : 'Quick move · steady points', edge: cur.style, onClick: () => pick({ kind: 'quick' }) })}
               {move({ id: 'skill', cls: 'skill', icon: <Fx sheet={CONTESTS[cur.skill.style].boom} scale={1} frame={2} />, name: cur.skill.name, sub: cur.skill.tag, uses: [cur.pp, cur.ppMax], disabled: cur.pp < 1, edge: cur.skill.power ? cur.skill.style : undefined, onClick: () => pick({ kind: 'skill' }) })}
               {cur.tech
                 ? move({ id: 'tech', cls: 'tech', icon: (() => { const t = TECH_FX[cur.tech.kind as keyof typeof TECH_FX]; return t?.proj ? <Fx sheet={t.proj} scale={1} frame={2} /> : t ? <Fx sheet={t.boom} scale={0.6} frame={3} /> : <Fx sheet={CONTESTS[cur.tech.style].proj} scale={1} frame={3} />; })(), name: cur.tech.name, sub: cur.tech.tag, uses: [cur.pp2, cur.pp2Max], disabled: cur.pp2 < 1, edge: cur.tech.power ? cur.tech.style : undefined, onClick: () => pick({ kind: 'tech' }) })
@@ -809,7 +809,7 @@ function BattleView({ setup, party, onEnd, bond }: { setup: Setup; party: Conten
           <div className="tsnacks">
             {bench.map(({ f, i }) => (
               <button key={i} className="tact snackrow" onClick={() => pick({ kind: 'swap', to: i })}
-                aria-label={`Swap in ${f.c.sp.common}, level ${f.c.level}, ${f.hp} of ${f.max} HP`}>
+                aria-label={`Swap in ${f.c.sp.common}, level ${f.c.level}, ${f.hp} of ${f.max} energy`}>
                 <span className="tact-ic" aria-hidden><Sprite species={f.c.sp} parts={f.c.parts} scale={1} mode="static" /></span>
                 <span className="tact-txt"><b>{f.c.sp.common}</b><small>Lv{f.c.level} · {f.hp}/{f.max} HP · {CONTESTS[f.style].name}</small></span>
                 <Edge move={f.style} vs={them.style} />
@@ -885,7 +885,7 @@ function Result({ setup, won, prize, party, wild, onRematch, onLadder, onNext, o
       <div className="trials-cta col">
         {onNext && idx >= 0 && idx + 1 < RIVALS.length && <button className="btn primary big block" onClick={onNext}>Next rival: {RIVALS[idx + 1].name}</button>}
         {onRematch && <button className={`btn block ${onNext ? '' : 'primary big'}`} onClick={onRematch}>{won ? 'Rematch' : 'Try again'}</button>}
-        {onSendBack && <button className="btn block" onClick={onSendBack}>⚔ Send them your team</button>}
+        {onSendBack && <button className="btn block" onClick={onSendBack}>✦ Send them your team</button>}
         <button className="btn ghost block" onClick={onLadder}>{wild ? 'Done' : 'Back to rivals'}</button>
       </div>
     </div>

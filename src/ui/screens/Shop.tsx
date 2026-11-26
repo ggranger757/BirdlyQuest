@@ -101,7 +101,7 @@ export function FeederShop({ cat, onCat, onPoured, birds }: { cat: Cat; onCat: (
       }));
       case 'potions': return POTIONS.map((p, i) => {
         const have = st.potions?.[p.id] ?? 0, state: State = lv < p.level ? 'locked' : 'buy';
-        const one = (n: number) => (n >= 5 ? 'Full' : `+${n}`), amt = p.atk && p.def && p.atk !== p.def ? `⚔${one(p.atk)} 🛡${one(p.def)}` : one(p.fill);
+        const one = (n: number) => (n >= 5 ? 'Full' : `+${n}`), amt = p.atk && p.def && p.atk !== p.def ? `✦${one(p.atk)} 🛡${one(p.def)}` : one(p.fill);
         return { key: `potion:${p.id}`, name: p.name, state, order: i,
           art: (s: number) => <span className="potion-tile"><PotionArt p={p} size={Math.round(s * 0.75)} />{have > 0 && <b className="potion-have">×{have}</b>}</span>,
           tag: state === 'locked' ? `🔒 Lv ${p.level}` : <><span className="ptag" style={{ color: KIND_META[p.kind].color }}>{amt}</span> · {price(p.price)}</> };
@@ -193,7 +193,7 @@ function ItemSheet({ itemKey, onClose, onPoured }: { itemKey: string; onClose: (
     art = <PotionArt p={p} size={112} />; title = p.name; line = potionSays(p);
     meta = <><b style={{ color: KIND_META[p.kind].color }}>{potionTag(p)}</b> · you have <b>{have}</b></>;
     primary = locked ? <button className="btn block" disabled>🔒 Unlocks at Lv {p.level}</button>
-      : <button className="btn primary block" disabled={st.feathers < p.price} onClick={() => { if (buyPotion(p.id)) { happy(`Into your bag! In a battle, tap Bag to drink it.`); nav.toast(`Bought ${p.name}`); } else broke(p.price); }}>Buy one · {coins(p.price)}</button>;
+      : <button className="btn primary block" disabled={st.feathers < p.price} onClick={() => { if (buyPotion(p.id)) { happy(`Into your bag! In a duel, tap Bag to drink it.`); nav.toast(`Bought ${p.name}`); } else broke(p.price); }}>Buy one · {coins(p.price)}</button>;
   } else if (kind === 'feeder' || kind === 'perch') {
     const d = variants.find((v) => v.id === pick) ?? variants[0];
     const owned = ownsDecor(st, d.id), using = st.diorama[d.kind] === d.id || (d.kind === 'feeder' && !st.diorama.feeder && d.price === 0), locked = !owned && lv < d.level;

@@ -22,12 +22,12 @@ const P = (id: string, name: string, atk: number, def: number, level: number, pr
 
 // Ids never change (players own them); levels spread across the climb to Lv50 (v1.50).
 export const POTIONS: Potion[] = [
-  P('atk1', 'Attack Vial', 1, 0, 1, 15, 'p1'),
+  P('atk1', 'Power Vial', 1, 0, 1, 15, 'p1'),
   P('def1', 'Defense Vial', 0, 1, 1, 15, 'p8'),
-  P('atk2', 'Attack Flask', 2, 0, 5, 30, 'p23'),
+  P('atk2', 'Power Flask', 2, 0, 5, 30, 'p23'),
   P('def2', 'Defense Flask', 0, 2, 5, 30, 'p9'),
   P('both1', 'Green Tonic', 1, 1, 9, 40, 'p29'),
-  P('atk3', 'Attack Bottle', 3, 0, 13, 55, 'p20'),
+  P('atk3', 'Power Bottle', 3, 0, 13, 55, 'p20'),
   P('def3', 'Defense Bottle', 0, 3, 13, 55, 'p10'),
   P('both2', 'Forest Draught', 2, 2, 17, 80, 'p46'),
   P('atk5', 'Ember Draught', 4, 0, 21, 95, 'p33'),
@@ -42,23 +42,23 @@ export const POTIONS: Potion[] = [
 ];
 export const potionById = (id: string) => POTIONS.find((p) => p.id === id);
 export const KIND_META: Record<PotionKind, { label: string; color: string }> = {
-  atk: { label: 'Attack', color: '#E0483A' },
+  atk: { label: 'Power', color: '#E0483A' },
   def: { label: 'Defense', color: '#3A8FE0' },
-  both: { label: 'Attack + Defense', color: '#4CC25A' },
+  both: { label: 'Power + Defense', color: '#4CC25A' },
 };
 const amt = (n: number) => (n >= GAUGE_MAX ? 'full' : `+${n}`);
 /** "Attack +2", "Defense full", "Attack +1 & Defense +1" */
 export function potionTag(p: Potion): string {
-  if (p.atk && p.def) return `Attack ${amt(p.atk)} & Defense ${amt(p.def)}`;
-  return p.atk ? `Attack ${amt(p.atk)}` : `Defense ${amt(p.def)}`;
+  if (p.atk && p.def) return `Power ${amt(p.atk)} & Defense ${amt(p.def)}`;
+  return p.atk ? `Power ${amt(p.atk)}` : `Defense ${amt(p.def)}`;
 }
 /** What it does, in a sentence. */
 export function potionSays(p: Potion): string {
   const by = (n: number) => (n >= GAUGE_MAX ? 'all the way' : `by ${n}`);
-  if (p.atk && !p.def) return `Fills your bird’s Attack gauge ${by(p.atk)}, so it hits harder. Battles only.`;
-  if (p.def && !p.atk) return `Fills your bird’s Defense gauge ${by(p.def)}, so it gets hurt less. Battles only.`;
-  if (p.atk === p.def) return `Fills both gauges ${by(p.atk)}: hits harder and gets hurt less. Battles only.`;
-  return `Fills Attack ${by(p.atk)} and Defense ${by(p.def)}. Battles only.`;
+  if (p.atk && !p.def) return `Fills your bird’s Power gauge ${by(p.atk)}, so its moves score more. Duels only.`;
+  if (p.def && !p.atk) return `Fills your bird’s Defense gauge ${by(p.def)}, so rival moves score less. Duels only.`;
+  if (p.atk === p.def) return `Fills both gauges ${by(p.atk)}: scores more, and rival moves score less. Duels only.`;
+  return `Fills Power ${by(p.atk)} and Defense ${by(p.def)}. Duels only.`;
 }
 /** Apply a potion to a bird's gauges; returns the new values. */
 export function drink(p: Potion, atk: number, def: number): { atk: number; def: number } {

@@ -195,7 +195,7 @@ function CaughtText({ result, onContinue }: { result: CatchResult; onContinue: (
     ...(result.badges.length === 1 ? [`You earned the ${result.badges[0].name.toUpperCase()} badge!`]
       : result.badges.length > 1 ? [`You earned ${result.badges.length} badges: ${result.badges.map((b) => b.name).join(', ')}!`] : []),
     ...(result.ticket ? [`+1 TRIAL TICKET for Field Trials (${ticketsOf(getState().trials)}/${TICKETS.max}).`] : []),
-    ...(result.levelUp ? [`Trainer level up! You are now Lv ${result.levelUp.level}. Your birds' Bond grows: +${Math.round(bondFor(result.levelUp.level) * 100)}% HP and power in battle.${result.rankUp ? ` ${RANK_LINES[result.rankUp] ?? result.rankUp}` : ''}`] : result.rankUp ? [`Trainer level up! ${RANK_LINES[result.rankUp] ?? result.rankUp}`] : []),
+    ...(result.levelUp ? [`Trainer level up! You are now Lv ${result.levelUp.level}. Your birds' Bond grows: +${Math.round(bondFor(result.levelUp.level) * 100)}% energy and power in duels.${result.rankUp ? ` ${RANK_LINES[result.rankUp] ?? result.rankUp}` : ''}`] : result.rankUp ? [`Trainer level up! ${RANK_LINES[result.rankUp] ?? result.rankUp}`] : []),
     ...(result.levelUp?.homes.length ? [`New Bird Home${result.levelUp.homes.length > 1 ? 's' : ''} for sale: ${result.levelUp.homes.length > 1 ? `${result.levelUp.homes.slice(0, -1).join(', ')} and ${result.levelUp.homes.at(-1)}` : result.levelUp.homes[0]}! Buy ${result.levelUp.homes.length > 1 ? 'them' : 'it'} under Bird Homes on the Aviary’s Birds page.`] : []),
   ];
   const played = useRef(false);
