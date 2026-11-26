@@ -432,3 +432,16 @@ One line per meaningful choice, with the reason.
 - **v1.47.0: the lens step's backdrop changes every 3 discoveries.** Before, the scene behind a new bird was always the player's home habitat. Now it steps through 13 outdoor day scenes (pine forest, valley pond, old town, palm shore…) and 6 night ones after dark, moving on every 3 sightings. Golden hour and dawn keep their warm tint. The scene is picked once when the screen opens, so it never changes mid-catch.
 - **v1.48.0: Bird Homes are only bought on the Aviary's Birds page.** The Shop's Homes category, its tiles and its home sheet are gone; the Shop now has Food, Potions, Feeders, Perches and Lenses. The Birds page already had the "Bird Homes" strip with buy and move-in, so nothing new was needed there. Any old link to the shop's homes tab opens the shop normally. The level-up message and Woods' tour now point to Aviary › Birds.
 - **v1.49.0: the Field Guide theme uses the same fonts as every other theme** (owner's request). The theme's Courier body text and typewriter headings are gone, as are about 80 per-element font, weight, size, letter-spacing and capitalisation overrides (mostly from v1.19, v1.23 and v1.34.1). Its paper colours and ink are unchanged. The theme swatch in Settings shows the app font too.
+- **v1.50.0: everything rebalanced for the Lv50 cap; 60 trainers in the app; Woods' bird facts.**
+  - **Field Trials ladder:** 31 stops. The original five (Pip, Wren, Captain Gale, Mara, Old Hawkins) keep the first five spots, because progress is saved as "rivals beaten".
+    - 25 new named rivals follow from Lv15 to Lv48, each with a portrait, bio, motive and battle lines (data/rivals.ts). Professor Woods moves to the finale at Lv50.
+    - Prizes, fieldcraft and turn pace scale with level: up to 600 coins for Woods.
+    - Saves that had beaten the old 6th stop (Woods) restart at the first new rival. A `ladder: 2` marker makes this happen only once.
+  - **Wanderers:** 30 named wandering birders replace the 8 random-faced ones, each with one fixed portrait, so a name always matches its face. All 60 portraits are used exactly once (tested).
+  - **Feeders:** 105, up from 50: 5 new designs (Birdhouse, Mason Jar, Log, Acorn, Pagoda) and 2 new colourways (Sunset, Frost). Designs unlock every 3 levels from Lv1 to Lv43; colourways follow one level apart, up to Lv49.
+  - **Perches:** they unlock across Lv1–50.
+  - **Lenses:** each lens has its own unlock level, banded by tier: Common Lv1–12, Rare Lv13–30, Epic Lv31–48.
+  - **Bird Homes:** stretched from Lv2–26 to Lv2–49, in the same order.
+  - **Prices:** they rise with the unlock level.
+  - **Potions:** 17, up from 11, through Lv44. A potion now has separate Attack and Defense amounts, which allowed Dragon Draught (ATK full + DEF 2) and Titan Draught (the reverse). Only red, blue and green bottles were used, so the colour code holds. Existing potion ids are unchanged.
+  - **Trainer page:** Woods' quest box adds a "Did you know?" bird fact from the curated species facts (favouring birds you've found), with a "Tell me another fact" button.

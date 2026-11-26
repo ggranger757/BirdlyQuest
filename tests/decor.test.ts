@@ -4,12 +4,14 @@ import { feederPixels, perchPixels, FEEDER_TRAY, PERCH_W, PERCH_H } from '../src
 import { RIVALS, WANDERERS, WANDERER_PERSONA } from '../src/core/trials';
 
 describe('Aviary decor and Bird Homes (v1.28)', () => {
-  it('has 50 feeders and 50 perches with unique ids, names and sensible prices', () => {
-    expect(FEEDERS.length).toBe(50);
+  it('has 105 feeders and 50 perches with unique ids, names and sensible prices', () => {
+    expect(FEEDERS.length).toBe(105);   // 15 designs × 7 colourways (v1.50)
     expect(PERCHES.length).toBe(50);
     const all = [...FEEDERS, ...PERCHES];
-    expect(new Set(all.map((d) => d.id)).size).toBe(100);
-    expect(new Set(all.map((d) => d.name)).size).toBe(100);
+    expect(new Set(all.map((d) => d.id)).size).toBe(155);
+    expect(new Set(all.map((d) => d.name)).size).toBe(155);
+    expect(Math.max(...all.map((d) => d.level))).toBeGreaterThanOrEqual(45);   // unlocks run all the way to the Lv50 cap
+    for (const d of all) expect(d.level).toBeLessThanOrEqual(50);
     for (const d of all) { expect(d.level).toBeGreaterThanOrEqual(1); expect(d.price).toBeGreaterThanOrEqual(0); }
     expect(DECOR[DEFAULT_FEEDER].price).toBe(0);
     expect(feederOf(undefined).id).toBe(DEFAULT_FEEDER);

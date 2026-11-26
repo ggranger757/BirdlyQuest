@@ -1,4 +1,4 @@
-// Pixel art for Aviary decor (v1.29), drawn with the pixel kit: 10 feeder designs and 10 perches, each in 5 colourways.
+// Pixel art for Aviary decor (v1.29), drawn with the pixel kit: 15 feeder designs (5 added in v1.50) and 10 perches, each in 5 colourways.
 // Feeders: 32×40 sprites hung from (16, 0) with the tray (where birds eat) at y 32.
 // Perches: 48×52 sprites standing on the ground at (24, 51), with landing spots for birds.
 import { Spr, type Mat } from './pixelkit';
@@ -128,6 +128,50 @@ function feeder(d: FeederDef, fill: number | FeederMix): Spr {
         s.rect(cx - 4, y + 3, 9, 7, glass);
         fillRange(cx - 3, y + 5, 7, 5, (2 - t) / 3, (3 - t) / 3); // the bottom tier fills first
       }
+      break;
+    // ── v1.50 designs ──
+    case 'birdhouse':
+      s.poly([[3, 13], [cx, 2], [29, 13]], roof).rect(3, 12, 26, 2, trim);
+      s.rect(7, 14, 19, 17, body).rect(7, 14, 1, 17, trim).rect(25, 14, 1, 17, trim);
+      s.ellipse(cx + 0.5, 18.5, 2.5, 2.5, { base: '#1E1408', flat: true });            // entrance hole
+      s.rect(cx - 1, 22, 3, 1, trim);                                                  // perch peg
+      s.rect(10, 24, 13, 6, trim).rect(11, 25, 11, 5, glass); seedsIn(11, 25, 11, 5);  // seed window
+      break;
+    case 'pagoda':
+      s.poly([[1, 9], [31, 9], [cx + 5, 4], [cx - 4, 4]], roof).rect(1, 9, 30, 1, trim).dot(1, 8, p.roofHi).dot(30, 8, p.roofHi);
+      s.rect(cx - 1, 1, 3, 3, trim);
+      s.rect(8, 10, 17, 6, body);
+      s.poly([[3, 19], [29, 19], [cx + 7, 15], [cx - 6, 15]], roof).rect(3, 19, 26, 1, trim);
+      s.rect(9, 20, 15, 11, body).rect(11, 21, 11, 9, trim).rect(12, 22, 9, 8, glass); seedsIn(12, 22, 9, 8);
+      break;
+    case 'jar':
+      s.rect(cx - 6, 0, 1, 5, WIRE).rect(cx + 6, 0, 1, 5, WIRE).rect(cx - 6, 0, 13, 1, WIRE);   // wire bail
+      s.rect(cx - 7, 5, 15, 3, roofM).rect(cx - 7, 8, 15, 1, trim);                              // screw lid
+      s.rect(cx - 8, 9, 17, 21, glass); seedsIn(cx - 7, 10, 15, 20);
+      s.rect(cx - 8, 15, 17, 1, { base: '#FFFFFF', alpha: 0.35, flat: true });                    // glass ring
+      s.rect(cx - 4, 21, 9, 4, { base: p.body, flat: true }).rect(cx - 3, 22, 7, 2, trim);         // label
+      break;
+    case 'log': {
+      const bark: Mat = { base: p.trim, light: p.roof, tex: 'wood' };
+      s.rect(cx - 4, 0, 1, 6, WIRE).rect(cx + 4, 0, 1, 6, WIRE);
+      s.rect(4, 6, 24, 24, bark).ellipse(cx, 6, 12, 2, { base: p.body, tex: 'wood' });            // log with a cut top
+      for (const [hx, hy] of [[10, 11], [21, 15], [12, 21], [22, 25]] as const) {
+        s.ellipse(hx, hy, 3, 2.5, { base: '#1E1408', flat: true });
+        if (k > 0) s.ellipse(hx, hy + 0.5, 2.2, 1.6 * Math.max(0.4, k), FOOD_MAT[foodAt(1 - (hy - 8) / 22)]);
+      }
+      for (let y = 8; y < 30; y += 5) s.dot(6 + (y % 3), y, p.roofHi).dot(25 - (y % 3), y + 2, p.roofHi);
+      break;
+    }
+    case 'acorn':
+      s.rect(cx, 0, 1, 3, WIRE).rect(cx - 1, 3, 3, 2, { base: '#6A5A30', tex: 'wood' });
+      s.ellipse(cx, 9, 11, 5, roof).rect(cx - 11, 9, 23, 3, roof);                                 // cap
+      for (let x = cx - 9; x <= cx + 9; x += 3) s.dot(x, 8, p.roofHi).dot(x + 1, 10, p.trim);
+      s.ellipse(cx, 20, 9, 10, glass);
+      for (let y = 12; y <= 29; y++) for (let x = cx - 9; x <= cx + 9; x++) {
+        const dx = (x + 0.5 - cx) / 9, dy = (y + 0.5 - 20) / 10;
+        if (dx * dx + dy * dy <= 0.8 && y >= 29 - Math.round(17 * k)) s.px(x, y, FOOD_MAT[foodAt((29 - y + 0.5) / 17)]);
+      }
+      s.rect(cx - 2, 29, 5, 2, trim).dot(cx - 5, 15, '#FFFFFF').dot(cx - 6, 17, '#FFFFFF', 0.7);
       break;
   }
   tray();

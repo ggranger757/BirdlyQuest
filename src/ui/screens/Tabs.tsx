@@ -1,4 +1,6 @@
 import { FoodIcon } from '../FoodIcon';
+import { SPECIES } from '../../data/species';
+import { RIVALS } from '../../core/trials';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNav } from '../nav';
 import { useGame, getState, counts, speciesOf, speciesCount, setBiome, setHome, ownsHome, buyHome, toggleHabitatBird, rotateAviary, setState, claimChallenge, refreshChallenges, buyFood, buyLens, equipLens, collectAviary, petBird, partnerPet, birdName, nameBird, fillFeeder, tickFeeder } from '../../app/store';
@@ -178,13 +180,13 @@ export function HabitatTab() {
       {!fact && aviary.length + (st.partner ? 1 : 0) > 0 && <p className="small muted mt8" style={{ textAlign: 'center' }}>Tap a bird for a fun fact.</p>}
       {meals.length > 0 && <div className="small mt8" role="status" style={{ color: 'var(--lichen)' }}>{meals.map((m) => `${birdName(m.id, st)} ate (+${m.ate} HP)`).join(' · ')}</div>}
 
-      <button className="trials-entry" onClick={() => { sfx.select(); nav.open({ name: 'trials' }); }} aria-label={`Field Trials: friendly bird contests. ${st.trials?.cleared ?? 0} of 6 rivals beaten`}>
+      <button className="trials-entry" onClick={() => { sfx.select(); nav.open({ name: 'trials' }); }} aria-label={`Field Trials: friendly bird contests. ${st.trials?.cleared ?? 0} of ${RIVALS.length} rivals beaten`}>
         <span className="trials-entry-icon" aria-hidden><span className="tfx" style={{ width: 52, height: 48, backgroundImage: 'url(fx/trials/sa_nova.png)', backgroundSize: '312px 48px', ['--sheet-w' as string]: '-312px', animation: 'tfx 900ms steps(6) infinite' }} /></span>
         <span className="grow" style={{ textAlign: 'left' }}>
           <b className="trials-entry-title">Field Trials</b>
           <span className="small">Song-offs, displays, sky races and foraging. Pit your birds against rival birders.</span>
         </span>
-        <span className="px small trials-entry-go">{st.trials?.cleared ?? 0}/6 ▶</span>
+        <span className="px small trials-entry-go">{Math.min(st.trials?.cleared ?? 0, RIVALS.length)}/{RIVALS.length} ▶</span>
       </button>
       <Segmented label="Aviary sections" value={section} onChange={setSection} options={[
         { id: 'birds', label: 'Birds', badge: hungry || undefined },
@@ -321,6 +323,14 @@ export function YouTab() {
   const [section, setSection] = useState<'quests' | 'badges' | 'lenses' | 'life'>('quests');
   useEffect(() => { const f = (e: Event) => setSection((e as CustomEvent).detail); window.addEventListener('birdly:trainer-section', f); return () => window.removeEventListener('birdly:trainer-section', f); }, []);
   const [questCast, setQuestCast] = useState(0);
+  // Professor Woods shares a random bird fact, favouring birds you've already found (v1.50)
+  const factPool = useMemo(() => {
+    const all = SPECIES.filter((x) => x.fact);
+    const mine = all.filter((x) => life.some((y) => y.speciesId === x.id));
+    return mine.length >= 3 && Math.random() < 0.6 ? mine : all;
+  }, [life.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [factN, setFactN] = useState(() => Math.floor(Math.random() * 1000));
+  const fact = factPool.length ? factPool[factN % factPool.length] : null;
   const cats = ['Firsts', 'Taxonomy', 'Place', 'Craft', 'Care', 'Time', 'Dedication'] as const;
   const tierColor = { bronze: 'var(--tier-bronze)', silver: 'var(--tier-silver)', gold: 'var(--tier-gold)', platinum: 'var(--tier-platinum)' };
   return (
@@ -355,8 +365,10 @@ export function YouTab() {
 
       {section === 'quests' && (
         <section aria-label="Quests">
-          <MerlinSays cast={questCast} mood={claimable ? 'delighted' : 'curious'} name="Professor Woods · Quests"
-            text={claimable ? `You have ${claimable} quest${claimable > 1 ? 's' : ''} to hand in. Claim your reward!` : 'Head out and find birds. I will reward you for every quest you finish.'} />
+          <MerlinSays cast={questCast + factN} mood={claimable ? 'delighted' : 'curious'} name="Professor Woods · Quests"
+            text={`${claimable ? `You have ${claimable} quest${claimable > 1 ? 's' : ''} to hand in. Claim your reward!` : 'Head out and find birds. I will reward you for every quest you finish.'}${fact ? `\n\nDid you know? ${fact.fact} (${fact.common})` : ''}`}>
+            {fact && <button className="btn ghost small woods-fact-next" onClick={(e) => { e.stopPropagation(); sfx.select(); setFactN((n) => n + 1 + Math.floor(Math.random() * 7)); }}>Tell me another fact ›</button>}
+          </MerlinSays>
           {slots.map(({ slot, kind }) => {
             const p = challengeProgress(st, slot, now);
             const ready = p.done && !slot.claimed;

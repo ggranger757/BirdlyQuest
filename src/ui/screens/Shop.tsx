@@ -101,7 +101,7 @@ export function FeederShop({ cat, onCat, onPoured, birds }: { cat: Cat; onCat: (
       }));
       case 'potions': return POTIONS.map((p, i) => {
         const have = st.potions?.[p.id] ?? 0, state: State = lv < p.level ? 'locked' : 'buy';
-        const amt = p.fill >= 5 ? 'Full' : `+${p.fill}`;
+        const one = (n: number) => (n >= 5 ? 'Full' : `+${n}`), amt = p.atk && p.def && p.atk !== p.def ? `⚔${one(p.atk)} 🛡${one(p.def)}` : one(p.fill);
         return { key: `potion:${p.id}`, name: p.name, state, order: i,
           art: (s: number) => <span className="potion-tile"><PotionArt p={p} size={Math.round(s * 0.75)} />{have > 0 && <b className="potion-have">×{have}</b>}</span>,
           tag: state === 'locked' ? `🔒 Lv ${p.level}` : <><span className="ptag" style={{ color: KIND_META[p.kind].color }}>{amt}</span> · {price(p.price)}</> };

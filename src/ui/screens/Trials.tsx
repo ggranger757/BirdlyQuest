@@ -17,13 +17,13 @@ import { runBackdrop } from '../../render/diorama';
 import { dayKey, trainerLevel } from '../../core/xp';
 import type { Species } from '../../data/types';
 import {
-  CONTESTS, RIVALS, WANDERERS, WANDERER_PERSONA, WILD, wandererFace, FX_CRIT, FX_RING, TECH_FX, critFx, SNACKS, GROW, TECHNIQUES, BEATS, TICKETS, T,
+  CONTESTS, RIVALS, WANDERER_PERSONA, WILD, wandererFace, wandererFor, FX_CRIT, FX_RING, TECH_FX, critFx, SNACKS, GROW, TECHNIQUES, BEATS, TICKETS, T,
   fighter, startBattle, takeTurn, active, rivalTeam, wildTeam, rewardFor, birdStyle, matchup, bondFor, learnedBetween, nextUnlock, ticketsOf, battleIsFree,
   type Contender, type Battle, type Ev, type Side, type Item, type Action, type Sheet, type Contest, type Persona,
 } from '../../core/trials';
 
 const sleep = (ms: number) => new Promise<void>((ok) => setTimeout(ok, ms));
-const hashName = (s: string) => WANDERERS[[...s].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7) % WANDERERS.length];
+const hashName = (s: string) => wandererFor(s);
 
 /** An animated sprite-sheet effect (or a single frame of one, for icons). */
 function Fx({ sheet, scale = 2, ms = 500, loop, frame, className, style }: { sheet: Sheet; scale?: number; ms?: number; loop?: boolean; frame?: number; className?: string; style?: CSSProperties }) {

@@ -18,8 +18,10 @@ describe('snap lenses', () => {
     expect([LENSES.ripple.power, LENSES.bubble.power, LENSES.ember.power, LENSES.arcane.power, LENSES.phantom.power]).toEqual([0, 5, 10, 15, 20]);
   });
   it('locks tiers behind trainer levels', () => {
-    expect(LENSES.phantom.level).toBe(TIER_META.epic.level);
-    expect(LENSES.dewdrop.level).toBe(1);
+    // v1.50: each lens unlocks on its own level, inside its tier's band, across the climb to Lv50
+    for (const l of Object.values(LENSES)) { expect(l.level).toBeGreaterThanOrEqual(TIER_META[l.tier].level); expect(l.level).toBeLessThanOrEqual(50); }
+    expect(Math.max(...Object.values(LENSES).map((l) => l.level))).toBeGreaterThanOrEqual(45);
+    expect(LENSES.ripple.level).toBe(1);
   });
   it('has no Legendary tier any more, and each rare lens has its own colour', () => {
     expect(LENS_TIERS).toEqual(['common', 'rare', 'epic']);

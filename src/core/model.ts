@@ -88,7 +88,7 @@ export interface GameState {
   petDay: string | null;           // last day the aviary paid out Feather Coins
   stats: { fills: number; spent: number; quests: number };
   badgeQueue: string[];            // newly earned badges waiting for their pop-up
-  trials?: { cleared: number; wins: number; day?: string; rematches?: number; tutorial?: boolean; battles?: number; wildDay?: string; tickets?: number; ticketsEarned?: number; ticketsUsed?: number; duels?: Record<string, string>; duelWins?: number }; // Field Trials progress (tickets: Trial Tickets, default 3; earned / used tallies since v1.34)
+  trials?: { cleared: number; wins: number; day?: string; rematches?: number; tutorial?: boolean; battles?: number; wildDay?: string; tickets?: number; ticketsEarned?: number; ticketsUsed?: number; duels?: Record<string, string>; duelWins?: number; ladder?: number }; // Field Trials progress (tickets: Trial Tickets, default 3; earned / used tallies since v1.34)
   pendingChallenge?: { sightingId: string; at: string } | null; // a wandering birder wants to see a newly discovered bird
 }
 

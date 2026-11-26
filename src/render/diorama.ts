@@ -80,7 +80,8 @@ export const SCENES: Record<string, SceneDef> = {
 
 // New players start with two homes (the default day/night pair); every other home unlocks one level later,
 // and then has to be bought with Feather Coins in Woods' Shop (v1.28).
-for (const sc of Object.values(SCENES)) sc.level = sc.id === 'skyday' || sc.id === 'dusk' ? 1 : sc.level + 1;
+// v1.50: stretched across the climb to the Lv50 cap (Lv2 → Lv49), same order as before.
+for (const sc of Object.values(SCENES)) sc.level = sc.id === 'skyday' || sc.id === 'dusk' ? 1 : Math.round(2 + (sc.level - 1) * 47 / 24);
 export const FREE_HOMES = ['skyday', 'dusk'];
 /** Price of a Bird Home in Feather Coins: grows with the level it unlocks at. */
 export const homePrice = (id: string) => (FREE_HOMES.includes(id) ? 0 : Math.round((40 + (SCENES[id]?.level ?? 1) * 25) / 5) * 5);

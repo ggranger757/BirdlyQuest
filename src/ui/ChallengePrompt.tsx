@@ -3,7 +3,7 @@ import { useGame, clearChallenge, speciesOf } from '../app/store';
 import { useNav } from './nav';
 import { Sprite } from './components';
 import { sfx, playClip } from '../app/audio';
-import { WANDERERS, WANDERER_PERSONA, wandererFace } from '../core/trials';
+import { WANDERER_PERSONA, wandererFace, wandererFor } from '../core/trials';
 
 export function ChallengePrompt() {
   const nav = useNav();
@@ -12,7 +12,7 @@ export function ChallengePrompt() {
   const sighting = useGame((s) => (s.pendingChallenge ? s.sightings.find((x) => x.id === s.pendingChallenge!.sightingId) : undefined));
   if (!pending || !sighting || badgeQueue > 0) return null;
   const sp = speciesOf(sighting);
-  const who = WANDERERS[[...sighting.id].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7) % WANDERERS.length];
+  const who = wandererFor(sighting.id);
   return (
     <div className="tchallenge" role="dialog" aria-modal="true" aria-label="Battle challenge">
       <div className="tchallenge-card panel">

@@ -11,6 +11,7 @@
 //                      Ultra Super Lv40) and your trainer level adds a Bond bonus to every bird you bring.
 // Matchups:            Song beats Display beats Forage beats Sky beats Song (×1.3, or ×0.77 the other way).
 import type { Species } from '../data/types';
+import { LADDER_EXTRA, WANDERER_LIST, type LadderRival } from '../data/rivals';
 import { potionById, drink, potionTag, GAUGE_STEP } from './potions';
 
 // ─── styles: a bird's best talent (sets its quick move, super move, colours and sounds) ───
@@ -478,6 +479,12 @@ export interface RivalDef extends Persona {
   styles: Contest[]; size: number; level: number; quality: number; scene: string;
   coins: number; xp: number; time: number; music: string; face?: string; merlin?: boolean;
 }
+/** Turn a ladder entry into a rival: bigger teams, sharper fieldcraft and bigger prizes as the level climbs. */
+function ladderRival(r: LadderRival): RivalDef {
+  const t = (r.level - 14) / (50 - 14);
+  return { ...r, size: 3, quality: Math.round(62 + t * 32), time: Math.max(6, Math.round(8 - t * 2)),
+    coins: Math.round((80 + t * 420) / 5) * 5, xp: Math.round((150 + t * 1500) / 10) * 10 };
+}
 export const RIVALS: RivalDef[] = [
   {
     id: 'pip', name: 'Pip', title: 'Backyard rookie', styles: ['song'], size: 1, level: 3, quality: 30, scene: 'valley', coins: 25, xp: 40, time: 12, music: 'music/battle/default-1.mp3', face: 'trainers/t002.png',
@@ -544,8 +551,9 @@ export const RIVALS: RivalDef[] = [
     win: 'Well I never. You’ve got a real eye. Maybe the ridge will be in good hands.',
     lose: 'Patience, young birder. The ridge will still be here. Come back stronger.',
   },
+  ...LADDER_EXTRA.map(ladderRival),
   {
-    id: 'merlin', name: 'Professor Woods', title: 'Grand finale', styles: ['song', 'display', 'sky'], size: 3, level: 18, quality: 70, scene: 'nfb', coins: 120, xp: 250, time: 7, music: 'music/battle/elven.mp3', merlin: true,
+    id: 'merlin', name: 'Professor Woods', title: 'Grand finale', styles: ['song', 'display', 'sky'], size: 3, level: 50, quality: 96, scene: 'nfb', coins: 600, xp: 2000, time: 6, music: 'music/battle/elven.mp3', merlin: true,
     bio: 'Your mentor and the keeper of the shop. Thirty years in the field, and she still gasps at every sparrow.',
     motive: 'The final exam: has her student learned that every bird’s real-life talent is its true strength?',
     line: 'So, you’ve come this far. Every bird has a true talent. Today, show me you’ve learned to see it.',
@@ -558,23 +566,14 @@ export const RIVALS: RivalDef[] = [
     lose: 'Not yet, my friend. Not yet. Study your birds’ talents and come back.',
   },
 ];
-/** Wandering birders who challenge you after you discover a new bird; each gets a portrait from the trainer set. */
-const RIVAL_FACES = new Set(['002', '016', '023', '024', '020']);
-const WANDERER_FACES = Array.from({ length: 60 }, (_, i) => String(i + 1).padStart(3, '0')).filter((n) => !RIVAL_FACES.has(n));
+/** Wandering birders who challenge you after you discover a new bird. Each has one fixed portrait (data/rivals). */
 export const hashStr = (s: string) => [...s].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7);
-export const wandererFace = (key: string) => `trainers/t${WANDERER_FACES[hashStr(key + 'face') % WANDERER_FACES.length]}.png`;
-export const WANDERERS = ['Birder Sky', 'Fern', 'Rook', 'Juniper', 'Marsh', 'Willow', 'Robin Lee', 'Sparrow Sam'];
-/** Wandering birders: short personalities for the challenges that pop up after a new find. `{new}` is your new bird. */
-export const WANDERER_PERSONA: Record<string, Persona & { line: string; win: string; lose: string; title: string }> = {
-  'Birder Sky': { title: 'Wildlife photographer', bio: 'Carries three cameras and zero snacks.', motive: 'Wants an action shot of your new bird for her portfolio.', line: 'Hold still… a {new}?! I need this shot. Battle me while I shoot!', send: [], faint: ['Got the shot anyway!'], taunt: ['Ooh, that’ll make a great photo.'], charge: ['{bird}, give me your best angle!'], low: 'One more frame…', win: 'Perfect shot. Thanks for the show!', lose: 'Great photos, though. Truly.' },
-  Fern: { title: 'Shy botanist', bio: 'Knows every plant on the trail and talks mostly to them.', motive: 'Curious whether your {new} can keep up with her garden birds.', line: 'Oh! Um. Sorry. Is that a {new}? Could we… maybe have a small trial?', send: [], faint: ['Oh no, sorry, {bird}!'], taunt: ['Oh! I didn’t mean to win that one.'], charge: ['{bird}, um… go big?'], low: 'Okay. Deep breaths.', win: 'You’re really good. Thank you for being gentle.', lose: 'I… won? Oh my.' },
-  Rook: { title: 'Cocky teen birder', bio: 'Has 400 species on his list and mentions it constantly.', motive: 'Wants to prove your {new} is just beginner’s luck.', line: 'A {new}? Cute. I’ve got that one five times over. Let’s see if yours can actually battle.', send: [], faint: ['Whatever, {bird} wasn’t trying.'], taunt: ['Too easy.'], charge: ['Watch this, {bird}. Show-off time.'], low: 'Okay, okay, I’m focusing now.', win: 'Fine. Beginner’s luck. Twice.', lose: 'Told you. Four hundred species, baby.' },
-  Juniper: { title: 'Field researcher', bio: 'Clipboard, waders, and a spreadsheet for everything.', motive: 'Collecting data on how a {new} performs under pressure.', line: 'Fascinating, a {new}. For science: may I test it in a trial?', send: [], faint: ['Noted. Interesting result.'], taunt: ['Consistent with my hypothesis.'], charge: ['Trial three, {bird}: maximum output.'], low: 'The sample size is getting small…', win: 'Excellent data. Thank you for participating.', lose: 'Results recorded. Try again for a larger sample.' },
-  Marsh: { title: 'Old fisherman', bio: 'Fishes the same pond every day and knows every heron by name.', motive: 'Reckons nothing beats a pond bird, not even your {new}.', line: 'Well now, a {new}. Pond birds’ll teach it a thing or two. Fancy a trial?', send: [], faint: ['That one got away.'], taunt: ['Patience. Like fishing.'], charge: ['Reel it in, {bird}!'], low: 'Last cast of the day.', win: 'Hah! Good catch, that bird of yours.', lose: 'The pond always wins in the end.' },
-  Willow: { title: 'Landscape painter', bio: 'Paints birds in watercolour, usually slightly the wrong colour.', motive: 'Wants to see your {new} move so she can paint it.', line: 'Look at the colours on that {new}! Battle me, I need to see how it moves.', send: [], faint: ['Such lovely brushwork, {bird}.'], taunt: ['Beautiful! I must paint that.'], charge: ['{bird}, a bold stroke now!'], low: 'Final layer of paint…', win: 'Gorgeous! That one’s going on canvas.', lose: 'Lovely composition. Mine, I mean!' },
-  'Robin Lee': { title: 'Birding streamer', bio: 'Live-streams every walk to 12 loyal viewers.', motive: 'Chat wants to see a {new} battle. Content is content.', line: 'Chat, CHAT. A {new}! Okay, okay, let’s do a trial on stream!', send: [], faint: ['Chat, that was a misclick.'], taunt: ['Clip that! CLIP IT!'], charge: ['{bird}, hit them with the big one for chat!'], low: 'Chat, we’re in trouble.', win: 'GG! Chat, follow this birder.', lose: 'And THAT’s why we stream, chat.' },
-  'Sparrow Sam': { title: 'Kid with a notebook', bio: 'Draws every bird she sees with a purple crayon.', motive: 'Has never seen a {new} up close and wants to know if it’s strong.', line: 'Is that a REAL {new}?! Can my bird try battling it? Please please please?', send: [], faint: ['Sorry, {bird}! You did great!'], taunt: ['Yay! Did you see?!'], charge: ['{bird}, do your biggest flap!'], low: 'Come on come on come on!', win: 'Wow! Your bird is the best one!', lose: 'We won! I’m drawing this in my notebook!' },
-};
+export const WANDERERS = WANDERER_LIST.map((w) => w.name);
+export const WANDERER_PERSONA: Record<string, Persona & { line: string; win: string; lose: string; title: string; face: string }> =
+  Object.fromEntries(WANDERER_LIST.map((w) => [w.name, { ...w, send: [] }]));
+/** The wanderer picked for a key (a sighting id, a friend's name…), and their portrait. */
+export const wandererFor = (key: string) => WANDERERS[hashStr(key) % WANDERERS.length];
+export const wandererFace = (key: string) => WANDERER_PERSONA[wandererFor(key)].face;
 export const WILD = { coins: 15, xp: 30, time: 10, chance: 0.4, scenes: ['valley', 'pine', 'n1', 'nfb', 'n3'], music: ['music/battle/battle-2.mp3', 'music/battle/battle-8.mp3', 'music/battle/battle-6.mp3', 'music/battle/default-1.mp3'] };
 
 /** Rival levels keep pace with your team so later rivals stay a challenge. */
@@ -606,7 +605,7 @@ export function wildTeam(pool: Species[], level: number, rng: () => number, excl
 export const REMATCH = { coins: 5, xp: 15, perDay: 3 };
 /** Trial Tickets: earned by logging birds, spent on rival battles (wandering challenges and your first battle are free). */
 export const TICKETS = { start: 3, max: 5 };
-export interface TrialsState { cleared: number; wins: number; day?: string; rematches?: number; tutorial?: boolean; battles?: number; wildDay?: string; tickets?: number; ticketsEarned?: number; ticketsUsed?: number; duels?: Record<string, string>; duelWins?: number }
+export interface TrialsState { cleared: number; wins: number; day?: string; rematches?: number; tutorial?: boolean; battles?: number; wildDay?: string; tickets?: number; ticketsEarned?: number; ticketsUsed?: number; duels?: Record<string, string>; duelWins?: number; ladder?: number /* 2 = the 31-stop ladder (v1.50) */ }
 export const ticketsOf = (st?: TrialsState) => st?.tickets ?? TICKETS.start;
 export const battleIsFree = (st?: TrialsState) => !st?.tutorial;
 export function rewardFor(st: TrialsState | undefined, index: number, today: string): { coins: number; xp: number; first: boolean } {

@@ -32,8 +32,8 @@ export interface Lens {
 
 export const TIER_META: Record<LensTier, { label: string; level: number; color: string }> = {
   common: { label: 'Common', level: 1, color: '#B6C0C9' },
-  rare: { label: 'Rare', level: 4, color: '#5AA9C9' },
-  epic: { label: 'Epic', level: 8, color: '#B48BE0' },
+  rare: { label: 'Rare', level: 13, color: '#5AA9C9' },
+  epic: { label: 'Epic', level: 31, color: '#B48BE0' },
 };
 
 // shell colour → shell shade and glass tint
@@ -77,8 +77,15 @@ const DEFS: Def[] = [
   ['phantom', 'Phantom Lens', 'epic', 20, 260, 'phantom', 'single', '#FF5FC8', 'A spooky spirit swirl that fades to sparkles.'],
 ];
 
+/** v1.50: lenses unlock one by one across the climb to Lv50, cheapest first within each tier. */
+const TIER_SPAN: Record<LensTier, [number, number]> = { common: [1, 12], rare: [13, 30], epic: [31, 48] };
+function lensLevel(id: string, tier: LensTier, price: number): number {
+  const same = DEFS.filter((d) => d[2] === tier).sort((a, b) => a[4] - b[4] || a[0].localeCompare(b[0]));
+  const i = same.findIndex((d) => d[0] === id), [lo, hi] = TIER_SPAN[tier];
+  return price === 0 ? 1 : Math.round(lo + (same.length > 1 ? (i / (same.length - 1)) * (hi - lo) : 0));
+}
 export const LENSES: Record<LensId, Lens> = Object.fromEntries(DEFS.map(([id, name, tier, power, price, sheet, pattern, color, desc, filter]) =>
-  [id, { id, name, tier, power, price, desc, pattern, filter, fx: SHEETS[sheet], level: TIER_META[tier].level, colors: capsule(color) }]));
+  [id, { id, name, tier, power, price, desc, pattern, filter, fx: SHEETS[sheet], level: lensLevel(id, tier, price), colors: capsule(color) }]));
 const P: Record<string, [ParticleShape, string[], number]> = {
   dewdrop: ['drop', ['#7FD9A8', '#C9F7E2'], 8], sunbeam: ['sparkle', ['#F2C14E', '#FFF3B0'], 8], pebble: ['diamond', ['#9AA3AD', '#D4D9DE', '#6B7480'], 8],
   meadow: ['leaf', ['#8DC63F', '#3F7A3F', '#C8E67A'], 10], bubble: ['ring', ['#7CCBFF', '#D8F1FF'], 8], cinder: ['sparkle', ['#FF9A3C', '#FFD08A'], 8],

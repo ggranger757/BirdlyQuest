@@ -1,7 +1,7 @@
-// Aviary decor (v1.29): 50 bird feeders and 50 perches, sold in Woods' Shop.
+// Aviary decor (v1.29): bird feeders (105 since v1.50) and 50 perches, sold in Woods' Shop.
 // Each is a design × a colourway; the pixel art lives in src/render/decor.ts.
 
-export type FeederShape = 'tube' | 'cottage' | 'platform' | 'globe' | 'lantern' | 'suet' | 'hopper' | 'teacup' | 'gourd' | 'tower';
+export type FeederShape = 'tube' | 'cottage' | 'platform' | 'globe' | 'lantern' | 'suet' | 'hopper' | 'teacup' | 'gourd' | 'tower' | 'birdhouse' | 'pagoda' | 'jar' | 'log' | 'acorn';
 export type PerchShape = 'fence' | 'statue' | 'ruins' | 'glow' | 'toadstool' | 'lamp' | 'stump' | 'bath' | 'rune' | 'blossom';
 
 export interface FeederPal { roof: string; roofHi: string; body: string; trim: string }
@@ -22,6 +22,12 @@ const FEEDER_SHAPES: [FeederShape, string, number, number, string][] = [
   ['teacup', 'Teacup Feeder', 8, 160, 'A painted teacup on a saucer. Very civilised.'],
   ['gourd', 'Gourd Feeder', 9, 180, 'A painted dried gourd, the oldest feeder there is.'],
   ['tower', 'Tower Feeder', 10, 220, 'Three tiers of seed for a busy aviary.'],
+  // v1.50: five more designs for the climb to Lv50
+  ['birdhouse', 'Birdhouse Feeder', 11, 240, 'A little house with a round door and a seed window below.'],
+  ['jar', 'Mason Jar Feeder', 12, 260, 'An upcycled glass jar on a wire bail. Watch the seed go down.'],
+  ['log', 'Log Feeder', 13, 280, 'A hollow log with food packed into its holes. Woodpeckers adore it.'],
+  ['acorn', 'Acorn Feeder', 14, 300, 'A glass acorn under a carved cap.'],
+  ['pagoda', 'Pagoda Feeder', 15, 340, 'Two sweeping roofs over a seed window. Fit for a grand aviary.'],
 ];
 const FEEDER_PALS: [string, FeederPal, number][] = [
   ['Classic', { roof: '#B4532A', roofHi: '#E8943A', body: '#9A6A3E', trim: '#6B3A1E' }, 1],
@@ -29,6 +35,8 @@ const FEEDER_PALS: [string, FeederPal, number][] = [
   ['Ocean', { roof: '#2F6FB0', roofHi: '#7FC0F0', body: '#E4EEF4', trim: '#1D3F66' }, 1.2],
   ['Berry', { roof: '#A83E78', roofHi: '#EE8CC2', body: '#EAD8EC', trim: '#5E1F42' }, 1.3],
   ['Midnight', { roof: '#262B4A', roofHi: '#E8C04A', body: '#3C4260', trim: '#14172A' }, 1.5],
+  ['Sunset', { roof: '#D8582E', roofHi: '#FFC25A', body: '#F4DCC0', trim: '#7A2E1A' }, 1.7],   // v1.50
+  ['Frost', { roof: '#9FC4E8', roofHi: '#FFFFFF', body: '#E8F2FA', trim: '#4E6E92' }, 1.9],     // v1.50
 ];
 
 /** Perches: [shape, name, level, base price, description, five colourways]. */
@@ -65,15 +73,22 @@ const PERCH_SHAPES: [PerchShape, string, number, number, string, [string, PerchP
     ['Magnolia', { a: '#6A4A36', b: '#F4E2EA', c: '#E8A8C4', d: '#FFFFFF' }], ['Wisteria', { a: '#5A4432', b: '#A98BE0', c: '#D8C4FF', d: '#FFFFFF' }], ['Maple', { a: '#5E3A22', b: '#E0562C', c: '#F2A43A', d: '#FFD86A' }]]],
 ];
 const r5 = (n: number) => Math.round(n / 5) * 5;
+// v1.50: unlocks spread over the whole climb to the Lv50 cap. Each design unlocks at its own level and each
+// colourway a little later; prices grow with the unlock level.
+const FEEDER_LV = (shapeIdx: number, palIdx: number) => Math.min(50, 1 + shapeIdx * 3 + palIdx);       // 15 designs: Lv1 → Lv49
+const PERCH_LV = (shapeIdx: number, varIdx: number) => Math.min(50, 1 + shapeIdx * 5 + varIdx);         // 10 designs: Lv1 → Lv50
+const lvPrice = (base: number, lv: number) => base + lv * 12;
 const VAR_MULT = [1, 1.1, 1.2, 1.3, 1.5];
 
-export const FEEDERS: FeederDef[] = FEEDER_SHAPES.flatMap(([shape, name, level, price, desc]) => FEEDER_PALS.map(([pn, pal, k]) => ({
-  id: `feeder-${shape}-${pn.toLowerCase()}`, kind: 'feeder' as const, name: `${pn} ${name}`, design: name, colourway: pn, shape, pal, level, desc,
-  price: shape === 'tube' && pn === 'Classic' ? 0 : r5(price * k),
-})));
-export const PERCHES: PerchDef[] = PERCH_SHAPES.flatMap(([shape, name, level, price, desc, vars]) => vars.map(([vn, pal], v) => ({
-  id: `perch-${shape}-${vn.toLowerCase().replace(/\s+/g, '')}`, kind: 'perch' as const, name: `${vn} ${name}`, design: name, colourway: vn, shape, pal, level, desc, variant: v, price: r5(price * VAR_MULT[v]),
-})));
+export const FEEDERS: FeederDef[] = FEEDER_SHAPES.flatMap(([shape, name, , price, desc], si) => FEEDER_PALS.map(([pn, pal, k], pi) => {
+  const level = FEEDER_LV(si, pi);
+  return { id: `feeder-${shape}-${pn.toLowerCase()}`, kind: 'feeder' as const, name: `${pn} ${name}`, design: name, colourway: pn, shape, pal, level, desc,
+    price: shape === 'tube' && pn === 'Classic' ? 0 : r5(lvPrice(price, level) * k) };
+}));
+export const PERCHES: PerchDef[] = PERCH_SHAPES.flatMap(([shape, name, , price, desc, vars], si) => vars.map(([vn, pal], v) => {
+  const level = PERCH_LV(si, v);
+  return { id: `perch-${shape}-${vn.toLowerCase().replace(/\s+/g, '')}`, kind: 'perch' as const, name: `${vn} ${name}`, design: name, colourway: vn, shape, pal, level, desc, variant: v, price: r5(lvPrice(price, level) * VAR_MULT[v]) };
+}));
 export const DEFAULT_FEEDER = 'feeder-tube-classic';
 export const DECOR: Record<string, DecorDef> = Object.fromEntries([...FEEDERS, ...PERCHES].map((d) => [d.id, d]));
 export const feederOf = (id?: string) => (DECOR[id ?? ''] as FeederDef | undefined)?.kind === 'feeder' ? (DECOR[id!] as FeederDef) : (DECOR[DEFAULT_FEEDER] as FeederDef);

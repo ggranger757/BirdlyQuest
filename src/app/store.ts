@@ -79,6 +79,9 @@ function adopt(saved: GameState | undefined) {
   // The Legendary lens tier was retired (v1.25): refund what each one cost and fall back to a lens still owned.
   // v1.28: Bird Homes are bought now. Whatever home a player already uses stays theirs; High Street was retired.
   if (!state.ownedHomes) state = { ...state, ownedHomes: state.diorama.home && state.diorama.home !== 'c2' ? [state.diorama.home] : [] };
+  // v1.50: the ladder grew from 6 stops to 31. Old saves count Professor Woods (stop 6) as beaten; she is now the
+  // final stop, so players who beat her carry on at the first new rival instead of skipping it.
+  if (state.trials && (state.trials.ladder ?? 1) < 2) state = { ...state, trials: { ...state.trials, cleared: Math.min(state.trials.cleared, 5), ladder: 2 } };
   if (state.diorama.home === 'c2' || (state.diorama.home && !SCENES[state.diorama.home])) state = { ...state, diorama: { ...state.diorama, home: undefined } };
   // v1.29: the twig-and-branch perches became fences, statues, ruins, glow sticks… (same slot and colourway)
   if (state.ownedDecor.some((id) => migratePerchId(id) !== id) || (state.diorama.perch && migratePerchId(state.diorama.perch) !== state.diorama.perch))
@@ -263,7 +266,7 @@ export async function fileCatch(input: CatchInput): Promise<CatchResult> {
   }
   // every bird you log earns a Trial Ticket for rival battles (up to the cap)
   const ticket = counts(sighting) && ticketsOf(next.trials) < TICKETS.max;
-  if (ticket) next = { ...next, trials: { cleared: 0, wins: 0, ...next.trials, tickets: ticketsOf(next.trials) + 1, ticketsEarned: (next.trials?.ticketsEarned ?? 0) + 1 } };
+  if (ticket) next = { ...next, trials: { cleared: 0, wins: 0, ladder: 2, ...next.trials, tickets: ticketsOf(next.trials) + 1, ticketsEarned: (next.trials?.ticketsEarned ?? 0) + 1 } };
   // sometimes a wandering birder challenges you to show off a newly discovered bird (at most once a day)
   if (sighting.firstRecord && counts(sighting) && next.sightings.filter(counts).length >= 2 && next.trials?.wildDay !== dayKey(at) && Math.random() < WILD.chance) {
     next = { ...next, pendingChallenge: { sightingId: sighting.id, at: at.toISOString() } };
@@ -496,13 +499,13 @@ export function finishTrial(index: number, won: boolean, birds: string[] = []): 
   const rival = RIVALS[index];
   if (!rival) return { coins: 0, xp: 0, first: false, levelled: [] };
   if (!won) { logEvent('trial_loss', rival.id); return { coins: 0, xp: 0, first: false, levelled: [] }; }
-  setState((s) => ({ ...s, trials: { cleared: 0, wins: 0, ...s.trials } }));
+  setState((s) => ({ ...s, trials: { cleared: 0, wins: 0, ladder: 2, ...s.trials } }));
   const today = dayKey(new Date());
   const r = rewardFor(state.trials, index, today);
   // birds that took part grow a level (only while the win still pays, so rematches can't be farmed)
   const levelled = r.coins > 0 ? birds.filter((id) => state.sightings.some((x) => x.id === id && (x.level ?? 5) < 50)) : [];
   setState((s) => {
-    const t = s.trials ?? { cleared: 0, wins: 0 };
+    const t = s.trials ?? { cleared: 0, wins: 0, ladder: 2 };
     const used = t.day === today ? t.rematches ?? 0 : 0;
     return {
       ...s, xp: s.xp + r.xp, feathers: s.feathers + r.coins,
@@ -519,7 +522,7 @@ export function finishWild(won: boolean, birds: string[] = []): { coins: number;
   const today = dayKey(new Date());
   const levelled = won ? birds.filter((id) => state.sightings.some((x) => x.id === id && (x.level ?? 5) < 50)) : [];
   setState((s) => {
-    const t = s.trials ?? { cleared: 0, wins: 0 };
+    const t = s.trials ?? { cleared: 0, wins: 0, ladder: 2 };
     return {
       ...s, xp: s.xp + (won ? WILD.xp : 0), feathers: s.feathers + (won ? WILD.coins : 0),
       sightings: levelled.length ? s.sightings.map((x) => (levelled.includes(x.id) ? { ...x, level: (x.level ?? 5) + 1 } : x)) : s.sightings,
@@ -537,7 +540,7 @@ export function finishDuel(won: boolean, birds: string[], friend: string): { coi
   const first = won && seen[friend] !== today;
   const levelled = first ? birds.filter((id) => state.sightings.some((x) => x.id === id && (x.level ?? 5) < 50)) : [];
   setState((s) => {
-    const t = s.trials ?? { cleared: 0, wins: 0 };
+    const t = s.trials ?? { cleared: 0, wins: 0, ladder: 2 };
     const duels = { ...(t.duels ?? {}) }; if (won) duels[friend] = today;
     const keep = Object.fromEntries(Object.entries(duels).sort((a, b) => (a[1] < b[1] ? 1 : -1)).slice(0, 40));
     return {
@@ -551,14 +554,14 @@ export function finishDuel(won: boolean, birds: string[], friend: string): { coi
 }
 /** Count a battle played, and mark the battle tutorial as seen. */
 export function noteBattle(tutorialDone: boolean) {
-  setState((s) => { const t = s.trials ?? { cleared: 0, wins: 0 }; return { ...s, trials: { ...t, battles: (t.battles ?? 0) + 1, tutorial: t.tutorial || tutorialDone } }; });
+  setState((s) => { const t = s.trials ?? { cleared: 0, wins: 0, ladder: 2 }; return { ...s, trials: { ...t, battles: (t.battles ?? 0) + 1, tutorial: t.tutorial || tutorialDone } }; });
 }
 /** Spend a Trial Ticket to start a rival battle (your very first battle is free). */
 export function spendTicket(): boolean {
   if (battleIsFree(state.trials)) return true;
   const n = ticketsOf(state.trials);
   if (n < 1) return false;
-  setState((s) => ({ ...s, trials: { cleared: 0, wins: 0, ...s.trials, tickets: n - 1, ticketsUsed: (s.trials?.ticketsUsed ?? 0) + 1 } }));
+  setState((s) => ({ ...s, trials: { cleared: 0, wins: 0, ladder: 2, ...s.trials, tickets: n - 1, ticketsUsed: (s.trials?.ticketsUsed ?? 0) + 1 } }));
   logEvent('ticket_used', n - 1);
   return true;
 }
