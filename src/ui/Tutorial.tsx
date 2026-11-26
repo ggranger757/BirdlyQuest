@@ -30,7 +30,7 @@ const STEPS: Step[] = [
   // Trainer
   { tab: 'you', section: 'lenses', target: '[aria-label="Your Snap Lenses"]', text: 'SNAP LENSES add Snap Power to every photo, and each records your bird with its own effect. Better lenses unlock as you level up.' },
   { tab: 'you', section: 'quests', target: '[role="tablist"][aria-label="Trainer sections"]', text: 'QUESTS and BADGES earn XP and Feather Coins. Each trainer level also adds BOND: +1% HP and power for every bird you bring to battle.' },
-  { tab: 'explore', target: '.feather-chip', text: 'My SHOP sells bird food, Snap Lenses, Bird Homes, 50 feeders and 50 perches. Everything is paid in Feather Coins.' },
+  { tab: 'explore', target: '.feather-chip', text: 'My SHOP sells bird food, potions, Snap Lenses, 50 feeders and 50 perches. Bird Homes are on the Aviary’s Birds page. Everything is paid in Feather Coins.' },
   { tab: 'explore', text: 'That’s everything! Go outside and find your first bird. You can replay this tour any time from Settings. Happy birding!' },
 ];
 export const TOUR_VERSION = 2;

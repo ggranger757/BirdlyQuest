@@ -60,7 +60,7 @@ export interface GameState {
   events: { sitSpots: string[]; shares: string[] };
   diorama: { biome: Habitat; home?: string /* chosen Bird Home scene id; unset = follows time of day */; birds: string[]; decor: Record<string, string>; feeder?: string /* feeder design in use */; perch?: string /* perch in use */; rotatedAt?: string /* last Aviary swap (v1.37) */ }; // `decor` is legacy
   ownedDecor: string[];                // feeders and perches bought in Woods' Shop (v1.28)
-  ownedHomes?: string[];               // Bird Homes bought in Woods' Shop (v1.28)
+  ownedHomes?: string[];               // Bird Homes bought (Aviary › Birds since v1.48)
   settings: Settings;
   sessions: number;
   lastSession: string | null;

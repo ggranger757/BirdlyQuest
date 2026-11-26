@@ -6,11 +6,10 @@ import { FeatherIcon } from '../FeatherIcon';
 //     Professor Woods, a big preview and ONE button that fits the item's state: Buy, Hang it, Move in, Use…
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNav, type Nav } from '../nav';
-import { useGame, buyPotion, buyHome, ownsHome, setHome, buyDecor, ownsDecor, equipDecor, buyFood, fillFeeder, buyLens, equipLens } from '../../app/store';
+import { useGame, buyPotion, buyDecor, ownsDecor, equipDecor, buyFood, fillFeeder, buyLens, equipLens } from '../../app/store';
 import { FOODS, FEEDER_CAP, type Food } from '../../core/pets';
 import { LENSES, LENS_ORDER, TIER_META, type LensId } from '../../core/lenses';
 import { FEEDERS, PERCHES, feederOf, type DecorDef } from '../../core/decor';
-import { SCENES, homePrice, paintHomeThumb } from '../../render/diorama';
 import { paintDecorThumb } from '../../render/decor';
 import { trainerLevel } from '../../core/xp';
 import { POTIONS, potionById, potionTag, potionSays, KIND_META, type Potion } from '../../core/potions';
@@ -20,18 +19,18 @@ import { FoodIcon } from '../FoodIcon';
 import { Sheet } from '../components';
 import { sfx, haptic, playClip } from '../../app/audio';
 
-export type ShopTab = 'food' | 'potions' | 'lenses' | 'homes' | 'feeders' | 'perches';
+export type ShopTab = 'food' | 'potions' | 'lenses' | 'feeders' | 'perches';  // Bird Homes are bought on the Aviary's Birds page (v1.48)
 type Cat = ShopTab;
 const CATS: { id: Cat; label: string }[] = [
-  { id: 'food', label: 'Food' }, { id: 'potions', label: 'Potions' }, { id: 'feeders', label: 'Feeders' }, { id: 'perches', label: 'Perches' }, { id: 'homes', label: 'Homes' }, { id: 'lenses', label: 'Lenses' },
+  { id: 'food', label: 'Food' }, { id: 'potions', label: 'Potions' }, { id: 'feeders', label: 'Feeders' }, { id: 'perches', label: 'Perches' }, { id: 'lenses', label: 'Lenses' },
 ];
 
 /* ── opening the shop from anywhere: jump to the Aviary's Feeder & Shop page ── */
 let pending: { tab?: ShopTab } | null = null;
 const listeners = new Set<() => void>();
 /** Open Woods' Shop: closes any open screen, goes to the Aviary and shows the Feeder & Shop page on that category. */
-export function openShop(nav: Nav, tab?: ShopTab) {
-  pending = { tab };
+export function openShop(nav: Nav, tab?: ShopTab | 'homes') {
+  pending = { tab: tab === 'homes' ? undefined : tab };
   nav.closeAll(); nav.setTab('aviary');
   listeners.forEach((f) => f());
 }
@@ -59,7 +58,6 @@ function Thumb({ paint, w, h, k }: { paint: (c: HTMLCanvasElement) => void; w: n
 const decorArt = (d: DecorDef, size: number) => <Thumb k={d.id} w={size} h={size} paint={(c) => paintDecorThumb(c, d)} />;
 /** A potion bottle (the owner's 32×32 pixel art). */
 export const PotionArt = ({ p, size }: { p: Potion; size: number }) => <img src={p.img} width={size} height={size} className="pix potion-art" alt="" draggable={false} />;
-const homeArt = (id: string, w: number) => <Thumb k={id} w={w} h={Math.round(w * 0.56)} paint={(c) => { void paintHomeThumb(c, id, w); }} />;
 
 type State = 'inuse' | 'owned' | 'buy' | 'locked';
 interface Tile { key: string; name: string; art: (size: number) => ReactNode; state: State; tag: ReactNode; order: number }
@@ -110,14 +108,6 @@ export function FeederShop({ cat, onCat, onPoured, birds }: { cat: Cat; onCat: (
       });
       case 'feeders': return decorTiles(FEEDERS);
       case 'perches': return decorTiles(PERCHES);
-      case 'homes': return [
-        { key: 'home:', name: 'Day & night', art: (s: number) => <span className="tile-homes">{homeArt('skyday', Math.round(s * 0.9))}</span>, state: (!st.diorama.home ? 'inuse' : 'owned') as State, order: -1, tag: !st.diorama.home ? '✓ In use' : 'Free' },
-        ...Object.values(SCENES).map((sc) => {
-          const owned = ownsHome(st, sc.id), state: State = st.diorama.home === sc.id ? 'inuse' : owned ? 'owned' : lv < sc.level ? 'locked' : 'buy';
-          return { key: `home:${sc.id}`, name: sc.label, art: (s: number) => homeArt(sc.id, Math.round(s * 0.9)), state, order: sc.level * 1000 + homePrice(sc.id),
-            tag: state === 'inuse' ? '✓ Home' : state === 'owned' ? 'Owned' : state === 'locked' ? `🔒 Lv ${sc.level}` : price(homePrice(sc.id)) };
-        }),
-      ];
       case 'lenses': return LENS_ORDER.map((id, i) => {
         const l = LENSES[id], owned = st.lenses.includes(id), state: State = st.lens === id ? 'inuse' : owned ? 'owned' : lv < l.level ? 'locked' : 'buy';
         return { key: `lens:${id}`, name: l.name, art: (s: number) => <Capsule size={Math.round(s * 0.55)} lens={id} glow={state === 'inuse'} />, state, order: i,
@@ -215,17 +205,6 @@ function ItemSheet({ itemKey, onClose, onPoured }: { itemKey: string; onClose: (
       : locked ? <button className="btn block" disabled>🔒 Unlocks at Lv {d.level}</button>
       : <button className="btn primary block" disabled={st.feathers < d.price} onClick={() => { if (buyDecor(d.id)) { happy(`The ${d.name}! I’ve put it up in your Aviary.`); nav.toast(`Bought ${d.name}`); } else broke(d.price); }}>Buy &amp; {verb.toLowerCase()} · {coins(d.price)}</button>;
     if (d.kind === 'perch' && using) secondary = <button className="btn ghost block" onClick={() => { equipDecor('perch', undefined); setMood('curious'); setSaid('Perch packed away. Your birds will use the branches.'); }}>Take it down</button>;
-  } else if (kind === 'home') {
-    const sc = id ? SCENES[id] : null;
-    const owned = !sc || ownsHome(st, sc.id), on = sc ? st.diorama.home === sc.id : !st.diorama.home, locked = !!sc && !owned && lv < sc.level, p = sc ? homePrice(sc.id) : 0;
-    art = homeArt(sc?.id ?? 'skyday', 200); title = sc?.label ?? 'Day & night';
-    line = sc ? 'A new home for your Aviary. Your birds, feeder and perch all move in together.' : 'The default home: a sunny meadow by day that turns to dusk at night.';
-    meta = sc ? <>Unlocks at Lv {sc.level}</> : <>Free</>;
-    const move = () => { sfx.select(); setHome(sc?.id); happy(`Your birds are settling into ${title}.`); };
-    primary = on ? <button className="btn block" disabled>✓ Your home</button>
-      : owned ? <button className="btn primary block" onClick={move}>Move in</button>
-      : locked ? <button className="btn block" disabled>🔒 Unlocks at Lv {sc!.level}</button>
-      : <button className="btn primary block" disabled={st.feathers < p} onClick={() => { if (buyHome(sc!.id)) { happy(`${sc!.label} is yours! Your birds have moved in.`); nav.toast(`Moved to ${sc!.label}`); } else broke(p); }}>Buy &amp; move in · {coins(p)}</button>;
   } else if (kind === 'lens') {
     const l = LENSES[id as LensId], owned = st.lenses.includes(l.id), on = st.lens === l.id, locked = !owned && lv < l.level;
     art = <Capsule size={96} lens={l.id} glow />; title = l.name; line = l.desc;
