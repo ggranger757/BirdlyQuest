@@ -451,3 +451,4 @@ One line per meaningful choice, with the reason.
   - ▼ means there is more below and ▲ means you're at the end. Swiping also scrolls.
   - While typing, the newest words stay in view.
   - Other uses of the box (quick log) are unchanged.
+- **v1.51.1: Bird Home buy panel scrolls into view and keeps its buttons inside.** Tapping a home for sale smooth-scrolls its panel to the middle of the screen (an instant jump with reduced motion). The panel now stacks: picture and text on top, then "Not now" / "Buy & move in" as a full-width row. Labels may wrap instead of overflowing. Checked at 320 px and 390 px.

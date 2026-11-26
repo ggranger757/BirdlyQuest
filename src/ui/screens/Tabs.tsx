@@ -54,6 +54,13 @@ export function HabitatTab() {
   useShopRequest(goShop);
   const [sceneLabel, setSceneLabel] = useState('');
   const [buying, setBuying] = useState<string | null>(null);
+  // when a home is tapped, bring its buy panel into view (v1.51.1)
+  const buyRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!buying) return;
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    requestAnimationFrame(() => buyRef.current?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' }));
+  }, [buying]);
   const [gift, setGift] = useState(0);
   const [meals, setMeals] = useState<Meal[]>([]);
   const stripRef = useRef<HTMLDivElement>(null);
@@ -242,17 +249,19 @@ export function HabitatTab() {
             })}
           </div>
           {buying && SCENES[buying] && (
-            <div className="panel home-buy" role="dialog" aria-label={`Buy ${SCENES[buying].label}`}>
-              <HomeThumb id={buying} />
-              <div className="grow">
-                <b>{SCENES[buying].label}</b>
-                <p className="small" style={{ margin: '2px 0 6px' }}>Move your birds here for <FeatherIcon size={12} /> <b>{homePrice(buying)}</b> Feather Coins. You have {st.feathers}.</p>
-                <div className="btn-pair">
+            <div ref={buyRef} key={buying} className="panel home-buy" role="dialog" aria-label={`Buy ${SCENES[buying].label}`}>
+              <div className="home-buy-top">
+                <HomeThumb id={buying} />
+                <div className="grow">
+                  <b>{SCENES[buying].label}</b>
+                  <p className="small" style={{ margin: '2px 0 0' }}>Move your birds here for <FeatherIcon size={12} /> <b>{homePrice(buying)}</b> Feather Coins. You have {st.feathers}.</p>
+                </div>
+              </div>
+              <div className="btn-pair home-buy-btns">
                   <button className="btn ghost small" onClick={() => { sfx.back(); setBuying(null); }}>Not now</button>
                   <button className="btn primary small" disabled={st.feathers < homePrice(buying)} onClick={() => { if (buyHome(buying)) { playClip('buy'); nav.toast(`Moved to ${SCENES[buying].label}!`); setBuying(null); } else sfx.error(); }}>
                     {st.feathers < homePrice(buying) ? `Need ${homePrice(buying) - st.feathers} more` : 'Buy & move in'}
                   </button>
-                </div>
               </div>
             </div>
           )}

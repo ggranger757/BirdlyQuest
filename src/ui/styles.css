@@ -1236,7 +1236,12 @@ button.goal-chest.ready:active { transform: translateY(2px); box-shadow: 0 1px 0
 /* Bird Homes for sale in the Aviary */
 .home-card { position: relative; }
 .home-price { position: absolute; top: 4px; right: 4px; display: inline-flex; align-items: center; gap: 3px; padding: 1px 5px; font-family: var(--lbl); font-size: 9px; color: var(--accent-ink, #0A0C0F); background: var(--accent-fill, var(--accent)); border: 1px solid #000; }
-.home-buy { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+.home-buy { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; scroll-margin: 90px 0 110px; animation: home-buy-in 160ms ease-out; }
+.home-buy-top { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.home-buy-top .grow { min-width: 0; overflow-wrap: anywhere; }
+.home-buy-btns .btn { min-width: 0; white-space: normal; line-height: 1.15; }
+@keyframes home-buy-in { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .home-buy { animation: none; } }
 .home-buy canvas { flex: none; width: 96px; border: 2px solid #000; }
 @media (max-width: 360px) { .shop-tab { font-size: 9px; } .shop-npc-portrait { width: 72px; height: 84px; } }
 .tour-progress { display: block; height: 4px; margin: 0 0 8px; background: rgba(0,0,0,.15); border: 1px solid #000; }
