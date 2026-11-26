@@ -452,3 +452,9 @@ One line per meaningful choice, with the reason.
   - While typing, the newest words stay in view.
   - Other uses of the box (quick log) are unchanged.
 - **v1.51.1: Bird Home buy panel scrolls into view and keeps its buttons inside.** Tapping a home for sale smooth-scrolls its panel to the middle of the screen (an instant jump with reduced motion). The panel now stacks: picture and text on top, then "Not now" / "Buy & move in" as a full-width row. Labels may wrap instead of overflowing. Checked at 320 px and 390 px.
+- **Bird photo ID, step 1: training kit (no app change yet).** The owner sells the app, so WingCLIP (CC BY-NC) was rejected, and so were models trained on NABirds or iNaturalist photos with mixed licences. `training/birdid_colab.ipynb` trains our own model in Google Colab:
+  - **Species:** the BirdDex 122 plus the top 150 per region, about 800 in all.
+  - **Photos:** only CC0 or CC BY iNaturalist photos, with credits recorded for each one.
+  - **Model:** EfficientNet-B0, exported to ONNX.
+  - The notebook is resumable through Google Drive. It was dry-run end-to-end against a fake API (licence filtering, resume, credits and zip all verified); GPU training was not run here.
+  - Step 2, once the owner sends `birdlyquest-birdid.zip`: an "✨ Identify it" step in the catch flow, run with onnxruntime-web and ranked with the region and month priors, plus a Photo credits page.
