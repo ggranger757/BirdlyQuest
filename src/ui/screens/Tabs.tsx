@@ -30,6 +30,9 @@ import { sfx, haptic, playClip } from '../../app/audio';
 
 // ─── AVIARY: your birds living in a scene, kept fed from the feeder ───
 
+/** How often Professor Woods' bird fact on the Trainer page changes. */
+const FACT_EVERY_MS = 12 * 60 * 60 * 1000;
+
 export function HabitatTab() {
   useEffect(() => { gameMusic('aviary'); }, []);
   const nav = useNav();
@@ -323,14 +326,15 @@ export function YouTab() {
   const [section, setSection] = useState<'quests' | 'badges' | 'lenses' | 'life'>('quests');
   useEffect(() => { const f = (e: Event) => setSection((e as CustomEvent).detail); window.addEventListener('birdly:trainer-section', f); return () => window.removeEventListener('birdly:trainer-section', f); }, []);
   const [questCast, setQuestCast] = useState(0);
-  // Professor Woods shares a random bird fact, favouring birds you've already found (v1.50)
-  const factPool = useMemo(() => {
+  // Professor Woods shares a bird fact that changes every 12 hours (v1.50.1). Every other period she picks
+  // one of the birds you've found (once you have a few); otherwise any bird with a fact.
+  const period = Math.floor(Date.now() / FACT_EVERY_MS);
+  const fact = useMemo(() => {
     const all = SPECIES.filter((x) => x.fact);
     const mine = all.filter((x) => life.some((y) => y.speciesId === x.id));
-    return mine.length >= 3 && Math.random() < 0.6 ? mine : all;
-  }, [life.length]); // eslint-disable-line react-hooks/exhaustive-deps
-  const [factN, setFactN] = useState(() => Math.floor(Math.random() * 1000));
-  const fact = factPool.length ? factPool[factN % factPool.length] : null;
+    const pool = mine.length >= 3 && period % 2 === 0 ? mine : all;
+    return pool.length ? pool[(period * 2654435761 >>> 0) % pool.length] : null;
+  }, [period, life.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const cats = ['Firsts', 'Taxonomy', 'Place', 'Craft', 'Care', 'Time', 'Dedication'] as const;
   const tierColor = { bronze: 'var(--tier-bronze)', silver: 'var(--tier-silver)', gold: 'var(--tier-gold)', platinum: 'var(--tier-platinum)' };
   return (
@@ -365,10 +369,8 @@ export function YouTab() {
 
       {section === 'quests' && (
         <section aria-label="Quests">
-          <MerlinSays cast={questCast + factN} mood={claimable ? 'delighted' : 'curious'} name="Professor Woods · Quests"
-            text={`${claimable ? `You have ${claimable} quest${claimable > 1 ? 's' : ''} to hand in. Claim your reward!` : 'Head out and find birds. I will reward you for every quest you finish.'}${fact ? `\n\nDid you know? ${fact.fact} (${fact.common})` : ''}`}>
-            {fact && <button className="btn ghost small woods-fact-next" onClick={(e) => { e.stopPropagation(); sfx.select(); setFactN((n) => n + 1 + Math.floor(Math.random() * 7)); }}>Tell me another fact ›</button>}
-          </MerlinSays>
+          <MerlinSays cast={questCast} mood={claimable ? 'delighted' : 'curious'} name="Professor Woods · Quests"
+            text={`${claimable ? `You have ${claimable} quest${claimable > 1 ? 's' : ''} to hand in. Claim your reward!` : 'Head out and find birds. I will reward you for every quest you finish.'}${fact ? `\n\nDid you know? ${fact.fact} (${fact.common})` : ''}`} />
           {slots.map(({ slot, kind }) => {
             const p = challengeProgress(st, slot, now);
             const ready = p.done && !slot.claimed;

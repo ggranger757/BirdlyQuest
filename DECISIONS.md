@@ -445,3 +445,4 @@ One line per meaningful choice, with the reason.
   - **Prices:** they rise with the unlock level.
   - **Potions:** 17, up from 11, through Lv44. A potion now has separate Attack and Defense amounts, which allowed Dragon Draught (ATK full + DEF 2) and Titan Draught (the reverse). Only red, blue and green bottles were used, so the colour code holds. Existing potion ids are unchanged.
   - **Trainer page:** Woods' quest box adds a "Did you know?" bird fact from the curated species facts (favouring birds you've found), with a "Tell me another fact" button.
+- **v1.50.1: Woods' bird fact changes every 12 hours; no "Tell me another" button** (owner's request). The fact is picked from the 12-hour period (UTC midnight and noon, so 7 am / 7 pm Eastern), so it stays put through reloads. Every other period it comes from birds you've found, once you have 3 or more.
