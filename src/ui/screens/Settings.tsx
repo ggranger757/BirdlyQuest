@@ -30,7 +30,7 @@ const THEMES: { id: Theme; label: string; bg: string; accent: string; card: stri
   { id: 'neon', label: 'Neon (default)', bg: '#0A0C0F', accent: '#C6FF1A', card: '#EEF3EA', ink: '#0A0C0F' },
   { id: 'dusk', label: 'Dusk', bg: 'linear-gradient(135deg, #1A1446, #1C0E33)', accent: 'linear-gradient(135deg, #9FB8FF, #C9A2FF)', card: '#F1EEFF', ink: '#0B0820' },
   { id: 'ember', label: 'Ember', bg: 'linear-gradient(135deg, #2A0F08, #1E0B05)', accent: 'linear-gradient(135deg, #FF6A45, #FFB347)', card: '#FFF2EA', ink: '#1A0700' },
-  { id: 'field', label: 'Field guide (light)', bg: '#EADCBC', accent: '#111111', card: '#FBF5E6', ink: '#17110A', font: "'Courier New', monospace" },
+  { id: 'field', label: 'Field guide (light)', bg: '#EADCBC', accent: '#111111', card: '#FBF5E6', ink: '#17110A' },
 ];
 
 export function Settings() {
