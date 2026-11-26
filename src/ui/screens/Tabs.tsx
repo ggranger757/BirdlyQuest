@@ -369,7 +369,7 @@ export function YouTab() {
 
       {section === 'quests' && (
         <section aria-label="Quests">
-          <MerlinSays cast={questCast} mood={claimable ? 'delighted' : 'curious'} name="Professor Woods · Quests"
+          <MerlinSays fit cast={questCast} mood={claimable ? 'delighted' : 'curious'} name="Professor Woods · Quests"
             text={`${claimable ? `You have ${claimable} quest${claimable > 1 ? 's' : ''} to hand in. Claim your reward!` : 'Head out and find birds. I will reward you for every quest you finish.'}${fact ? `\n\nDid you know? ${fact.fact} (${fact.common})` : ''}`} />
           {slots.map(({ slot, kind }) => {
             const p = challengeProgress(st, slot, now);
